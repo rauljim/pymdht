@@ -1,0 +1,302 @@
+# Copyright (C) 2009 Raul Jimenez
+# Released under GNU LGPL 2.1
+# See LICENSE.txt for more information
+
+import sys
+import threading
+import time
+
+import logging
+
+import identifier as identifier
+import message as message
+
+
+logger = logging.getLogger('dht')
+
+
+MAX_PARALLEL_QUERIES = 16
+
+ANNOUNCE_REDUNDANCY = 3
+
+class _QueuedNode(object):
+
+    def __init__(self, node_, log_distance):
+        self.node = node_
+        self.log_distance = log_distance
+
+    def __cmp__(self, other):
+        return self.log_distance - other.log_distance
+
+class _LookupQueue(object):
+
+    def __init__(self, info_hash, queue_size):
+        self.info_hash = info_hash
+        self.queue_size = queue_size
+        self.queue = [_QueuedNode(None, identifier.ID_SIZE_BITS+1)]
+        # *_ips is used to prevent that many Ids are
+        # claimed from a single IP address.
+        self.queued_ips = set()
+        self.queried_ips = set()
+        self.queued_qnodes = []
+        self.responded_qnodes = []
+        self.max_queued_qnodes = 8
+        self.max_responded_qnodes = 16
+
+        self.last_query_ts = time.time()
+        self.slow_down = False
+        self.pop_counter = 0
+
+    def bootstrap(self, nodes):
+        # Assume that the ips are not duplicated.
+        for n in nodes:
+            self.queried_ips.add(n.ip)
+        return nodes
+
+    def on_response(self, src_node, nodes):
+        ''' Nodes must not be duplicated'''
+        qnode = _QueuedNode(src_node,
+                            src_node.id.log_distance(self.info_hash))
+        self._add_responded_qnode(qnode)
+        qnodes = [_QueuedNode(n, n.id.log_distance(self.info_hash)) \
+                      for n in nodes]
+        self._add_queued_qnodes(qnodes)
+        return self._pop_nodes_to_query()
+
+    def _add_queried_ip(self, ip):
+        if ip not in self.queried_ips:
+            self.queried_ips.add(ip)
+            return True
+        
+    def _add_responded_qnode(self, qnode):
+        self.responded_qnodes.append(qnode)
+        '''
+        print '=====', len(self.responded_qnodes)
+        for qnode in self.responded_qnodes:
+            print qnode.node,
+            print qnode.log_distance
+        print '====='
+        '''
+        self.responded_qnodes.sort()
+        del self.responded_qnodes[self.max_responded_qnodes:]
+
+    def _add_queued_qnodes(self, qnodes):
+        for qnode in qnodes:
+            if qnode.node.ip not in self.queued_ips \
+                    and qnode.node.ip not in self.queried_ips:
+                self.queued_qnodes.append(qnode)
+                self.queued_ips.add(qnode.node.ip)
+        self.queued_qnodes.sort()
+        for qnode  in self.queued_qnodes[self.max_queued_qnodes:]:
+            self.queued_ips.remove(qnode.node.ip)
+        del self.queued_qnodes[self.max_queued_qnodes:]
+
+    def _pop_nodes_to_query(self):
+        self.pop_counter += 1
+        nodes_to_query = []
+        marks_index = (3,3)
+#        if self.pop_counter % 2:
+#            marks_index = (3,)# 15,)
+#            if self.slow_down:
+#                return nodes_to_query
+#        else:
+#            marks_index = (3,)
+        marks = []
+        for i in marks_index:
+            if len(self.responded_qnodes) > i:
+                marks.append(self.responded_qnodes[i].log_distance)
+            else:
+                marks.append(identifier.ID_SIZE_BITS)
+        for mark in marks:
+            try:
+                qnode = self.queued_qnodes[0]
+            except (IndexError):
+                break # no more queued nodes left
+            if qnode.log_distance < mark:
+                self.queried_ips.add(qnode.node.ip)
+                nodes_to_query.append(qnode.node)
+                del self.queued_qnodes[0]
+                self.queued_ips.remove(qnode.node.ip)
+        self.last_query_ts = time.time()
+        return nodes_to_query
+
+   
+class GetPeersLookup(object):
+    """DO NOT use underscored variables, they are thread-unsafe.
+    Variables without leading underscore are thread-safe.
+
+    All nodes in bootstrap_nodes MUST have ID.
+    """
+
+    def __init__(self, my_id, querier_, max_parallel_queries,
+                 info_hash, callback_f, bootstrap_nodes,
+                 bt_port=None):
+        logger.debug('New lookup (info_hash: %r)' % info_hash)
+        self._my_id = my_id
+        self._querier = querier_
+        self._max_parallel_queries = max_parallel_queries
+        self._get_peers_msg = message.OutgoingGetPeersQuery(
+            my_id, info_hash)
+        self._callback_f = callback_f
+        self._lookup_queue = _LookupQueue(info_hash,
+                                          max_parallel_queries * 2)
+        self.nodes_to_query = self._lookup_queue.bootstrap(bootstrap_nodes)
+                                     
+        self._info_hash = info_hash
+        self._bt_port = bt_port
+        self._lock = threading.RLock()
+
+        self._num_parallel_queries = 0
+        self._is_done = False
+
+        self.num_queries = 0
+        self.num_responses = 0
+        self.num_timeouts = 0
+        self.num_errors = 0
+
+    @property
+    def is_done(self):
+        #with self._lock:
+        self._lock.acquire()
+        try:
+            is_done = self._is_done
+        finally:
+            self._lock.release()
+        return is_done
+
+    def get_num_parallel_queries(self):
+        #with self._lock:
+        self._lock.acquire()
+        try:
+            n = self._num_parallel_queries
+        finally:
+            self._lock.release()
+        return n
+    def set_num_parallel_queries(self, n):
+        self._lock.acquire()
+        try:
+            self._num_parallel_queries = n
+        finally:
+            self._lock.release()
+    num_parallel_queries = property(get_num_parallel_queries,
+                                    set_num_parallel_queries)
+            
+    def start(self):
+        self._send_queries(self.nodes_to_query)
+        del self.nodes_to_query
+        
+    def _on_response(self, response_msg, node_):
+        self.num_responses += 1
+        print '[%.4f] response %d' % (time.time(), self.num_responses)
+        logger.debug('response from %r\n%r' % (node_,
+                                                response_msg))
+        peers = getattr(response_msg, 'peers', None)
+        if peers:
+            self._lookup_queue.slow_down = True
+            self._callback_f(peers)
+        nodes_to_query = self._lookup_queue.on_response(node_,
+                                                        response_msg.all_nodes)
+        #FIXME: all_nodes instead of nodes >> fixed???
+        self._send_queries(nodes_to_query)
+        self.num_parallel_queries -= 1
+        self._end_lookup_when_done()
+
+    def _on_timeout(self, node_):
+        self._lookup_queue.slow_down = True
+        nodes_to_query = self._lookup_queue.on_response(node_, []) 
+        self._send_queries(nodes_to_query)
+                                                       
+        self.num_timeouts += 1
+        print '[%.4f] timeout %d' % (time.time(), self.num_timeouts)
+        logger.debug('TIMEOUT node: %r' % node_)
+        self.num_parallel_queries -= 1
+        self._end_lookup_when_done()
+        
+    def _on_error(self, error_msg, node_):
+        self.num_errors += 1
+        print '[%.4f] error %d' % (time.time(), self.num_errors)
+        logger.debug('ERROR node: %r' % node_)
+        self.num_parallel_queries -= 1
+        self._end_lookup_when_done()
+
+    def _end_lookup_when_done(self):
+        if self.num_parallel_queries == 0:
+            # This is the last pending query
+            # TODO: callback end_of_lookup()
+            print '[%.4f] end of lookup' % (time.time())
+        
+    def _send_queries(self, nodes):
+        self.num_parallel_queries += len(nodes)
+        self.num_queries += len(nodes)
+        print '[%.4f] sending querie(s)... %d' % (time.time(),
+                                                  self.num_queries)
+        for node_ in nodes:
+            if node_.id == self._my_id:
+                # Don't send to myself
+                continue
+            self._querier.send_query(self._get_peers_msg, node_,
+                                     self._on_response,
+                                     self._on_timeout,
+                                     self._on_error)
+
+    def _do_nothing(self, *args, **kwargs):
+        #TODO2: generate logs
+        pass
+
+    def _announce(self):
+        self._is_done = True
+        if not self._bt_port:
+            return
+        for (_, node_, token) in self._announce_candidates:
+            logger.debug('announcing to %r' % node_)
+            msg = message.OutgoingAnnouncePeerQuery(
+                self._my_id, self._info_hash, self._bt_port, token)
+            self._querier.send_query(msg, node_,
+                                     self._do_nothing,
+                                     self._do_nothing,
+                                     self._do_nothing)
+
+            
+class BootstrapLookup(GetPeersLookup):
+
+    def __init__(self, my_id, querier, max_parallel_queries, target, nodes):
+        GetPeersLookup.__init__(self, my_id, querier, max_parallel_queries,
+                                target, None, nodes)
+        self._get_peers_msg = message.OutgoingFindNodeQuery(my_id,
+                                                            target)
+            
+        
+class LookupManager(object):
+
+    def __init__(self, my_id, querier_, routing_m,
+                 max_parallel_queries=MAX_PARALLEL_QUERIES):
+        self.my_id = my_id
+        self.querier = querier_
+        self.routing_m = routing_m
+        self.max_parallel_queries = max_parallel_queries
+
+
+    def get_peers(self, info_hash, callback_f, bt_port=None):
+        lookup_q = GetPeersLookup(
+            self.my_id, self.querier,
+            self.max_parallel_queries, info_hash, callback_f,
+            self.routing_m.get_closest_rnodes(info_hash),
+            bt_port)
+        lookup_q.start()
+        return lookup_q
+
+    def bootstrap_lookup(self, target=None):
+        target = target or self.my_id
+        lookup_q = BootstrapLookup(
+            self.my_id, self.querier,
+            self.max_parallel_queries,
+            target,
+            self.routing_m.get_closest_rnodes(target))
+        lookup_q.start()
+
+    def stop(self):
+        self.querier.stop()
+
+
+#TODO2: During the lookup, routing_m gets nodes_found and sends find_node
+        # to them (in addition to the get_peers sent by lookup_m)
