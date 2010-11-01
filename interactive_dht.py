@@ -16,7 +16,7 @@ logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 #logs_level = logging.WARNING # This generates warning and error logs
 
 import core.identifier as identifier
-import core.mdht as mdht
+import core.pymdht as pymdht
 
 
 def _on_peers_found(peers):
@@ -38,9 +38,9 @@ def main(options, args):
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
 
-    dht = mdht.NSmdht(my_addr, logs_path,
-                      routing_m_mod,
-                      lookup_m_mod)
+    dht = pymdht.Pymdht(my_addr, logs_path,
+                        routing_m_mod,
+                        lookup_m_mod)
     
     print '\nType "exit" to stop the DHT and exit'
     print 'Type an info_hash (in hex digits): ',
@@ -57,7 +57,7 @@ def main(options, args):
         print 'Getting peers for info_hash %r' % info_hash
         global start_ts
         start_ts = time.time()
-        dht.get_peers(info_hash, _on_peers_found)
+        dht.get_peers(None, info_hash, _on_peers_found)
         
 if __name__ == '__main__':
     parser = OptionParser()
