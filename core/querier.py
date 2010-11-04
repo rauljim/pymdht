@@ -17,6 +17,7 @@ class Query(object):
 
     def __init__(self, msg, dstnode, lookup_obj=None):
         self.tid = None
+        self.query_ts = None
         self.msg = msg
         self.dstnode = dstnode
         self.lookup_obj = lookup_obj

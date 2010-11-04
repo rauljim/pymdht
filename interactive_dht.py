@@ -19,7 +19,7 @@ import core.identifier as identifier
 import core.pymdht as pymdht
 
 
-def _on_peers_found(peers):
+def _on_peers_found(lookup_id, peers):
     if peers:
         print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
     else:
@@ -45,10 +45,15 @@ def main(options, args):
     print '\nType "exit" to stop the DHT and exit'
     print 'Type an info_hash (in hex digits): ',
     while (1):
-        input = sys.stdin.readline()[:-1]
+        input = sys.stdin.readline().strip()
         if input == 'exit':
             dht.stop()
             break
+        elif input == 'm':
+            import guppy
+            h = guppy.hpy()
+            print h.heap()
+            continue
         try:
             info_hash = identifier.Id(input)
         except (identifier.IdError):
@@ -74,7 +79,7 @@ if __name__ == '__main__':
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
-                      metavar='FILE', default='plugins/lookup_m2_a4.py',
+                      metavar='FILE', default='plugins/lookup_a16.py',
                       help="file containing the lookup_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT',

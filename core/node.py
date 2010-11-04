@@ -63,6 +63,7 @@ QUERY = 'query'
 RESPONSE = 'response'
 TIMEOUT = 'timeout'
 
+MAX_LAST_EVENTS = 10
 
 class RoutingNode(Node):
 
@@ -76,7 +77,6 @@ class RoutingNode(Node):
         self.num_timeouts = 0
         self.msgs_since_timeout = 0
         self.last_events = []
-        self.max_last_events = 10
         #self.refresh_task = None
         self.rank = 0
         current_time = time.time()
@@ -94,6 +94,10 @@ class RoutingNode(Node):
 
     def get_node(self):
         return Node(self.addr, self.id)
+
+    def add_event(self, timestamp, event):
+        self.last_events.append((timestamp, event))
+        self.last_events = self.last_events[:MAX_LAST_EVENTS]
     
     def timeouts_in_a_row(self, consider_queries=True):
         """Return number of timeouts in a row for this rnode."""

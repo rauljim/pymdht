@@ -13,17 +13,17 @@ This module intends to implement the routing policy specified in BEP5:
 
 
 import random
-import mdht.ptime as time
+import core.ptime as time
 import heapq
 
 import logging
 
-import mdht.identifier as identifier
-import mdht.message as message
-from mdht.querier import Query
-import mdht.node as node
-from mdht.node import Node, RoutingNode
-from mdht.routing_table import RoutingTable
+import core.identifier as identifier
+import core.message as message
+from core.querier import Query
+import core.node as node
+from core.node import Node, RoutingNode
+from core.routing_table import RoutingTable
 
 logger = logging.getLogger('dht')
 
@@ -320,8 +320,7 @@ class RoutingManager(object):
         rnode.last_action_ts = time.time()
         rnode.msgs_since_timeout += 1
         rnode.num_queries += 1
-        rnode.last_events.append((current_time, node.QUERY))
-        rnode.last_events[:rnode.max_last_events]
+        rnode.add_event(current_time, node.QUERY)
         rnode.last_seen = current_time
 
     def _update_rnode_on_response_received(self, rnode, rtt):
@@ -338,8 +337,7 @@ class RoutingManager(object):
                 current_time - QUARANTINE_PERIOD)
         rnode.last_action_ts = current_time
         rnode.num_responses += 1
-        rnode.last_events.append((time.time(), node.RESPONSE))
-        rnode.last_events[:rnode.max_last_events]
+        rnode.add_event(time.time(), node.RESPONSE)
         rnode.last_seen = current_time
 
     def _update_rnode_on_timeout(self, rnode):
@@ -351,8 +349,7 @@ class RoutingManager(object):
         rnode.last_action_ts = time.time()
         rnode.msgs_since_timeout = 0
         rnode.num_timeouts += 1
-        rnode.last_events.append((time.time(), node.TIMEOUT))
-        rnode.last_events[:rnode.max_last_events]
+        rnode.add_event(time.time(), node.TIMEOUT)
 
     def _worst_rnode(self, rnodes):
         max_num_timeouts = -1

@@ -281,14 +281,14 @@ class OldTestQuery:
         # querier notifies of the message (callback)
         self.query.on_error_received(error_msg)
         assert not self.got_response and self.got_error
-
+    '''
     def _test_on_timeout(self):
         ok_(not self.got_timeout)
         ok_(not self.got_routing_timeout)
         self.query.on_timeout()
         ok_(self.got_timeout)
         ok_(self.got_routing_timeout)
-        
+    '''        
     def test_fire_callback_on_timeout(self):
         self.query.timeout_task.fire_callbacks()
         self.query.timeout_task.cancel()
@@ -349,7 +349,7 @@ class OldTestQuery:
         time.unmock()
         time = querier.time = time.actual_time
 
-
+'''
 class _OldTestQuerier:
     
     def setup(self):
@@ -573,5 +573,5 @@ class _OldTestQuerier:
         self.r.stop()
         global time
         time = minitwisted.time = querier.time = time.actual_time
-        
 
+'''

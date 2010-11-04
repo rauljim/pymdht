@@ -3,17 +3,47 @@ svn:wc:ra_dav:version-url
 V 49
 /svn/p2p-next/!svn/ver/1834/KTH/pymdht/trunk/core
 END
+test_querier.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/test_querier.py
+END
+querier.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/querier.py
+END
+test_routing_table.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/test_routing_table.py
+END
 test_controller.py
 K 25
 svn:wc:ra_dav:version-url
 V 68
 /svn/p2p-next/!svn/ver/1834/KTH/pymdht/trunk/core/test_controller.py
 END
+lookup_plugin_template.py
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/lookup_plugin_template.py
+END
 controller.py
 K 25
 svn:wc:ra_dav:version-url
 V 63
-/svn/p2p-next/!svn/ver/1833/KTH/pymdht/trunk/core/controller.py
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/controller.py
+END
+test_message.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/test_message.py
 END
 test_pymdht.py
 K 25
@@ -26,4 +56,10 @@ K 25
 svn:wc:ra_dav:version-url
 V 59
 /svn/p2p-next/!svn/ver/1833/KTH/pymdht/trunk/core/pymdht.py
+END
+node.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/p2p-next/!svn/ver/1847/KTH/pymdht/trunk/core/node.py
 END

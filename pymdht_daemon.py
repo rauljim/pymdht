@@ -139,6 +139,19 @@ class SessionHandler(SocketServer.StreamRequestHandler):
     
     def handle(self):
         while (1):
+            
+            # Profile memory usage
+            '''
+            import objgraph
+            objgraph.show_most_common_types(limit=20)
+            '''
+            import guppy
+            h = guppy.hpy()
+            print h.heap()
+            print '=================================='
+            
+
+            
             line = self.rfile.readline().strip()
             splitted_line = line.split()
             try:
@@ -198,6 +211,14 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
     
+    '''
+    # Trace memory leaks
+    import cherrypy
+    import dowser
+    cherrypy.config.update({'server.socket_port': 8080})
+    cherrypy.tree.mount(dowser.Root())
+    cherrypy.engine.start()
+    '''
     main(options, args)
 
 

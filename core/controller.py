@@ -107,6 +107,11 @@ class Controller:
         
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         assert self._running
+        # look if I'm tracking this info_hash
+        peers = self._tracker.get(info_hash)
+        if peers:
+            callback_f(lookup_id, peers)
+        # do the lookup
         log_distance = info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                               None,

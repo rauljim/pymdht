@@ -152,17 +152,15 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
             for t in bad_types:
                 msg._dict[m.TYPE] = t
                 self._check_bad_msg(msg)
+        return
 
     def test_bad_version(self):
         return
-        
-
-
-        
+             
     def _check_bad_msg(self, msg, tid=tc.TID):
         data = msg.encode(tid)
         assert_raises(m.MsgError, m.IncomingMsg, data, tc.CLIENT_ADDR)
-        
+    '''    
     def _test_ping_error(self):
         outgoing_query = m.OutgoingPingQuery(tc.CLIENT_ID)
         outgoing_query.tid = tc.TID
@@ -215,7 +213,7 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         assert_raises(m.MsgError, outgoing_response.encode)
         logger.error(
             "**IGNORE ERROR LOGS** This exception was raised by a test")
-
+            '''
     
     def test_find_node(self):
         #client
@@ -463,7 +461,7 @@ class TestSanitizeResponseError:
         self.fn2_r = m.IncomingMsg(b_fn2_r, tc.SERVER_ADDR)
         self.gp_r = m.IncomingMsg(b_gp_r, tc.SERVER_ADDR)
         self.ap_r = m.IncomingMsg(b_ap_r, tc.SERVER_ADDR)
-
+'''
     def _test_sanitize(self):
         self.ping_r.sanitize_response(m.PING)
 
@@ -487,7 +485,7 @@ class TestSanitizeResponseError:
         del self.gp_r._msg_dict[m.RESPONSE][m.NODES]
         del self.gp_r._msg_dict[m.RESPONSE][m.VALUES]
         assert_raises(m.MsgError, self.gp_r.sanitize_response, m.GET_PEERS)
-        
+'''        
         
 class TestSanitizeErrorError:
 

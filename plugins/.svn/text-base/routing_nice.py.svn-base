@@ -13,17 +13,17 @@ This module intends to implement the routing policy specified in NICE:
 
 
 import random
-import mdht.ptime as time
+import core.ptime as time
 import heapq
 
 import logging
 
-import mdht.identifier as identifier
-import mdht.message as message
-from mdht.querier import Query
-import mdht.node as node
-from mdht.node import Node, RoutingNode
-from mdht.routing_table import RoutingTable
+import core.identifier as identifier
+import core.message as message
+from core.querier import Query
+import core.node as node
+from core.node import Node, RoutingNode
+from core.routing_table import RoutingTable
 
 logger = logging.getLogger('dht')
 
@@ -199,7 +199,7 @@ class RoutingManager(object):
         # node is not in the routing table
         if m_bucket.there_is_room():
             # There is room in the bucket: queue it
-            self._query_received_queue.add(node_)
+            self._query_received_queue.add(node_, log_distance)
             return
         # No room in the main routing table
         # Add to replacement table (if the bucket is not full)
@@ -290,7 +290,7 @@ class RoutingManager(object):
             self.table.num_rnodes -= 1
 
             for r_rnode in r_bucket.sorted_by_rtt():
-                self._query_received_queue.add(r_rnode)
+                self._replacement_queue.add(r_rnode)
             if r_bucket.there_is_room():
                 r_bucket.add(rnode)
             else:
@@ -327,8 +327,7 @@ class RoutingManager(object):
         rnode.last_action_ts = time.time()
         rnode.msgs_since_timeout += 1
         rnode.num_queries += 1
-        rnode.last_events.append((current_time, node.QUERY))
-        rnode.last_events[:rnode.max_last_events]
+        rnode.add_event(current_time, node.QUERY)
         rnode.last_seen = current_time
 
     def _update_rnode_on_response_received(self, rnode, rtt):
@@ -346,8 +345,7 @@ class RoutingManager(object):
                 
         rnode.last_action_ts = current_time
         rnode.num_responses += 1
-        rnode.last_events.append((time.time(), node.RESPONSE))
-        rnode.last_events[:rnode.max_last_events]
+        rnode.add_event(time.time(), node.RESPONSE)
         rnode.last_seen = current_time
 
     def _update_rnode_on_timeout(self, rnode):
@@ -359,8 +357,7 @@ class RoutingManager(object):
         rnode.last_action_ts = time.time()
         rnode.msgs_since_timeout = 0
         rnode.num_timeouts += 1
-        rnode.last_events.append((time.time(), node.TIMEOUT))
-        rnode.last_events[:rnode.max_last_events]
+        rnode.add_event(time.time(), node.TIMEOUT)
 
     def _worst_rnode(self, rnodes):
         max_num_timeouts = -1
@@ -379,18 +376,18 @@ class _ReplacementQueue(object):
         self.table = table
         self._queue = []
 
-    def add(self, node_):
-        self._queue.append(node_)
+    def add(self, rnode):
+        self._queue.append(rnode)
 
     def pop(self, _):
         while self._queue:
-            node_ = self._queue.pop(0)
-            log_distance = self.table.my_node.log_distance(node_)
+            rnode = self._queue.pop(0)
+            log_distance = self.table.my_node.log_distance(rnode)
             sbucket = self.table.get_sbucket(log_distance)
             m_bucket = sbucket.main
             if m_bucket.there_is_room():
                 # room in main: return it
-                return node_
+                return rnode
         return
 
 class _QueryReceivedQueue(object):
@@ -398,8 +395,22 @@ class _QueryReceivedQueue(object):
     def __init__(self, table):
         self.table = table
         self._queue = []
+        self._queued_nodes_set = set()
+        self._nodes_queued_per_bucket = [0 for _ in range(160)]
 
-    def add(self, node_):
+    def add(self, node_, log_distance):
+        # The caller already checked that there is room in the bucket
+#        print 'received queue', len(self._queue)
+        if node_ in self._queued_nodes_set:
+            # This node is already queued
+            return
+        num_nodes_queued = self._nodes_queued_per_bucket[log_distance]
+        if num_nodes_queued >= 8:
+            # many nodes queued for this bucket already
+            return
+        self._queued_nodes_set.add(node_)
+        self._nodes_queued_per_bucket[log_distance] = (
+            num_nodes_queued + 1)
         self._queue.append((time.time(), node_))
 
     def pop(self, _):
@@ -409,8 +420,11 @@ class _QueryReceivedQueue(object):
             if time_in_queue < QUARANTINE_PERIOD:
                 return
             # Quarantine period passed
-            del self._queue[0]
             log_distance = self.table.my_node.log_distance(node_)
+            self._queued_nodes_set.remove(node_)
+            self._nodes_queued_per_bucket[log_distance] = (
+                self._nodes_queued_per_bucket[log_distance] - 1)
+            del self._queue[0]
             sbucket = self.table.get_sbucket(log_distance)
             m_bucket = sbucket.main
             if m_bucket.there_is_room():
@@ -424,13 +438,19 @@ class _FoundNodesQueue(object):
         self.table = table
         self._queue = []
         self._queued_nodes_set = set()
+        self._nodes_queued_per_bucket = [0 for _ in range(160)]
 
     def add(self, nodes):
+#        print 'found queue', len(self._queue)
         for node_ in nodes:
             if node_ in self._queued_nodes_set:
                 # This node has already been queued
                 continue
             log_distance = self.table.my_node.log_distance(node_)
+            num_nodes_queued = self._nodes_queued_per_bucket[log_distance]
+            if num_nodes_queued >= 8:
+                # many nodes queued for this bucket already
+                continue
             try:
                 sbucket = self.table.get_sbucket(log_distance)
             except(IndexError):
@@ -439,8 +459,10 @@ class _FoundNodesQueue(object):
             rnode = m_bucket.get_rnode(node_)
             if not rnode and m_bucket.there_is_room():
                 # Not in the main: add to the queue if there is room in main
-                self._queue.append(node_)
+                self._nodes_queued_per_bucket[log_distance] = (
+                    num_nodes_queued + 1)
                 self._queued_nodes_set.add(node_)
+                self._queue.append(node_)
 
     def pop(self, _): 
         while self._queue:

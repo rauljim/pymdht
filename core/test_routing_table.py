@@ -234,7 +234,7 @@ class TestRoutingTable:
                      
         eq_(self.rt.get_closest_rnodes(ld_to_server, 8, True),
             [tc.SERVER_NODE])
-
+    '''
     def _test_pop_sbucket_parameters(self):
         # no parameters raises AssertionError
         assert_raises(AssertionError, self.rt.pop_sbucket)
@@ -270,7 +270,7 @@ class TestRoutingTable:
         # popped is OK
         assert sbucket != sbucket2
         self.rt.put_sbucket(sbucket)
-
+    '''
     def test_get_closest_rnodes(self):
         log_distances = [2, 3, 5, 5, 6, 7, 7, 19]
         nodes = [node.Node(n.addr, tc.CLIENT_ID.generate_close_id(ld))
