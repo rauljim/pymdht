@@ -198,10 +198,13 @@ class Controller:
                 self._send_queries(lookup_queries_to_send)
                 
                 if related_query.lookup_obj.callback_f:
+                    
                     lookup_id = related_query.lookup_obj.lookup_id
                     if peers:
                         related_query.lookup_obj.callback_f(lookup_id, peers)
                     if lookup_done:
+                        queries_to_send = related_query.lookup_obj.announce()
+                        self._send_queries(queries_to_send)
                         related_query.lookup_obj.callback_f(lookup_id, None)
             # maintenance related tasks
             if msg.type == message.RESPONSE:
@@ -259,6 +262,8 @@ class Controller:
              ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
             self._send_queries(lookup_queries_to_send)
             if lookup_done and related_query.lookup_obj.callback_f:
+                queries_to_send = related_query.lookup_obj.announce()
+                self._send_queries(queries_to_send)
                 lookup_id = related_query.lookup_obj.lookup_id
                 related_query.lookup_obj.callback_f(lookup_id, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(

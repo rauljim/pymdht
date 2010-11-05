@@ -62,7 +62,7 @@ def main(options, args):
         print 'Getting peers for info_hash %r' % info_hash
         global start_ts
         start_ts = time.time()
-        dht.get_peers(None, info_hash, _on_peers_found)
+        dht.get_peers(None, info_hash, _on_peers_found, 123)
         
 if __name__ == '__main__':
     parser = OptionParser()
