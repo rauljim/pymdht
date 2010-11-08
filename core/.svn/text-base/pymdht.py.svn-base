@@ -11,6 +11,8 @@ the DHT.
 Find usage examples in server_dht.py and interactive_dht.py.
 
 """
+import sys
+
 import ptime as time
 
 import controller
@@ -29,7 +31,7 @@ class Pymdht:
     """
     def __init__(self, dht_addr, conf_path,
                  routing_m_mod, lookup_m_mod):
-        logging_conf.setup(conf_path, logging.DEBUG)
+        logging_conf.setup(conf_path, logging.ERROR)
         self.controller = controller.Controller(dht_addr, conf_path,
                                                 routing_m_mod,
                                                 lookup_m_mod)
@@ -55,7 +57,7 @@ class Pymdht:
         """
         if not self.controller.get_peers(lookup_id, info_hash,
                                          callback_f, bt_port):
-            print 'ERROR: the lookup could not start'
+            print >>sys.stderr, 'ERROR: the lookup could not start'
 
     def remove_torrent(self, info_hash):
         pass
