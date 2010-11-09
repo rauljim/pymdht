@@ -89,7 +89,9 @@ class OutgoingMsgBase(object):
     """
 
     def __init__(self):
-        self._dict = {VERSION: NEXTSHARE_VERSION, 'd': private_dht_name}
+        self._dict = {VERSION: NEXTSHARE_VERSION}
+        if private_dht_name:
+            self._dict['d'] = private_dht_name
         self._lock = threading.RLock()
 
     

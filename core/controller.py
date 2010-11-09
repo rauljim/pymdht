@@ -35,9 +35,9 @@ class Controller:
 
     def __init__(self, dht_addr, state_path,
                  routing_m_mod, lookup_m_mod,
-                 private_dht):
+                 private_dht_name):
         #TODO: don't do this evil stuff!!!
-        message.private_dht = private_dht
+        message.private_dht_name = private_dht_name
         
         self.state_filename = os.path.join(state_path, STATE_FILENAME)
         self.load_state()
