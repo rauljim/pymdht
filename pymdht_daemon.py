@@ -107,8 +107,13 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             raise SanitizeError, '? Invalid port number'
 
         channel = self.open_channels.create(send)
-        dht.get_peers(channel, info_hash, self._on_peers_found, port)
-        return '%d OPEN %d' % (channel.send, channel.recv)
+        success= dht.get_peers(channel, info_hash,
+                               self._on_peers_found, port)
+        response = '%d OPEN %d' % (channel.send, channel.recv)
+        if not success:
+            self.open_channels.remove(channel)
+            response = '%s\r\n%d CLOSE' % (response, channel.send)
+        return response
         
 
     def _on_existing_channel(self, recv, splitted_line):

@@ -121,8 +121,8 @@ class Controller:
         self._send_queries(lookup_queries_to_send)
         if not lookup_queries_to_send:
             # There are no nodes in my routing table, announce to myself
-            print 'announce to myself'
             self._announce(lookup_obj)
+            # NOTICE: the callback is NOT triggered, zero is returned.
         return len(lookup_queries_to_send)
         
     def print_routing_table_stats(self):
@@ -274,7 +274,7 @@ class Controller:
         self._send_queries(queries_to_send)
         if announce_to_myself:
             self._tracker.put(lookup_obj._info_hash,
-                              (self._my_node.addr[0], lookup_obj._bt_port)
+                              (self._my_node.addr[0], lookup_obj._bt_port))
         
     def _send_queries(self, queries_to_send, lookup_obj=None):
         if queries_to_send is None:
@@ -290,5 +290,6 @@ class Controller:
         
 BOOTSTRAP_NODES = (
 #    Node(('67.215.242.138', 6881)), #router.bittorrent.com
+    Node(('192.16.125.242', 7000)), #raul's laptop
     Node(('192.16.127.98', 7000)), #KTH node
     )

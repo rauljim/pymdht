@@ -240,14 +240,18 @@ class GetPeersLookup(object):
             return [], False
         nodes_to_announce = self._lookup_queue.get_closest_responded_qnodes()
         announce_to_myself = False
+        #TODO: is is worth it to announce to self? The problem is that I don't
+        #know my own IP number. Maybe if 127.0.0.1 translates into "I (the
+        #node returning 127.0.0.1) am in the swarm".
+        '''
         if len(nodes_to_announce) < ANNOUNCE_REDUNDANCY:
             announce_to_myself = True
         elif (self._my_id.log_distance(self._info_hash) <
-              nodes_to_announce[ANNOUNCE_REDUNDANCY-1].log_distance(
+              nodes_to_announce[ANNOUNCE_REDUNDANCY-1].id.log_distance(
                 self._info_hash)):
             nodes_to_announce = nodes_to_announce[:-1]
             announce_to_myself = True
-            
+        '''
         queries_to_send = []
         for qnode in nodes_to_announce:
             logger.debug('announcing to %r' % qnode.node)
@@ -261,7 +265,8 @@ class GetPeersLookup(object):
 class MaintenanceLookup(GetPeersLookup):
 
     def __init__(self, my_id, target):
-        GetPeersLookup.__init__(self, my_id, target, None)
+        GetPeersLookup.__init__(self, my_id,
+                                None, target, None, 0)
         self.bootstrap_alpha = 4
         self.normal_alpha = 4
         self.normal_m = 1
@@ -276,7 +281,7 @@ class LookupManager(object):
     def __init__(self, my_id):
         self.my_id = my_id
 
-    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=None):
+    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         lookup_q = GetPeersLookup(self.my_id,
                                   lookup_id, info_hash,
                                   callback_f, bt_port)
