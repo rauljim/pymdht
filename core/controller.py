@@ -16,7 +16,6 @@ import tracker
 from minitwisted import ThreadedReactor
 
 from querier import Querier
-#from responder import Responder
 from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
 from node import Node
 
@@ -116,12 +115,14 @@ class Controller:
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                               None,
                                                               True)
-        lookup_obj = self._lookup_m.get_peers(info_hash, callback_f, bt_port)
-        #TODO: propagate lookup_id to the lookup plugin
-        lookup_obj.lookup_id = lookup_id
-        ################################################
+        lookup_obj = self._lookup_m.get_peers(lookup_id, info_hash,
+                                              callback_f, bt_port)
         lookup_queries_to_send = lookup_obj.start(bootstrap_rnodes)
         self._send_queries(lookup_queries_to_send)
+        if not lookup_queries_to_send:
+            # There are no nodes in my routing table, announce to myself
+            print 'announce to myself'
+            self._announce(lookup_obj)
         return len(lookup_queries_to_send)
         
     def print_routing_table_stats(self):
@@ -203,8 +204,7 @@ class Controller:
                     if peers:
                         related_query.lookup_obj.callback_f(lookup_id, peers)
                     if lookup_done:
-                        queries_to_send = related_query.lookup_obj.announce()
-                        self._send_queries(queries_to_send)
+                        self._announce(related_query.lookup_obj)
                         related_query.lookup_obj.callback_f(lookup_id, None)
             # maintenance related tasks
             if msg.type == message.RESPONSE:
@@ -262,14 +262,20 @@ class Controller:
              ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
             self._send_queries(lookup_queries_to_send)
             if lookup_done and related_query.lookup_obj.callback_f:
-                queries_to_send = related_query.lookup_obj.announce()
-                self._send_queries(queries_to_send)
+                self._announce(related_query.lookup_obj)
                 lookup_id = related_query.lookup_obj.lookup_id
                 related_query.lookup_obj.callback_f(lookup_id, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(
             related_query.dstnode)
         self._send_queries(maintenance_queries_to_send)
 
+    def _announce(self, lookup_obj):
+        queries_to_send, announce_to_myself = lookup_obj.announce()
+        self._send_queries(queries_to_send)
+        if announce_to_myself:
+            self._tracker.put(lookup_obj._info_hash,
+                              (self._my_node.addr[0], lookup_obj._bt_port)
+        
     def _send_queries(self, queries_to_send, lookup_obj=None):
         if queries_to_send is None:
             return
