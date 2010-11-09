@@ -283,6 +283,6 @@ class Controller:
             
         
 BOOTSTRAP_NODES = (
-    Node(('67.215.242.138', 6881)), #router.bittorrent.com
-    Node(('192.16.127.98', 7005)), #KTH node
+#    Node(('67.215.242.138', 6881)), #router.bittorrent.com
+    Node(('192.16.127.98', 7000)), #KTH node
     )

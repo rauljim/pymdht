@@ -65,12 +65,6 @@ class SessionHandler(SocketServer.StreamRequestHandler):
     def __init__(self, *args, **kwargs):
         self.open_channels = Channels()
         SocketServer.StreamRequestHandler.__init__(self, *args, **kwargs)
-        todo_msgs = ['TODO:',
-                'Announce when the port is non-zero',
-                'Enable SLOW lookup',
-            ]
-        for msg in todo_msgs:
-            self.wfile.write('%s\r\n' % (msg))
         
     def _on_peers_found(self, channel, peers):
         if not channel.open:
@@ -103,8 +97,8 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             info_hash = identifier.Id(key)
         except (identifier.IdError):
             raise SanitizeError, '? Invalid key (must be 40 HEX characters)'
-        if lookup_mode != 'FAST':
-            raise SanitizeError, '? Only FAST lookup supported'
+        if lookup_mode not in ('SLOW', 'FAST'):
+            raise SanitizeError, '? Only FAST and SLOW lookup supported'
         try:
             port = int(port_str)
         except (ValueError):
@@ -139,20 +133,7 @@ class SessionHandler(SocketServer.StreamRequestHandler):
     
     def handle(self):
         while (1):
-            
-            # Profile memory usage
-            '''
-            import objgraph
-            objgraph.show_most_common_types(limit=20)
-            '''
-            import guppy
-            h = guppy.hpy()
-            print h.heap()
-            print '=================================='
-            
-
-            
-            line = self.rfile.readline().strip()
+            line = self.rfile.readline().strip().upper()
             splitted_line = line.split()
             try:
                 recv = self._get_recv(splitted_line)
@@ -203,7 +184,7 @@ if __name__ == '__main__':
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
-                      metavar='FILE', default='plugins/lookup_m2_a4.py',
+                      metavar='FILE', default='plugins/lookup_a16.py',
                       help="file containing the lookup_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT',
