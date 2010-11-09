@@ -107,13 +107,13 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             raise SanitizeError, '? Invalid port number'
 
         channel = self.open_channels.create(send)
-        success= dht.get_peers(channel, info_hash,
-                               self._on_peers_found, port)
-        response = '%d OPEN %d' % (channel.send, channel.recv)
+        self.wfile.write('%d OPEN %d\r\n' % (channel.send, channel.recv))
+        success = dht.get_peers(channel, info_hash,
+                                self._on_peers_found, port)
         if not success:
+            print 'no success'
             self.open_channels.remove(channel)
-            response = '%s\r\n%d CLOSE' % (response, channel.send)
-        return response
+            self.wfile.write('%d CLOSE\r\n' % (channel.send))
         
 
     def _on_existing_channel(self, recv, splitted_line):
@@ -126,8 +126,8 @@ class SessionHandler(SocketServer.StreamRequestHandler):
                 channel.send)
         channel.open = False
         self.open_channels.remove(channel)
-        return '%d CLOSE' % (channel.send)
-
+        self.wfile.write('%d CLOSE\r\n' % (channel.send))
+    
     def _get_recv(self, splitted_line):
         if not splitted_line: 
             raise SanitizeError, "? I don't like empty lines"
@@ -148,8 +148,6 @@ class SessionHandler(SocketServer.StreamRequestHandler):
                     response = self._on_new_channel(splitted_line)
             except (SanitizeError), error_msg:
                 self.wfile.write('%s\r\n' % (error_msg))
-            else:
-                self.wfile.write('%s\r\n' % (response))
 
                 
 def main(options, args):

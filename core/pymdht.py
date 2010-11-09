@@ -55,9 +55,8 @@ class Pymdht:
         will be send using the provided port number.
 
         """
-        if not self.controller.get_peers(lookup_id, info_hash,
-                                         callback_f, bt_port):
-            print >>sys.stderr, 'ERROR: the lookup could not start'
+        return self.controller.get_peers(lookup_id, info_hash,
+                                         callback_f, bt_port)
 
     def remove_torrent(self, info_hash):
         pass
