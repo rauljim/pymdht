@@ -272,9 +272,11 @@ class Controller:
     def _announce(self, lookup_obj):
         queries_to_send, announce_to_myself = lookup_obj.announce()
         self._send_queries(queries_to_send)
+        '''
         if announce_to_myself:
             self._tracker.put(lookup_obj._info_hash,
                               (self._my_node.addr[0], lookup_obj._bt_port))
+        '''
         
     def _send_queries(self, queries_to_send, lookup_obj=None):
         if queries_to_send is None:
