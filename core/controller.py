@@ -33,7 +33,12 @@ NUM_NODES = 8
 
 class Controller:
 
-    def __init__(self, dht_addr, state_path, routing_m_mod, lookup_m_mod):
+    def __init__(self, dht_addr, state_path,
+                 routing_m_mod, lookup_m_mod,
+                 private_dht):
+        #TODO: don't do this evil stuff!!!
+        message.private_dht = private_dht
+        
         self.state_filename = os.path.join(state_path, STATE_FILENAME)
         self.load_state()
         if not self._my_id:

@@ -166,7 +166,8 @@ def main(options, args):
     global dht
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
-                        lookup_m_mod)
+                        lookup_m_mod,
+                        'WIKI')
 
     server = SocketServer.TCPServer(('', port), SessionHandler)
     server.serve_forever()
