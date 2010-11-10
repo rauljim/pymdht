@@ -83,9 +83,9 @@ Available commands are:
                                            _on_peers_found, bt_port)
             if not success:
                 print 'Lookup failed'
-                if peers:
-                    print '[local] %d peer(s)' % (len(peers))
-                    print peers
+            if peers:
+                print '[local] %d peer(s)' % (len(peers))
+                print peers
                 
         
 if __name__ == '__main__':
