@@ -31,8 +31,9 @@ class Pymdht:
     """
     def __init__(self, dht_addr, conf_path,
                  routing_m_mod, lookup_m_mod,
-                 private_dht_name=None):
-        logging_conf.setup(conf_path, logging.ERROR)
+                 private_dht_name,
+                 debug_level):
+        logging_conf.setup(conf_path, debug_level)
         self.controller = controller.Controller(dht_addr, conf_path,
                                                 routing_m_mod,
                                                 lookup_m_mod,

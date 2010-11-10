@@ -170,6 +170,9 @@ class Controller:
             msg = message.IncomingMsg(data, addr)
         except(message.MsgError):
             return # ignore message
+        if msg.sender_id == self._my_id:
+            logger.debug('Got a msg from myself:\n%r', msg)
+            return
         
         if msg.type == message.QUERY:
             response_msg = self._get_response(msg)

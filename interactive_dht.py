@@ -29,10 +29,10 @@ def _on_peers_found(lookup_id, peers):
 def main(options, args):
     my_addr = (options.ip, int(options.port))
     logs_path = options.path
-    logging_conf.setup(logs_path, logs_level)
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
+    print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
@@ -40,7 +40,9 @@ def main(options, args):
 
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
-                        lookup_m_mod)
+                        lookup_m_mod,
+                        options.private_dht_name,
+                        logs_level)
     
     print '\nType "exit" to stop the DHT and exit'
     print 'Type an info_hash (in hex digits): ',
@@ -84,6 +86,9 @@ if __name__ == '__main__':
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT',
                       help="logging level")
+    parser.add_option("-d", "--private-dht", dest="private_dht_name",
+                      metavar='STRING', default=None,
+                      help="private DHT name")
 
     (options, args) = parser.parse_args()
     
