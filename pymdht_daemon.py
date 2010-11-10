@@ -13,9 +13,10 @@ import core.ptime as time
 import logging
 import core.logging_conf as logging_conf
 
-logs_level = logging.DEBUG # This generates HUGE (and useful) logs
+#logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 #logs_level = logging.INFO # This generates some (useful) logs
 #logs_level = logging.WARNING # This generates warning and error logs
+logs_level = logging.WARNING # Just error logs
 
 import core.identifier as identifier
 import core.pymdht as pymdht
@@ -108,8 +109,14 @@ class SessionHandler(SocketServer.StreamRequestHandler):
 
         channel = self.open_channels.create(send)
         self.wfile.write('%d OPEN %d\r\n' % (channel.send, channel.recv))
-        success = dht.get_peers(channel, info_hash,
-                                self._on_peers_found, port)
+        success, peers = dht.get_peers(channel, info_hash,
+                                       self._on_peers_found, port)
+        if peers:
+            for peer in peers:
+                if peer not in channel.peers:
+                    channel.peers.add(peer)
+                    self.wfile.write('%d PEER %s:%d\r\n' % (channel.send,
+                                                            peer[0], peer[1]))
         if not success:
             print 'no success'
             self.open_channels.remove(channel)
@@ -167,7 +174,7 @@ def main(options, args):
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
-                        'WIKI')
+                        'WIKI', logs_level)
 
     server = SocketServer.TCPServer(('', port), SessionHandler)
     server.serve_forever()
