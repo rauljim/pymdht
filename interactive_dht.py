@@ -48,6 +48,8 @@ def main(options, args):
     print 'Type "help" if you need'
     while (1):
         input = sys.stdin.readline().strip().split()
+        if not input:
+            continue
         command = input[0]
         if command == 'help':
             print '''
@@ -77,9 +79,14 @@ Available commands are:
             except:
                 print 'Invalid bt_port (%r)' % input[2]
                 continue
-            print 'Getting peers for info_hash %r' % info_hash
-            dht.get_peers(time.time(), info_hash,
-                          _on_peers_found, bt_port)
+            success, peers = dht.get_peers(time.time(), info_hash,
+                                           _on_peers_found, bt_port)
+            if not success:
+                print 'Lookup failed'
+                if peers:
+                    print '[local] %d peer(s)' % (len(peers))
+                    print peers
+                
         
 if __name__ == '__main__':
     parser = OptionParser()
