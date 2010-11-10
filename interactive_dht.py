@@ -19,12 +19,12 @@ import core.identifier as identifier
 import core.pymdht as pymdht
 
 
-def _on_peers_found(lookup_id, peers):
+def _on_peers_found(start_ts, peers):
     if peers:
         print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
+        print peers
     else:
         print '[%.4f] END OF LOOKUP' % (time.time() - start_ts)
-        print 'Type an info_hash (in hex digits): ',
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
@@ -45,26 +45,41 @@ def main(options, args):
                         logs_level)
     
     print '\nType "exit" to stop the DHT and exit'
-    print 'Type an info_hash (in hex digits): ',
+    print 'Type "help" if you need'
     while (1):
-        input = sys.stdin.readline().strip()
-        if input == 'exit':
+        input = sys.stdin.readline().strip().split()
+        command = input[0]
+        if command == 'help':
+            print '''
+Available commands are:
+- help
+- fast info_hash bt_port
+- exit
+- m                  Memory information
+'''
+        elif command == 'exit':
             dht.stop()
             break
-        elif input == 'm':
+        elif command == 'm':
             import guppy
             h = guppy.hpy()
             print h.heap()
-            continue
-        try:
-            info_hash = identifier.Id(input)
-        except (identifier.IdError):
-            print 'Invalid input (%s)' % input
-            continue
-        print 'Getting peers for info_hash %r' % info_hash
-        global start_ts
-        start_ts = time.time()
-        dht.get_peers(None, info_hash, _on_peers_found, 123)
+        elif command == 'fast':
+            if len(input) != 3:
+                print 'usage: fast info_hash bt_port'
+                continue
+            try:
+                info_hash = identifier.Id(input[1])
+            except (identifier.IdError):
+                print 'Invalid info_hash (%s)' % input[1]
+            try:
+                bt_port = int(input[2])
+            except:
+                print 'Invalid bt_port (%r)' % input[2]
+                continue
+            print 'Getting peers for info_hash %r' % info_hash
+            dht.get_peers(time.time(), info_hash,
+                          _on_peers_found, bt_port)
         
 if __name__ == '__main__':
     parser = OptionParser()

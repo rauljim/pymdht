@@ -330,8 +330,6 @@ class IncomingMsg(object):
         return
         
     def _sanitize_response(self):
-        nodes_found = False
-        peers_found = False
         # sender_id
         self.sender_id = self._get_id(RESPONSE, ID)
         self.sender_node = Node(self.sender_addr, self.sender_id)
