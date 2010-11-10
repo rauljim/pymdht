@@ -298,15 +298,12 @@ class IncomingMsg(object):
         except (KeyError):
             raise MsgError, 'key TYPE not found'
         # private dht name
-        print 'private'
         if private_dht_name:
             try:
-                print self._msg_dict['d'], private_dht_name
                 if self._msg_dict['d'] != private_dht_name:
                     raise MsgError, 'invalid private DHT name'
             except (KeyError, TypeError):
                 raise MsgError, 'invalid private DHT name'
-        print 'DONE'
         # version (optional)
         self.version = self._get_str(VERSION, optional=True)
         self.ns_node = self.version \
