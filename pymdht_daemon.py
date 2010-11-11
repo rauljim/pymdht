@@ -13,10 +13,10 @@ import core.ptime as time
 import logging
 import core.logging_conf as logging_conf
 
-#logs_level = logging.DEBUG # This generates HUGE (and useful) logs
-#logs_level = logging.INFO # This generates some (useful) logs
-#logs_level = logging.WARNING # This generates warning and error logs
-logs_level = logging.WARNING # Just error logs
+#default_logs_level = logging.DEBUG # This generates HUGE (and useful) logs
+#default_logs_level = logging.INFO # This generates some (useful) logs
+#default_logs_level = logging.WARNING # This generates warning and error logs
+default_logs_level = logging.ERROR # Just error logs
 
 import core.identifier as identifier
 import core.pymdht as pymdht
@@ -144,8 +144,14 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             raise SanitizeError, '? Channel must be a number'
     
     def handle(self):
-        while (1):
+        while not stop_server:
             line = self.rfile.readline().strip().upper()
+            if line == 'KILL':
+                global stop_server
+                stop_server = True
+                return
+            if line == 'EXIT':
+                return
             splitted_line = line.split()
             try:
                 recv = self._get_recv(splitted_line)
@@ -161,6 +167,7 @@ def main(options, args):
     port = int(options.port)
     my_addr = (options.ip, port)
     logs_path = options.path
+    logs_level = options.logs_level or default_logs_level
     logging_conf.setup(logs_path, logs_level)
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
@@ -174,10 +181,13 @@ def main(options, args):
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
-                        'WIKI', logs_level)
-
+                        '', logs_level)
+    global server
     server = SocketServer.TCPServer(('', port), SessionHandler)
-    server.serve_forever()
+    global stop_server
+    stop_server = False
+    while not stop_server:
+        server.handle_request()
     
         
 if __name__ == '__main__':
@@ -198,8 +208,13 @@ if __name__ == '__main__':
                       metavar='FILE', default='plugins/lookup_a16.py',
                       help="file containing the lookup_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
-                      metavar='INT',
+                      metavar='INT', default=0,
                       help="logging level")
+    parser.add_option("-d", "--private-dht", dest="private_dht_name",
+                      metavar='STRING', default=None,
+                      help="private DHT name")
+
+    
 
     (options, args) = parser.parse_args()
     
