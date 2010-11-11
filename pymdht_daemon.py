@@ -4,7 +4,6 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-#testing git access rights...
 import SocketServer
 import random
 import sys, os
