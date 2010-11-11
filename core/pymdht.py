@@ -30,11 +30,14 @@ class Pymdht:
 
     """
     def __init__(self, dht_addr, conf_path,
-                 routing_m_mod, lookup_m_mod):
-        logging_conf.setup(conf_path, logging.ERROR)
+                 routing_m_mod, lookup_m_mod,
+                 private_dht_name,
+                 debug_level):
+        logging_conf.setup(conf_path, debug_level)
         self.controller = controller.Controller(dht_addr, conf_path,
                                                 routing_m_mod,
-                                                lookup_m_mod)
+                                                lookup_m_mod,
+                                                private_dht_name)
         self.controller.start()
 
     def stop(self):
@@ -55,9 +58,8 @@ class Pymdht:
         will be send using the provided port number.
 
         """
-        if not self.controller.get_peers(lookup_id, info_hash,
-                                         callback_f, bt_port):
-            print >>sys.stderr, 'ERROR: the lookup could not start'
+        return self.controller.get_peers(lookup_id, info_hash,
+                                         callback_f, bt_port)
 
     def remove_torrent(self, info_hash):
         pass

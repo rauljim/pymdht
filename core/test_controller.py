@@ -14,7 +14,8 @@ class TestController:
     def setup(self):
         self.controller = controller.Controller(tc.CLIENT_ADDR, 'test_logs',
                                                 routing_m_mod,
-                                                lookup_m_mod)
+                                                lookup_m_mod,
+                                                None)
 
     def test_start_stop(self):
         self.controller.start()
@@ -29,5 +30,5 @@ class TestController:
 
     def test_get_peers(self):
         self.controller.start()
-        self.controller.get_peers(None, tc.INFO_HASH, lambda x:None)
+        self.controller.get_peers(None, tc.INFO_HASH, None, 0)
         self.controller.stop()

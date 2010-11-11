@@ -2,6 +2,8 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import logging
+
 import test_const as tc
 
 import pymdht
@@ -17,7 +19,8 @@ class TestKadTracker:
     def setup(self):
         self.dht = pymdht.Pymdht(tc.CLIENT_ADDR, 'test_logs',
                                  routing_m_mod,
-                                 lookup_m_mod)
+                                 lookup_m_mod,
+                                 None, logging.DEBUG)
 
     def test_interface(self):
         #self.dht.start()

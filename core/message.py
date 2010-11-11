@@ -23,6 +23,7 @@ from identifier import Id, ID_SIZE_BYTES, IdError
 from node import Node
 import message_tools as mt
 
+private_dht_name = None
 
 logger = logging.getLogger('dht')
 
@@ -89,6 +90,8 @@ class OutgoingMsgBase(object):
 
     def __init__(self):
         self._dict = {VERSION: NEXTSHARE_VERSION}
+        if private_dht_name:
+            self._dict['d'] = private_dht_name
         self._lock = threading.RLock()
 
     
@@ -294,6 +297,13 @@ class IncomingMsg(object):
             self.type = self._msg_dict[TYPE]
         except (KeyError):
             raise MsgError, 'key TYPE not found'
+        # private dht name
+        if private_dht_name:
+            try:
+                if self._msg_dict['d'] != private_dht_name:
+                    raise MsgError, 'invalid private DHT name'
+            except (KeyError, TypeError):
+                raise MsgError, 'invalid private DHT name'
         # version (optional)
         self.version = self._get_str(VERSION, optional=True)
         self.ns_node = self.version \
@@ -317,8 +327,6 @@ class IncomingMsg(object):
         return
         
     def _sanitize_response(self):
-        nodes_found = False
-        peers_found = False
         # sender_id
         self.sender_id = self._get_id(RESPONSE, ID)
         self.sender_node = Node(self.sender_addr, self.sender_id)
