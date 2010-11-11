@@ -13,17 +13,26 @@ This module intends to implement the routing policy specified in NICE RTT:
 
 
 import random
-import core.ptime as time
 import heapq
 
 import logging
 
-import core.identifier as identifier
-import core.message as message
-from core.querier import Query
-import core.node as node
-from core.node import Node, RoutingNode
-from core.routing_table import RoutingTable
+try:
+    import core.ptime as time
+    import core.identifier as identifier
+    import core.message as message
+    from core.querier import Query
+    import core.node as node
+    from core.node import Node, RoutingNode
+    from core.routing_table import RoutingTable
+except (ImportError):
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.ptime as time
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.identifier as identifier
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.message as message
+    from BaseLib.Core.DecentralizedTracking.pymdht.core.querier import Query
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.node as node
+    from BaseLib.Core.DecentralizedTracking.pymdht.core.node import Node, RoutingNode
+    from BaseLib.Core.DecentralizedTracking.pymdht.core.routing_table import RoutingTable
 
 logger = logging.getLogger('dht')
 
