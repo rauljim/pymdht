@@ -11,10 +11,10 @@ try:
     import core.identifier as identifier
     import core.message as message
 except ImportError:
-    import Tribler.Core.DecentralizedTracking.pymdht.core.ptime as time
-    from Tribler.Core.DecentralizedTracking.pymdht.core.querier import Query
-    import Tribler.Core.DecentralizedTracking.pymdht.core.identifier as identifier
-    import Tribler.Core.DecentralizedTracking.pymdht.core.message as message
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.ptime as time
+    from BaseLib.Core.DecentralizedTracking.pymdht.core.querier import Query
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.identifier as identifier
+    import BaseLib.Core.DecentralizedTracking.pymdht.core.message as message
 
 
 logger = logging.getLogger('dht')
