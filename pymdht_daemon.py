@@ -8,7 +8,6 @@ import SocketServer
 import random
 import sys, os
 from optparse import OptionParser
-import geo
 
 import core.ptime as time
 import logging
@@ -25,6 +24,7 @@ import core.pymdht as pymdht
 MAX_PORT = 2**16 - 1
 
 dht = None
+stop_server = False
 
 class SanitizeError(Exception):
     pass
@@ -81,10 +81,16 @@ class SessionHandler(SocketServer.StreamRequestHandler):
         for peer in peers:
             if peer not in channel.peers:
                 channel.peers.add(peer)
-                peer_score = geo_score.score_peer(peer[0])
-                self.wfile.write('%d PEER %s:%d SCORE %d\r\n' % (channel.send,
-                                                                 peer[0], peer[1],
-                                                                 peer_score))
+                msg_head = '%d PEER %s:%d' % (channel.send,
+                                              peer[0], peer[1])
+                msg_tail = '\r\n'
+                if geo_score:
+                    peer_score = geo_score.score_peer(peer[0])
+                    msg_score = ' SCORE %d' % (peer_score)
+                else:
+                    msg_score = ''
+                msg = ''.join((msg_head, msg_score, msg_tail))
+                self.wfile.write(msg)
         return
 
     def _on_new_channel(self, splitted_line):
@@ -188,13 +194,16 @@ def main(options, args):
                         routing_m_mod,
                         lookup_m_mod,
                         '', logs_level)
+
     global geo_score
-    geo_score = geo.Geo(local_ip)
+    if options.geoip_mode:
+        import geo
+        geo_score = geo.Geo(local_ip)
+    else:
+        geo_score = None
     
     global server
     server = SocketServer.TCPServer(('', port), SessionHandler)
-    global stop_server
-    stop_server = False
     while not stop_server:
         server.handle_request()
     
@@ -225,8 +234,10 @@ if __name__ == '__main__':
     parser.add_option("-m", "--my-address", dest="my_ip",
                       metavar='IP', default='192.16.125.198',
                       help="local IP address")
+    parser.add_option("--no-geoip", dest="geoip_mode",
+                      action='store_false', default=True,
+                      help="do not use geoIP")
 
-    
 
     (options, args) = parser.parse_args()
     
