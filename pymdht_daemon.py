@@ -8,6 +8,7 @@ import SocketServer
 import random
 import sys, os
 from optparse import OptionParser
+import geo
 
 import core.ptime as time
 import logging
@@ -80,8 +81,10 @@ class SessionHandler(SocketServer.StreamRequestHandler):
         for peer in peers:
             if peer not in channel.peers:
                 channel.peers.add(peer)
-                self.wfile.write('%d PEER %s:%d\r\n' % (channel.send,
-                                                        peer[0], peer[1]))
+                peer_score = geo_score.score_peer(peer[0])
+                self.wfile.write('%d PEER %s:%d SCORE %d\r\n' % (channel.send,
+                                                                 peer[0], peer[1],
+                                                                 peer_score))
         return
 
     def _on_new_channel(self, splitted_line):
@@ -115,8 +118,10 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             for peer in peers:
                 if peer not in channel.peers:
                     channel.peers.add(peer)
-                    self.wfile.write('%d PEER %s:%d\r\n' % (channel.send,
-                                                            peer[0], peer[1]))
+                    peer_score = geo_score.score_peer(peer[0])
+                    self.wfile.write('%d PEER %s:%d SCORE %d\r\n' % (channel.send,
+                                                                     peer[0], peer[1],
+                                                                     peer_score))
         if not success:
             print 'no success'
             self.open_channels.remove(channel)
@@ -166,6 +171,7 @@ class SessionHandler(SocketServer.StreamRequestHandler):
 def main(options, args):
     port = int(options.port)
     my_addr = (options.ip, port)
+    local_ip = options.my_ip
     logs_path = options.path
     logs_level = options.logs_level or default_logs_level
     logging_conf.setup(logs_path, logs_level)
@@ -182,6 +188,9 @@ def main(options, args):
                         routing_m_mod,
                         lookup_m_mod,
                         '', logs_level)
+    global geo_score
+    geo_score = geo.Geo(local_ip)
+    
     global server
     server = SocketServer.TCPServer(('', port), SessionHandler)
     global stop_server
@@ -213,6 +222,9 @@ if __name__ == '__main__':
     parser.add_option("-d", "--private-dht", dest="private_dht_name",
                       metavar='STRING', default=None,
                       help="private DHT name")
+    parser.add_option("-m", "--my-address", dest="my_ip",
+                      metavar='IP', default='192.16.125.198',
+                      help="local IP address")
 
     
 
