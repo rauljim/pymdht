@@ -208,7 +208,7 @@ if __name__ == '__main__':
                       metavar='INT', default=7000,
                       help="port to be used")
     parser.add_option("-x", "--path", dest="path",
-                      metavar='PATH', default='interactive_logs/',
+                      metavar='PATH', default='.',
                       help="state.dat and logs location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
