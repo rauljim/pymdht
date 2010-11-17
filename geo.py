@@ -1,7 +1,6 @@
 import GeoIP
 import math
 import os, sys
-#testing git 2
 # longitude/latitude constants
 nauticalMilePerLat = 60.00721
 nauticalMilePerLongitude = 60.10793
