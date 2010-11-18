@@ -124,10 +124,17 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             for peer in peers:
                 if peer not in channel.peers:
                     channel.peers.add(peer)
-                    peer_score = geo_score.score_peer(peer[0])
-                    self.wfile.write('%d PEER %s:%d SCORE %d\r\n' % (channel.send,
-                                                                     peer[0], peer[1],
-                                                                     peer_score))
+                    msg_head = '%d PEER %s:%d' % (channel.send,
+                                              peer[0], peer[1])
+                    msg_tail = '\r\n'
+                    if geo_score:
+                        peer_score = geo_score.score_peer(peer[0])
+                        msg_score = ' SCORE %d' % (peer_score)
+                    else:
+                        msg_score = ''
+                    msg = ''.join((msg_head, msg_score, msg_tail))
+                    self.wfile.write(msg)
+
         if not success:
             print 'no success'
             self.open_channels.remove(channel)
