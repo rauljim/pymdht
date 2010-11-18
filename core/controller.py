@@ -13,8 +13,7 @@ from identifier import Id
 import message
 import token_manager
 import tracker
-from minitwisted import ThreadedReactor
-
+from minitwisted import Task#ThreadedReactor
 from querier import Querier
 from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
 from node import Node
@@ -47,9 +46,6 @@ class Controller:
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
-        self._reactor = ThreadedReactor()
-        self._reactor.listen_udp(self._my_node.addr[1],
-                                 self._on_datagram_received)
         self._querier = Querier(self._my_id)
         bootstrap_nodes = self.loaded_nodes or BOOTSTRAP_NODES
         del self.loaded_nodes
@@ -61,9 +57,8 @@ class Controller:
         self._next_save_state_ts = current_time + SAVE_STATE_DELAY
         
     def stop(self):
-        assert self._running
-        #TODO2: stop each manager
-        self._reactor.stop()
+        #TODO2: stop each manager, save routing table
+        return
 
     def save_state(self):
         rnodes = self._routing_m.get_main_rnodes()
@@ -97,8 +92,12 @@ class Controller:
         f.close
         
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+        tasks_to_schedule = []
+        msgs_to_send = []
         # look if I'm tracking this info_hash
         local_peers = self._tracker.get(info_hash)
+        if local_peers:
+            callback_f(lookup_id, local_peers)
         # do the lookup
         log_distance = info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
@@ -107,51 +106,62 @@ class Controller:
         lookup_obj = self._lookup_m.get_peers(lookup_id, info_hash,
                                               callback_f, bt_port)
         lookup_queries_to_send = lookup_obj.start(bootstrap_rnodes)
-        tasks_to_schedule, msgs_to_send = self._send_queries(
+        lookup_tasks_to_schedule, lookup_msgs_to_send = self._send_queries(
             lookup_queries_to_send)
+        tasks_to_schedule.extend(lookup_tasks_to_schedule)
+        msgs_to_send.extend(lookup_msgs_to_send)
         if not lookup_queries_to_send:
             # There are no nodes in my routing table, announce to myself
-            self._announce(lookup_obj)
-            # NOTICE: the callback is NOT triggered, zero is returned.
-        return len(lookup_queries_to_send), local_peers
+            (announce_tasks_to_schedule,
+             announce_msgs_to_send) = self._announce(lookup_obj)
+            tasks_to_schedule.extend(announce_tasks_to_schedule)
+            msgs_to_send.extend(announce_msgs_to_send)
+            # callback with None (end of lookup)
+            callback_f(lookup_id, None)
+        return tasks_to_schedule, msgs_to_send
         
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
 
     def main_loop(self):
+        tasks_to_schedule = []
+        msgs_to_send = []
         current_time = time.time()
-        # Routing table
-        if current_time > self._next_maintenance_ts:
-            (maintenance_delay,
-             queries_to_send,
-             maintenance_lookup_target) = self._routing_m.do_maintenance()
-            self._send_queries(queries_to_send)
-            if maintenance_lookup_target:
-                log_distance = maintenance_lookup_target.log_distance(
-                    self._my_id)
-                bootstrap_nodes = self._routing_m.get_closest_rnodes(
-                    log_distance, None, True)
-                lookup_obj = self._lookup_m.maintenance_lookup(
-                    maintenance_lookup_target)
-                lookup_queries_to_send = lookup_obj.start(bootstrap_nodes)
-                self._send_queries(lookup_queries_to_send)
-            self._next_maintenance_ts = (current_time
-                                         + maintenance_delay)
+        # Routing table maintenance
+        (maintenance_delay,
+         queries_to_send,
+         maintenance_lookup_target) = self._routing_m.do_maintenance()
+        tasks, msgs = self._send_queries(queries_to_send)
+        tasks_to_schedule.extend(tasks)
+        msgs_to_send.extend(msgs)
+        if maintenance_lookup_target:
+            log_distance = maintenance_lookup_target.log_distance(
+                self._my_id)
+            bootstrap_nodes = self._routing_m.get_closest_rnodes(
+                log_distance, None, True)
+            lookup_obj = self._lookup_m.maintenance_lookup(
+                maintenance_lookup_target)
+            lookup_queries_to_send = lookup_obj.start(bootstrap_nodes)
+            tasks, msgs = self._send_queries(lookup_queries_to_send)
+            tasks_to_schedule.extend(tasks)
+            msgs_to_send.extend(msgs)
         # Auto-save routing table
         if current_time > self._next_save_state_ts:
             self.save_state()
             self._next_save_state_ts = current_time + SAVE_STATE_DELAY
-
-        # Schedule next call
-        delay = (min(self._next_maintenance_ts, self._next_save_state_ts)
-                 - current_time)
-        #self._reactor.call_later(delay, self._main_loop)
-        return Task(delay, self.main_loop), 
+        # Schedule next call to main_loop 
+        tasks_to_schedule.append(Task(maintenance_delay, self.main_loop))
+        self._next_maintenance_ts = (current_time
+                                     + maintenance_delay)
+        # Return control to reactor
+        return tasks_to_schedule, msgs_to_send
 
     def _maintenance_lookup(self, target):
         self._lookup_m.maintenance_lookup(target)
 
-    def _on_datagram_received(self, data, addr):
+    def on_datagram_received(self, data, addr):
+        tasks_to_schedule = []
+        msgs_to_send = []
         try:
             msg = message.IncomingMsg(data, addr)
         except(message.MsgError):
@@ -164,7 +174,7 @@ class Controller:
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.encode(msg.tid)
-                self._reactor.sendto(bencoded_response, addr)
+                msgs_to_send.append((bencoded_response, addr))
 
             maintenance_queries_to_send = self._routing_m.on_query_received(
                 msg.sender_node)
@@ -265,7 +275,7 @@ class Controller:
 
     def _announce(self, lookup_obj):
         queries_to_send, announce_to_myself = lookup_obj.announce()
-        self._send_queries(queries_to_send)
+        return self._send_queries(queries_to_send)
         '''
         if announce_to_myself:
             self._tracker.put(lookup_obj._info_hash,
@@ -278,9 +288,8 @@ class Controller:
         if queries_to_send is None:
             return tasks_to_schedule, msgs_to_send
         for query in queries_to_send:
-            timeout_task = self._reactor.call_later(TIMEOUT_DELAY,
-                                                    self._on_timeout,
-                                                    query.dstnode.addr)
+            timeout_task = Task(TIMEOUT_DELAY,
+                                self._on_timeout, query.dstnode.addr)
             bencoded_query = self._querier.register_query(query, timeout_task)
             tasks_to_schedule.append(timeout_task)
             msgs_to_send.append((bencoded_query, query.dstnode.addr))

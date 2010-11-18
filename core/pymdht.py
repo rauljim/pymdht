@@ -40,6 +40,8 @@ class Pymdht:
                                                 lookup_m_mod,
                                                 private_dht_name)
         self.reactor = minitwisted.ThreadedReactor()
+        self.reactor.listen_udp(dht_addr[1],
+                                self.controller.on_datagram_received)
         self.reactor.call_asap(self.controller.main_loop)
         self.reactor.start()
         #FIXME: put a lock or something

@@ -169,17 +169,17 @@ class ThreadedReactor(threading.Thread):
                         task = self.tasks.consume_task()
                         if task is None:
                             break
-                        task_to_schedule, msgs_to_send = task.fire_callback()
+                        tasks_to_schedule, msgs_to_send = task.fire_callback()
                         last_task_run_ts = time.time()
                     stop_flag = self.stop_flag
                 finally:
                     self._lock.release()
-            if task_to_schedule:
-                self.tasks.add(task_to_schedule)
+            for task in tasks_to_schedule:
+                self.tasks.add(task)
             for msg, addr in msgs_to_send:
                 self.sendto(msg, addr)
             # Get data from the network
-            task_to_schedule = None
+            tasks_to_schedule = None
             msgs_to_send = []
             try:
                 data, addr = self.s.recvfrom(BUFFER_SIZE)
@@ -199,10 +199,11 @@ class ThreadedReactor(threading.Thread):
                 if ip_is_blocked:
                     logger.warning('%s blocked' % `addr`)
                 else:
-                    task_to_schedule, msgs_to_send = self.datagram_received_f(
+                    (tasks_to_schedule,
+                     msgs_to_send) = self.datagram_received_f(
                         data, addr)
-            if task_to_schedule:
-                self.tasks.add(task_to_schedule)
+            for task in tasks_to_schedule:
+                self.tasks.add(task)
             for msg, addr in msgs_to_send:
                 self.sendto(msg, addr)
 
