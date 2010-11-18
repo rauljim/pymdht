@@ -79,13 +79,8 @@ Available commands are:
             except:
                 print 'Invalid bt_port (%r)' % input[2]
                 continue
-            success, peers = dht.get_peers(time.time(), info_hash,
-                                           _on_peers_found, bt_port)
-            if not success:
-                print 'Lookup failed'
-            if peers:
-                print '[local] %d peer(s)' % (len(peers))
-                print peers
+            dht.get_peers(time.time(), info_hash,
+                          _on_peers_found, bt_port)
                 
         
 if __name__ == '__main__':

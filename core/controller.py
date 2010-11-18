@@ -13,7 +13,7 @@ from identifier import Id
 import message
 import token_manager
 import tracker
-from minitwisted import Task#ThreadedReactor
+from minitwisted import Task
 from querier import Querier
 from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
 from node import Node
@@ -169,16 +169,15 @@ class Controller:
         if msg.sender_id == self._my_id:
             logger.debug('Got a msg from myself:\n%r', msg)
             return
-        
+        # Got a query, we need to respond and inform routing table
         if msg.type == message.QUERY:
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.encode(msg.tid)
                 msgs_to_send.append((bencoded_response, addr))
-
             maintenance_queries_to_send = self._routing_m.on_query_received(
                 msg.sender_node)
-            
+        # Got a response, we need to inform routing table and querier
         elif msg.type in (message.RESPONSE, message.ERROR):
             related_query = self._querier.on_response_received(msg, addr)
             if not related_query:
@@ -200,16 +199,18 @@ class Controller:
                      lookup_done
                      ) = related_query.lookup_obj.on_error_received(
                         msg, msg.sender_node)
-                self._send_queries(lookup_queries_to_send)
-                
+                tasks, msgs = self._send_queries(lookup_queries_to_send)
+                tasks_to_schedule.extend(tasks)
+                msgs_to_send.extend(msgs)
                 if related_query.lookup_obj.callback_f:
-                    
                     lookup_id = related_query.lookup_obj.lookup_id
                     if peers:
                         related_query.lookup_obj.callback_f(lookup_id, peers)
                     if lookup_done:
-                        self._announce(related_query.lookup_obj)
                         related_query.lookup_obj.callback_f(lookup_id, None)
+                        tasks, msgs = self._announce(related_query.lookup_obj)
+                        tasks_to_schedule.extend(tasks)
+                        msgs_to_send.extend(msgs)
             # maintenance related tasks
             if msg.type == message.RESPONSE:
                 maintenance_queries_to_send = \
@@ -221,7 +222,10 @@ class Controller:
                     msg.sender_node)
         else: # unknown type
             return
-        self._send_queries(maintenance_queries_to_send)
+        tasks, msgs = self._send_queries(maintenance_queries_to_send)
+        tasks_to_schedule.extend(tasks)
+        msgs_to_send.extend(msgs)
+        return tasks_to_schedule, msgs_to_send
 
     def _get_response(self, msg):
         if msg.query == message.PING:

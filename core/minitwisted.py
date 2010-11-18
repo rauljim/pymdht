@@ -52,9 +52,22 @@ class Task(object):
     
     def fire_callback(self):
         """Fire a callback (if it hasn't been cancelled)."""
-        result = None
+        tasks_to_schedule = []
+        msgs_to_send = []
+        import sys
+        print >>sys.stderr, '\nfiring>>>', self
         if not self._cancelled:
-            result = self.callback_f(*self.args, **self.kwds)
+            try:
+                tasks_to_schedule, msgs_to_send = self.callback_f(
+                    *self.args, **self.kwds)
+            except:
+                '''
+                import sys
+                print >>sys.stderr, '\n\n>>>>>>>>>>>>>>>>', self.__dict__
+                raise
+                '''
+            # This task cannot be used again
+            self._cancelled = True
         '''
         Tasks may have arguments which reference to the objects which
         created the task. That is, they create a memory cycle. In order
@@ -63,7 +76,7 @@ class Task(object):
         del self.callback_f
         del self.args
         del self.kwds
-        return result
+        return tasks_to_schedule, msgs_to_send
 
     def cancel(self):
         """Cancel a task (callback won't be called when fired)"""
@@ -80,7 +93,12 @@ class TaskManager(object):
 
     def add(self, task):
         """Add task to the TaskManager"""
-        
+
+        if not task.callback_f:
+            #no callback, just ignore. The code that created this callback
+            #doesn't really call anything back, it probably created the task
+            #because some function required a task (e.g. timeout_task).
+            return
         ms_delay = int(task.delay * 1000)
         # we need integers for the dictionary (floats are not hashable)
         self.tasks.setdefault(ms_delay, []).append(task)
@@ -158,7 +176,7 @@ class ThreadedReactor(threading.Thread):
         last_task_run_ts = 0
         stop_flag = self.stop_flag
         while not stop_flag:
-            task_to_schedule = None
+            tasks_to_schedule = []
             msgs_to_send = []
             # Perfom scheduled tasks
             if time.time() - last_task_run_ts > self.task_interval:
@@ -169,7 +187,8 @@ class ThreadedReactor(threading.Thread):
                         task = self.tasks.consume_task()
                         if task is None:
                             break
-                        tasks_to_schedule, msgs_to_send = task.fire_callback()
+                        (tasks_to_schedule,
+                         msgs_to_send) = task.fire_callback()
                         last_task_run_ts = time.time()
                     stop_flag = self.stop_flag
                 finally:
@@ -179,7 +198,7 @@ class ThreadedReactor(threading.Thread):
             for msg, addr in msgs_to_send:
                 self.sendto(msg, addr)
             # Get data from the network
-            tasks_to_schedule = None
+            tasks_to_schedule = []
             msgs_to_send = []
             try:
                 data, addr = self.s.recvfrom(BUFFER_SIZE)
@@ -241,7 +260,7 @@ class ThreadedReactor(threading.Thread):
         self.s.bind(my_addr)
         return self.s
         
-    def call_later(self, delay, callback_fs, *args, **kwds):
+    def call_later(self, delay, callback_f, *args, **kwds):
         """Call the given callback with given arguments in the future (delay
         seconds).
 
@@ -249,14 +268,15 @@ class ThreadedReactor(threading.Thread):
         #with self._lock:
         self._lock.acquire()
         try:
-            task = Task(delay, callback_fs, *args, **kwds)
+            task = Task(delay, callback_f, *args, **kwds)
             self.tasks.add(task)
         finally:
             self._lock.release()
         return task
             
     def call_asap(self, callback_f, *args, **kwds):
-        """Same as call_later with delay 0 seconds."""
+        """Same as call_later with delay 0 seconds. That is, call as soon as
+        possible""" 
         return self.call_later(0, callback_f, *args, **kwds)
         
         

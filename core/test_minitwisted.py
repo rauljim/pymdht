@@ -3,6 +3,7 @@
 # See LICENSE.txt for more information
 
 from __future__ import with_statement
+import sys
 import threading
 import ptime as time
 
@@ -29,7 +30,10 @@ DATA = 'testing...'
 class TestTaskManager:
     
     def callback_f(self, callback_id):
+        tasks_to_schedule = []
+        msgs_to_send = []
         self.callback_order.append(callback_id)
+        return tasks_to_schedule, msgs_to_send
         
     def setup(self):
         global time
@@ -41,18 +45,13 @@ class TestTaskManager:
     def test_simple(self):
         for i in xrange(5):
             self.task_m.add(Task(.01, self.callback_f, i))
-        while True:
-            task = self.task_m.consume_task()
-            if task is None:
-                break
-            task.fire_callback()
-        logger.debug('%s' % self.callback_order)
-        assert self.callback_order == []
+        ok_(not self.task_m.consume_task())
         time.sleep(.01)
         while True:
             task = self.task_m.consume_task()
             if task is None:
                 break
+            print >>sys.stderr, '\ntask>>>', task.__dict__
             task.fire_callback() 
         assert self.callback_order == range(5)
 
@@ -141,7 +140,7 @@ class TestTaskManager:
         time = minitwisted.time = time.actual_time
 
         
-class _TestMinitwisted:
+class TestMinitwisted:
 
     def setup(self):
         global time
@@ -182,7 +181,7 @@ class _TestMinitwisted:
             assert first_datagram, (DATA, tc.CLIENT_ADDR)
         r.stop()
             
-    def test_network_callback(self):
+    def _test_network_callback(self):
         self.client_r.sendto(DATA, tc.SERVER_ADDR)
         time.sleep(tc.TASK_INTERVAL)
         with self.lock:
@@ -192,7 +191,7 @@ class _TestMinitwisted:
                     (DATA, tc.CLIENT_ADDR)))
             assert first_datagram, (DATA, tc.CLIENT_ADDR)
 
-    def test_block_flood(self):
+    def _test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
 
         for _ in xrange(FLOOD_LIMIT):
@@ -211,7 +210,7 @@ class _TestMinitwisted:
             print len(self.datagrams_received)
             assert len(self.datagrams_received) <= FLOOD_LIMIT
 
-    def test_call_later(self):
+    def _test_call_later(self):
         self.client_r.call_later(.13, self.callback_f, 1)
         self.client_r.call_later(.11, self.callback_f, 2)
         self.client_r.call_later(.01, self.callback_f, 3)
@@ -235,7 +234,7 @@ class _TestMinitwisted:
             logger.debug('callback_order: %s' % self.callback_order)
             eq_(self.callback_order, [2, 1])
 
-    def test_network_and_delayed(self):
+    def _test_network_and_delayed(self):
         self.client_r.call_later(.2, self.callback_f, 0)
         self.client_r.call_asap(self.callback_f, 1)
         task2 = self.client_r.call_later(.2, self.callback_f, 2)
@@ -261,7 +260,7 @@ class _TestMinitwisted:
             assert self.callback_order == [0]
             assert not self.datagrams_received
 
-    def test_sendto_socket_error(self): 
+    def _test_sendto_socket_error(self): 
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
         self.client_r.sendto('z', (tc.NO_ADDR[0], 0))
 
@@ -270,12 +269,18 @@ class _TestMinitwisted:
         self.server_r.stop()
 
     def on_datagram_received(self, data, addr):
+        tasks_to_schedule = []
+        msgs_to_send = []
         with self.lock:
             self.datagrams_received.append((data, addr))
+        return tasks_to_schedule, msgs_to_send
 
     def callback_f(self, callback_id):
+        tasks_to_schedule = []
+        msgs_to_send = []
         with self.lock:
             self.callback_order.append(callback_id)
+        return tasks_to_schedule, msgs_to_send
 
 
 class TestSocketErrors:

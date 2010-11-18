@@ -11,7 +11,7 @@ import pymdht
 import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
 
-class TestKadTracker:
+class _TestPymdht:
 
     def _callback(self, *args, **kwargs):
         return
