@@ -15,6 +15,7 @@ import sys
 
 import ptime as time
 
+import minitwisted
 import controller
 import logging, logging_conf
 
@@ -38,11 +39,17 @@ class Pymdht:
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 private_dht_name)
-        self.controller.start()
+        self.reactor = minitwisted.ThreadedReactor()
+        self.reactor.call_asap(self.controller.main_loop)
+        self.reactor.start()
+        #FIXME: put a lock or something
+        time.sleep(.0001)
+        
 
     def stop(self):
         """Stop the DHT."""
         self.controller.stop()
+        self.reactor.stop()
         time.sleep(.1) # Give time for the controller (reactor) to stop
     
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
@@ -50,16 +57,21 @@ class Pymdht:
         
         The info_hash must be an identifier.Id object.
         
-        The callback_f must expect one parameter. When peers are
-        discovered, the callback is called with a list of peers as paramenter.
-        The list of peers is a list of addresses (<IPv4, port> pairs).
+        The callback_f must expect two parameters (lookup_id and list of
+        peeers). When peers are discovered, the callback is called with a list
+        of peers as paramenter.  The list of peers is a list of addresses
+        (<IPv4, port> pairs).
 
-        The bt_port parameter is optional. When provided, ANNOUNCE messages
+        The bt_port parameter is optional. When non-zero, ANNOUNCE messages
         will be send using the provided port number.
 
+        Notice that the callback can be fired even before this call ends. Your
+        callback needs to be ready to get peers BEFORE calling this fuction.
+        
         """
-        return self.controller.get_peers(lookup_id, info_hash,
-                                         callback_f, bt_port)
+        self.reactor.call_asap(self.controller.get_peers,
+                               lookup_id, info_hash,
+                               callback_f, bt_port)
 
     def remove_torrent(self, info_hash):
         return

@@ -27,24 +27,20 @@ from floodbarrier import FloodBarrier
 logger = logging.getLogger('dht')
 
 
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 3000
 
 
 class Task(object):
     
     '''Simple container for a task '''
 
-    def __init__(self, delay, callback_fs, *args, **kwds):
+    def __init__(self, delay, callback_f, *args, **kwds):
         '''
         Create a task instance. Here is when the call time is calculated.
 
         '''
         self.delay = delay
-        if callable(callback_fs):
-            # single callback
-            self.callback_fs = [callback_fs]
-        else:
-            self.callback_fs = callback_fs
+        self.callback_f = callback_f
         self.args = args
         self.kwds = kwds
         self.call_time = time.time() + self.delay
@@ -54,19 +50,20 @@ class Task(object):
     def cancelled(self):
         return self._cancelled
     
-    def fire_callbacks(self):
+    def fire_callback(self):
         """Fire a callback (if it hasn't been cancelled)."""
+        result = None
         if not self._cancelled:
-            for callback_f in self.callback_fs:
-                callback_f(*self.args, **self.kwds)
+            result = self.callback_f(*self.args, **self.kwds)
         '''
-        Tasks usually have arguments which reference to the objects which
+        Tasks may have arguments which reference to the objects which
         created the task. That is, they create a memory cycle. In order
         to break the memoery cycle, those arguments are deleted.
         '''
-        del self.callback_fs
+        del self.callback_f
         del self.args
         del self.kwds
+        return result
 
     def cancel(self):
         """Cancel a task (callback won't be called when fired)"""
@@ -140,12 +137,14 @@ class ThreadedReactor(threading.Thread):
     It is an instance, not a nasty global
     
     """
-    def __init__(self, task_interval=0.1, floodbarrier_active=True):
+    def __init__(self, task_interval=0.1,
+                 floodbarrier_active=True):
         threading.Thread.__init__(self)
         self.setDaemon(True)
         
         self.stop_flag = False
         self._lock = threading.RLock()
+
         self.task_interval = task_interval
         self.floodbarrier_active = floodbarrier_active
         self.tasks = TaskManager()
@@ -156,19 +155,40 @@ class ThreadedReactor(threading.Thread):
     def run(self):
         """Main loop activated by calling self.start()"""
         
-        last_task_run = time.time()
+        last_task_run_ts = 0
         stop_flag = self.stop_flag
         while not stop_flag:
-            timeout_raised = False
+            task_to_schedule = None
+            msgs_to_send = []
+            # Perfom scheduled tasks
+            if time.time() - last_task_run_ts > self.task_interval:
+                #with self._lock:
+                self._lock.acquire()
+                try:
+                    while True:
+                        task = self.tasks.consume_task()
+                        if task is None:
+                            break
+                        task_to_schedule, msgs_to_send = task.fire_callback()
+                        last_task_run_ts = time.time()
+                    stop_flag = self.stop_flag
+                finally:
+                    self._lock.release()
+            if task_to_schedule:
+                self.tasks.add(task_to_schedule)
+            for msg, addr in msgs_to_send:
+                self.sendto(msg, addr)
+            # Get data from the network
+            task_to_schedule = None
+            msgs_to_send = []
             try:
                 data, addr = self.s.recvfrom(BUFFER_SIZE)
-            except (AttributeError):
-                logger.warning('udp_listen has not been called')
-                time.sleep(self.task_interval)
-                #TODO2: try using Event and wait
-                timeout_raised = True
+            # except (AttributeError):
+            #     logger.warning('udp_listen has not been called')
+            #     time.sleep(self.task_interval)
+            #     #TODO2: try using Event and wait
             except (socket.timeout):
-                timeout_raised = True
+                pass #timeout
             except (socket.error), e:
                 logger.critical(
                     'Got socket.error when receiving (more info follows)')
@@ -179,22 +199,13 @@ class ThreadedReactor(threading.Thread):
                 if ip_is_blocked:
                     logger.warning('%s blocked' % `addr`)
                 else:
-                    self.datagram_received_f(data, addr)
+                    task_to_schedule, msgs_to_send = self.datagram_received_f(
+                        data, addr)
+            if task_to_schedule:
+                self.tasks.add(task_to_schedule)
+            for msg, addr in msgs_to_send:
+                self.sendto(msg, addr)
 
-            if timeout_raised or \
-                   time.time() - last_task_run > self.task_interval:
-                #with self._lock:
-                self._lock.acquire()
-                try:
-                    while True:
-                        task = self.tasks.consume_task()
-                        if task is None:
-                            break
-#                        logger.critical('TASK COUNT 2 %d' % sys.getrefcount(task))
-                        task.fire_callbacks()
-                    stop_flag = self.stop_flag
-                finally:
-                    self._lock.release()
         logger.debug('Reactor stopped')
             
     def stop(self):
@@ -238,14 +249,12 @@ class ThreadedReactor(threading.Thread):
         self._lock.acquire()
         try:
             task = Task(delay, callback_fs, *args, **kwds)
-#            logger.critical('TASK COUNT CREATION 2 %d' % sys.getrefcount(task))
             self.tasks.add(task)
-#            logger.critical('TASK COUNT CREATION 3 %d' % sys.getrefcount(task))
         finally:
             self._lock.release()
         return task
             
-    def call_now(self, callback_f, *args, **kwds):
+    def call_asap(self, callback_f, *args, **kwds):
         """Same as call_later with delay 0 seconds."""
         return self.call_later(0, callback_f, *args, **kwds)
         
@@ -279,7 +288,7 @@ class ThreadedReactorSocketError(ThreadedReactor):
         self.s = _SocketMock()
 
                 
-class ThreadedReactorMock(object):
+class ___ThreadedReactorMock(object):
  
     def __init__(self, task_interval=0.1):
         pass

@@ -18,9 +18,8 @@ logger = logging.getLogger('dht')
 
 
 import minitwisted
-from minitwisted import Task, TaskManager, \
-     ThreadedReactor, ThreadedReactorMock, \
-     ThreadedReactorSocketError
+from minitwisted import Task, TaskManager, ThreadedReactor
+from minitwisted import ThreadedReactorSocketError, _SocketMock
 
 
 ADDRS= (tc.CLIENT_ADDR, tc.SERVER_ADDR)
@@ -54,7 +53,7 @@ class TestTaskManager:
             task = self.task_m.consume_task()
             if task is None:
                 break
-            task.fire_callbacks() 
+            task.fire_callback() 
         assert self.callback_order == range(5)
 
     def test_cancel(self):
@@ -80,7 +79,7 @@ class TestTaskManager:
             task = self.task_m.consume_task()
             if task is None:
                 break
-            task.fire_callbacks()
+            task.fire_callback()
         logger.debug('%s' % self.callback_order)
         assert self.callback_order == [0,1,2,3,4,  6,7,8,9]
         # task 5 was cancelled        
@@ -108,7 +107,7 @@ class TestTaskManager:
                 task = self.task_m.consume_task()
                 if task is None:
                     break
-                task.fire_callbacks()
+                task.fire_callback()
             logger.debug('#: %d, result: %s, expected: %s' % (i,
                                               self.callback_order, expected))
             assert self.callback_order == expected
@@ -127,14 +126,14 @@ class TestTaskManager:
         if arg1 == 1 and arg2 == 2:
             self.callback_order.append(2)
     
-    def test_callback_list(self):
+    def _DEPRECATED_test_callback_list(self):
         self.task_m.add(Task(tc.TASK_INTERVAL/2,
                               [self._callback1, self._callback2],
                               1, 2))
         ok_(self.task_m.consume_task() is None)
         eq_(self.callback_order, [])
         time.sleep(tc.TASK_INTERVAL)
-        self.task_m.consume_task().fire_callbacks()
+        self.task_m.consume_task().fire_callback()
         eq_(self.callback_order, [1,2])
 
     def teardown(self):
@@ -142,7 +141,7 @@ class TestTaskManager:
         time = minitwisted.time = time.actual_time
 
         
-class TestMinitwisted:
+class _TestMinitwisted:
 
     def setup(self):
         global time
@@ -168,7 +167,8 @@ class TestMinitwisted:
         logger.warning(''.join(
             ('TESTING LOGS ** IGNORE EXPECTED WARNING ** ',
              '(udp_listen has not been called)')))
-        self.client_r.sendto(DATA, tc.SERVER_ADDR)
+        assert_raises(AttributeError, self.client_r.sendto,
+                      DATA, tc.SERVER_ADDR)
         while 1: #waiting for data
             with self.lock:
                 if self.datagrams_received:
@@ -222,7 +222,7 @@ class TestMinitwisted:
             logger.debug('callback_order: %s' % self.callback_order)
             eq_(self.callback_order, [3])
             self.callback_order = []
-        self.client_r.call_now(self.callback_f, 5)
+        self.client_r.call_asap(self.callback_f, 5)
         time.sleep(.03)
         with self.lock:
             logger.debug('callback_order: %s' % self.callback_order)
@@ -237,7 +237,7 @@ class TestMinitwisted:
 
     def test_network_and_delayed(self):
         self.client_r.call_later(.2, self.callback_f, 0)
-        self.client_r.call_now(self.callback_f, 1)
+        self.client_r.call_asap(self.callback_f, 1)
         task2 = self.client_r.call_later(.2, self.callback_f, 2)
         with self.lock:
             eq_(self.callback_order, [])
@@ -310,7 +310,7 @@ class TestSocketErrors:
 
 
         
-class TestMockThreadedReactor:
+class _TestMockThreadedReactor:
 
     def setup(self):
         pass

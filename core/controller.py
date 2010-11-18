@@ -60,15 +60,6 @@ class Controller:
         self._next_maintenance_ts = current_time
         self._next_save_state_ts = current_time + SAVE_STATE_DELAY
         
-        self._running = False
-        
-
-    def start(self):
-        assert not self._running
-        self._running = True
-        self._reactor.start()
-        self._main_loop()
-
     def stop(self):
         assert self._running
         #TODO2: stop each manager
@@ -106,7 +97,6 @@ class Controller:
         f.close
         
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
-        assert self._running
         # look if I'm tracking this info_hash
         local_peers = self._tracker.get(info_hash)
         # do the lookup
@@ -117,7 +107,8 @@ class Controller:
         lookup_obj = self._lookup_m.get_peers(lookup_id, info_hash,
                                               callback_f, bt_port)
         lookup_queries_to_send = lookup_obj.start(bootstrap_rnodes)
-        self._send_queries(lookup_queries_to_send)
+        tasks_to_schedule, msgs_to_send = self._send_queries(
+            lookup_queries_to_send)
         if not lookup_queries_to_send:
             # There are no nodes in my routing table, announce to myself
             self._announce(lookup_obj)
@@ -127,7 +118,7 @@ class Controller:
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
 
-    def _main_loop(self):
+    def main_loop(self):
         current_time = time.time()
         # Routing table
         if current_time > self._next_maintenance_ts:
@@ -154,7 +145,8 @@ class Controller:
         # Schedule next call
         delay = (min(self._next_maintenance_ts, self._next_save_state_ts)
                  - current_time)
-        self._reactor.call_later(delay, self._main_loop)
+        #self._reactor.call_later(delay, self._main_loop)
+        return Task(delay, self.main_loop), 
 
     def _maintenance_lookup(self, target):
         self._lookup_m.maintenance_lookup(target)
@@ -281,15 +273,18 @@ class Controller:
         '''
         
     def _send_queries(self, queries_to_send, lookup_obj=None):
+        tasks_to_schedule = []
+        msgs_to_send = []
         if queries_to_send is None:
-            return
+            return tasks_to_schedule, msgs_to_send
         for query in queries_to_send:
             timeout_task = self._reactor.call_later(TIMEOUT_DELAY,
                                                     self._on_timeout,
                                                     query.dstnode.addr)
             bencoded_query = self._querier.register_query(query, timeout_task)
-            self._reactor.sendto(bencoded_query, query.dstnode.addr)
-
+            tasks_to_schedule.append(timeout_task)
+            msgs_to_send.append((bencoded_query, query.dstnode.addr))
+        return tasks_to_schedule, msgs_to_send
             
         
 BOOTSTRAP_NODES = (
