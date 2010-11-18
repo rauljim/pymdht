@@ -50,15 +50,11 @@ class Controller:
         self._reactor = ThreadedReactor()
         self._reactor.listen_udp(self._my_node.addr[1],
                                  self._on_datagram_received)
-        #self._rpc_m = RPCManager(self._reactor)
         self._querier = Querier(self._my_id)
         bootstrap_nodes = self.loaded_nodes or BOOTSTRAP_NODES
         del self.loaded_nodes
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        bootstrap_nodes)
-#        self._responder = Responder(self._my_id, self._routing_m,
-#                                    self._tracker, self._token_m)
-
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_time = time.time()
         self._next_maintenance_ts = current_time

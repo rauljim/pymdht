@@ -48,9 +48,6 @@ def decode(bencoded, max_depth=4):
         data, next_pos, = decode_f(bencoded, 0, max_depth)
     except (DecodeError):
         raise
-    except:
-        raise
-        raise DecodeError('UNEXPECTED>>>>>>>>>>>>', bencoded)
     else:
         if next_pos != len(bencoded):
             raise DecodeError('Extra characters after valid bencode.',
