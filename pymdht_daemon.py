@@ -7,6 +7,7 @@
 import SocketServer
 import random
 import sys, os
+import socket
 from optparse import OptionParser
 
 import core.ptime as time
@@ -217,6 +218,13 @@ def main(options, args):
         
 if __name__ == '__main__':
     parser = OptionParser()
+
+    #get IP address of the local computer
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('google.com', 80))
+    local_ip = s.getsockname()[0]
+    del s
+    
     parser.add_option("-a", "--address", dest="ip",
                       metavar='IP', default='127.0.0.1',
                       help="IP address to be used")
@@ -239,7 +247,7 @@ if __name__ == '__main__':
                       metavar='STRING', default=None,
                       help="private DHT name")
     parser.add_option("-m", "--my-address", dest="my_ip",
-                      metavar='IP', default='192.16.125.198',
+                      metavar='IP', default=local_ip,
                       help="local IP address")
     parser.add_option("--no-geoip", dest="geoip_mode",
                       action='store_false', default=True,
