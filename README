@@ -8,14 +8,6 @@ installed.
 A Makefile is provided to run the tests. The tests require the nose test
 framework to work.
 
-Additional libraries should be installed for GEOIP to work (optional):
-1. python-geoip
-2. geoip-database
-3. libgeoip1
-
-GeoIPCity.dat is missing and should be retrieved from MaxMind... (will update this later today)
-
-
 API
 
 The API is located in pymdht.py. This is the only module necessary to use the
@@ -56,6 +48,42 @@ kcachegrind (profile viewer)
 and from easy_install (comes with the python-setuptools package in Ubuntu):
 profilestats (produces input for both RunSnakeRun and KCachegrind)
 runsnakerun (simple and nice profile viewer)
+
+
+PYMDHT DAEMON
+
+This daemon serves as a simple interface between swift transport
+protocol and pymdht.  It takes takes inhohashes from swift as input,
+uses pymdht to find peers for the corresponding infohashes, and
+finally returns the list of peers (in bursts, as they are discovered)
+to the swift core. 
+
+To run pymdht daemon:
+- pymdht_daemon.py
+- refer to pymdht_daemon_api.txt for technical details
+
+GEO SCORING API
+
+Module geo.py contains a set of functions that can be used to retrieve peer's
+location-related information, such as: city, country, latitude,
+longitude etc (based on the geoip library). In addition, this module
+contains functions to calculate coordinate distances between two
+peers, find if peers are in the same country, and score peers
+according to a defined (in geo.py) metric.
+ 
+Geo scoring is enabled by default, when running pymdht daemon. It can
+be switched off this way:
+
+- python pymdht_daemon.py --no-geoip
+
+For geo module to work (only if running geo scoring), you need to
+install the following libraries (Ubuntu):
+1. python-geoip
+2. geoip-database
+3. libgeoip1
+4. Run geolitecityupdate.sh script to get the latest version of the
+city database. The data, otherwise, is located here: "/usr/share/GeoIP/GeoIPCity.dat"
+
 
 CLEAN CODE
 
