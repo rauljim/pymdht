@@ -106,6 +106,10 @@ class Controller:
         f.close
         
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+        logger.critical('get_peers %d %r' % (bt_port, info_hash))
+        if time.time() > self._next_maintenance_ts + 1:
+            logger.critical('minitwisted crashed!')
+            return
         assert self._running
         # look if I'm tracking this info_hash
         local_peers = self._tracker.get(info_hash)
