@@ -94,6 +94,10 @@ class Controller:
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         tasks_to_schedule = []
         msgs_to_send = []
+        logger.critical('get_peers %d %r' % (bt_port, info_hash))
+        if time.time() > self._next_maintenance_ts + 1:
+            logger.critical('minitwisted crashed!')
+            return
         # look if I'm tracking this info_hash
         local_peers = self._tracker.get(info_hash)
         if local_peers:
