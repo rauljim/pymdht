@@ -81,7 +81,6 @@ Available commands are:
                 continue
             dht.get_peers(time.time(), info_hash,
                           _on_peers_found, bt_port)
-                
         
 if __name__ == '__main__':
     parser = OptionParser()

@@ -96,12 +96,12 @@ class Controller:
         msgs_to_send = []
         logger.critical('get_peers %d %r' % (bt_port, info_hash))
         if time.time() > self._next_maintenance_ts + 1:
-            logger.critical('minitwisted crashed!')
+            logger.critical('minitwisted crashed or stopped!')
             return
         # look if I'm tracking this info_hash
-        local_peers = self._tracker.get(info_hash)
-        if local_peers:
-            callback_f(lookup_id, local_peers)
+        peers = self._tracker.get(info_hash)
+        if peers:
+            callback_f(lookup_id, peers)
         # do the lookup
         log_distance = info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
@@ -306,6 +306,5 @@ class Controller:
         
 BOOTSTRAP_NODES = (
     Node(('67.215.242.138', 6881)), #router.bittorrent.com
-    Node(('192.16.125.242', 7000)), #raul's laptop
-    Node(('192.16.127.98', 7000)), #KTH node
+    Node(('192.16.127.98', 7005)), #KTH node
     )

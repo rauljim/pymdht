@@ -118,16 +118,16 @@ class SessionHandler(SocketServer.StreamRequestHandler):
 
         channel = self.open_channels.create(send)
         self.wfile.write('%d OPEN %d\r\n' % (channel.send, channel.recv))
-        success, peers = dht.get_peers(channel, info_hash,
-                                       self._on_peers_found, port)
-        if peers:
-            for peer in peers:
-                if peer not in channel.peers:
-                    channel.peers.add(peer)
-                    peer_score = geo_score.score_peer(peer[0])
-                    self.wfile.write('%d PEER %s:%d SCORE %d\r\n' % (channel.send,
-                                                                     peer[0], peer[1],
-                                                                     peer_score))
+        success = dht.get_peers(channel, info_hash,
+                                self._on_peers_found, port)
+        # if peers:
+        #     for peer in peers:
+        #         if peer not in channel.peers:
+        #             channel.peers.add(peer)
+        #             peer_score = geo_score.score_peer(peer[0])
+        #             self.wfile.write('%d PEER %s:%d SCORE %d\r\n' % (channel.send,
+        #                                                              peer[0], peer[1],
+        #                                                              peer_score))
         if not success:
             print 'no success'
             self.open_channels.remove(channel)
