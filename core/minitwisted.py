@@ -171,6 +171,13 @@ class ThreadedReactor(threading.Thread):
 
     #@profile
     def run(self):
+        try:
+            self._protected_run()
+        except:
+            logger.critical('MINITWISTED CRASHED')
+            logger.exception('MINITWISTED CRASHED')
+
+    def _protected_run(self):
         """Main loop activated by calling self.start()"""
         
         last_task_run_ts = 0
@@ -225,7 +232,6 @@ class ThreadedReactor(threading.Thread):
                 self.tasks.add(task)
             for msg, addr in msgs_to_send:
                 self.sendto(msg, addr)
-
         logger.debug('Reactor stopped')
             
     def stop(self):

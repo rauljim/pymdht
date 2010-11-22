@@ -10,7 +10,7 @@ import controller
 import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
 
-class _TestController:
+class TestController:
 
     def setup(self):
         self.controller = controller.Controller(tc.CLIENT_ADDR, 'test_logs',

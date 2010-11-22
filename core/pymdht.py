@@ -11,13 +11,12 @@ the DHT.
 Find usage examples in server_dht.py and interactive_dht.py.
 
 """
-import sys
-
 import ptime as time
 
 import minitwisted
 import controller
 import logging, logging_conf
+
 
 class Pymdht:
     """Pymdht is the interface for the whole package.
