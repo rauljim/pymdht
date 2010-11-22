@@ -162,7 +162,7 @@ class TestMinitwisted:
 
     def test_listen_upd(self):
         r = ThreadedReactor()
-        r.start()
+        assert_raises(Exception, r.start)
         logger.warning(''.join(
             ('TESTING LOGS ** IGNORE EXPECTED WARNING ** ',
              '(udp_listen has not been called)')))
