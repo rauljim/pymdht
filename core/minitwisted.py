@@ -270,11 +270,9 @@ class ThreadedReactor(threading.Thread):
                             len(data)))
                     logger.critical('Data: %s' % data)
             except (socket.error):
-                logger.critical(
-                    'Got socket.error when sending (more info follows)')
-                logger.critical('Sending data to %r\n%r' % (addr,
-                                                             data))
-                logger.exception('See critical log above')
+                logger.warning(
+                    'Got socket.error when sending data to %r\n%r' % (addr,
+                                                                      data))
         finally:
             self._lock.release()
 
