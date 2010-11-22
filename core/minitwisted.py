@@ -177,9 +177,9 @@ class ThreadedReactor(threading.Thread):
             except (socket.timeout):
                 timeout_raised = True
             except (socket.error), e:
-                logger.critical(
-                    'Got socket.error when receiving (more info follows)')
-                logger.exception('See critical log above')
+                logger.warning(
+                    'Got socket.error when receiving data:\n%s' % e)
+                #logger.exception('See critical log above')
             else:
                 ip_is_blocked = self.floodbarrier_active and \
                                 self.floodbarrier.ip_blocked(addr[0])
