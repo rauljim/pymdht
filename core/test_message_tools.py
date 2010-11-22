@@ -28,7 +28,7 @@ class TestMsgTools:
         for ip in ips:
             c_addr = mt.compact_addr((ip, 22))
             assert_raises(mt.AddrError, mt.uncompact_addr, c_addr)
-    
+
     def test_tools(self):
         bin_strs = ['23', '\1\5', 'a\3']
         for bs in bin_strs:
@@ -93,4 +93,9 @@ class TestMsgTools:
         c_peers = mt.compact_peers(peers)
         eq_(mt.uncompact_peers(c_peers), peers[1:])
 
+        addr = ('1.2.3.4', 1234)
+        c_addr = mt.compact_addr(addr)
+        assert_raises(mt.AddrError, mt.uncompact_addr, c_addr[:-1])
+        assert_raises(mt.AddrError, mt.uncompact_addr, c_addr[1:])
+        assert_raises(mt.AddrError, mt.uncompact_addr, c_addr+'X')
         

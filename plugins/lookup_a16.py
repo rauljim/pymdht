@@ -11,10 +11,10 @@ try:
     import core.identifier as identifier
     import core.message as message
 except ImportError:
-    import BaseLib.Core.DecentralizedTracking.pymdht.core.ptime as time
-    from BaseLib.Core.DecentralizedTracking.pymdht.core.querier import Query
-    import BaseLib.Core.DecentralizedTracking.pymdht.core.identifier as identifier
-    import BaseLib.Core.DecentralizedTracking.pymdht.core.message as message
+    import Tribler.Core.DecentralizedTracking.pymdht.core.ptime as time
+    from Tribler.Core.DecentralizedTracking.pymdht.core.querier import Query
+    import Tribler.Core.DecentralizedTracking.pymdht.core.identifier as identifier
+    import Tribler.Core.DecentralizedTracking.pymdht.core.message as message
 
 
 logger = logging.getLogger('dht')
@@ -212,7 +212,7 @@ class GetPeersLookup(object):
         return (queries_to_send, self._num_parallel_queries,
                 lookup_done)
     
-    def on_error(self, error_msg, node_):
+    def on_error_received(self, error_msg, node_):
         logger.debug('ERROR node: %r' % node_)
         self._num_parallel_queries -= 1
         self.num_errors += 1

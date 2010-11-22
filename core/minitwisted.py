@@ -154,6 +154,13 @@ class ThreadedReactor(threading.Thread):
 
     #@profile
     def run(self):
+        try:
+            self._protected_run()
+        except:
+            logger.critical('MINITWISTED CRASHED')
+            logger.exception('MINITWISTED CRASHED')
+
+    def _protected_run(self):
         """Main loop activated by calling self.start()"""
         
         last_task_run = time.time()
@@ -190,7 +197,6 @@ class ThreadedReactor(threading.Thread):
                         task = self.tasks.consume_task()
                         if task is None:
                             break
-#                        logger.critical('TASK COUNT 2 %d' % sys.getrefcount(task))
                         task.fire_callbacks()
                     stop_flag = self.stop_flag
                 finally:

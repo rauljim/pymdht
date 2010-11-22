@@ -27,3 +27,7 @@ class TestKadTracker:
         self.dht.get_peers(None, tc.INFO_HASH, self._callback, tc.BT_PORT)
         self.dht.stop()
         self.dht.print_routing_table_stats()
+
+    def complete_coverage(self):
+        # This is only used for NSDI experiments
+        self.dht.remove_torrent(tc.INFO_HASH)

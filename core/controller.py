@@ -50,15 +50,11 @@ class Controller:
         self._reactor = ThreadedReactor()
         self._reactor.listen_udp(self._my_node.addr[1],
                                  self._on_datagram_received)
-        #self._rpc_m = RPCManager(self._reactor)
         self._querier = Querier(self._my_id)
         bootstrap_nodes = self.loaded_nodes or BOOTSTRAP_NODES
         del self.loaded_nodes
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        bootstrap_nodes)
-#        self._responder = Responder(self._my_id, self._routing_m,
-#                                    self._tracker, self._token_m)
-
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_time = time.time()
         self._next_maintenance_ts = current_time
@@ -110,9 +106,15 @@ class Controller:
         f.close
         
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+        logger.critical('get_peers %d %r' % (bt_port, info_hash))
+        if time.time() > self._next_maintenance_ts + 1:
+            logger.critical('minitwisted crashed or stopped!')
+            return
         assert self._running
         # look if I'm tracking this info_hash
-        local_peers = self._tracker.get(info_hash)
+        peers = self._tracker.get(info_hash)
+        if peers:
+            callback_f(lookup_id, peers)
         # do the lookup
         log_distance = info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
@@ -122,11 +124,7 @@ class Controller:
                                               callback_f, bt_port)
         lookup_queries_to_send = lookup_obj.start(bootstrap_rnodes)
         self._send_queries(lookup_queries_to_send)
-        if not lookup_queries_to_send:
-            # There are no nodes in my routing table, announce to myself
-            self._announce(lookup_obj)
-            # NOTICE: the callback is NOT triggered, zero is returned.
-        return len(lookup_queries_to_send), local_peers
+        return len(lookup_queries_to_send)
         
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
@@ -298,6 +296,5 @@ class Controller:
         
 BOOTSTRAP_NODES = (
     Node(('67.215.242.138', 6881)), #router.bittorrent.com
-    Node(('192.16.125.242', 7000)), #raul's laptop
-    Node(('192.16.127.98', 7000)), #KTH node
+    Node(('192.16.127.98', 7005)), #KTH node
     )
