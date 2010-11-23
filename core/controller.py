@@ -166,11 +166,11 @@ class Controller:
             msg = message.IncomingMsg(data, addr)
         except(message.MsgError):
             return # ignore message
-        if msg.sender_id == self._my_id:
-            logger.debug('Got a msg from myself:\n%r', msg)
-            return
         
         if msg.type == message.QUERY:
+            if msg.sender_id == self._my_id:
+                logger.debug('Got a msg from myself:\n%r', msg)
+                return
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.encode(msg.tid)
@@ -199,7 +199,7 @@ class Controller:
                      num_parallel_queries,
                      lookup_done
                      ) = related_query.lookup_obj.on_error_received(
-                        msg, msg.sender_node)
+                        msg, addr)
                 self._send_queries(lookup_queries_to_send)
                 
                 if related_query.lookup_obj.callback_f:
@@ -212,13 +212,14 @@ class Controller:
                         related_query.lookup_obj.callback_f(lookup_id, None)
             # maintenance related tasks
             if msg.type == message.RESPONSE:
+                # response
                 maintenance_queries_to_send = \
                     self._routing_m.on_response_received(
                     msg.sender_node, related_query.rtt, msg.all_nodes)
             else:
+                # error
                 maintenance_queries_to_send = \
-                    self._routing_m.on_error_received(
-                    msg.sender_node)
+                    self._routing_m.on_error_received(addr)
         else: # unknown type
             return
         self._send_queries(maintenance_queries_to_send)
