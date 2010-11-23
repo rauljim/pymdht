@@ -55,7 +55,6 @@ class Task(object):
         tasks_to_schedule = []
         msgs_to_send = []
         import sys
-        print >>sys.stderr, '\nfiring>>>', self
         if not self._cancelled:
             try:
                 tasks_to_schedule, msgs_to_send = self.callback_f(
@@ -160,9 +159,10 @@ class ThreadedReactor(threading.Thread):
         threading.Thread.__init__(self)
         self.setDaemon(True)
         
-        self.stop_flag = False
+        self.running = False
         self._lock = threading.RLock()
 
+        self.last_task_run_ts = 0
         self.task_interval = task_interval
         self.floodbarrier_active = floodbarrier_active
         self.tasks = TaskManager()
@@ -171,87 +171,82 @@ class ThreadedReactor(threading.Thread):
 
     #@profile
     def run(self):
+        self.running = True
         try:
-            self._protected_run()
+            while self.running:
+                self._protected_run()
         except:
+            self.running = False
             logger.critical('MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
+        print 'Reactor stopped!'
+        logger.debug('Reactor stopped')
 
     def _protected_run(self):
         """Main loop activated by calling self.start()"""
         
-        last_task_run_ts = 0
-        stop_flag = self.stop_flag
-        while not stop_flag:
-            tasks_to_schedule = []
-            msgs_to_send = []
-            # Perfom scheduled tasks
-            if time.time() - last_task_run_ts > self.task_interval:
-                #with self._lock:
-                self._lock.acquire()
-                try:
-                    while True:
-                        task = self.tasks.consume_task()
-                        if task is None:
-                            break
-                        (tasks_to_schedule,
-                         msgs_to_send) = task.fire_callback()
-                        last_task_run_ts = time.time()
-                    stop_flag = self.stop_flag
-                finally:
-                    self._lock.release()
-            for task in tasks_to_schedule:
-                self.tasks.add(task)
-            for msg, addr in msgs_to_send:
-                self.sendto(msg, addr)
-            # Get data from the network
-            tasks_to_schedule = []
-            msgs_to_send = []
+        tasks_to_schedule = []
+        msgs_to_send = []
+        # Perfom scheduled tasks
+        if time.time() - self.last_task_run_ts > self.task_interval:
+            #with self._lock:
+            self._lock.acquire()
             try:
-                data, addr = self.s.recvfrom(BUFFER_SIZE)
-            # except (AttributeError):
-            #     logger.warning('udp_listen has not been called')
-            #     time.sleep(self.task_interval)
-            #     #TODO2: try using Event and wait
-            except (socket.timeout):
-                pass #timeout
-            except (socket.error), e:
-                logger.warning(
-                    'Got socket.error when receiving data:\n%s' % e)
-                #logger.exception('See critical log above')
-            else:
-                ip_is_blocked = self.floodbarrier_active and \
-                                self.floodbarrier.ip_blocked(addr[0])
-                if ip_is_blocked:
-                    logger.warning('%s blocked' % `addr`)
-                else:
+                while True:
+                    task = self.tasks.consume_task()
+                    if task is None:
+                        break
+                    print 'called', task.callback_f,
                     (tasks_to_schedule,
-                     msgs_to_send) = self.datagram_received_f(
-                        data, addr)
-            for task in tasks_to_schedule:
-                self.tasks.add(task)
-            for msg, addr in msgs_to_send:
-                self.sendto(msg, addr)
-        logger.debug('Reactor stopped')
+                     msgs_to_send) = task.fire_callback()
+                    self.last_task_run_ts = time.time()
+                    print len(tasks_to_schedule), 'new tasks'
+                    for task in tasks_to_schedule:
+                        print 'new task:', task.delay, task.callback_f
+            finally:
+                self._lock.release()
+        for task in tasks_to_schedule:
+            self.tasks.add(task)
+        for msg, addr in msgs_to_send:
+            logger.debug('TASK Sending to %r\n%r' % (addr, msg))
+            self.sendto(msg, addr)
+        # Get data from the network
+        tasks_to_schedule = []
+        msgs_to_send = []
+        try:
+            data, addr = self.s.recvfrom(BUFFER_SIZE)
+        # except (AttributeError):
+        #     logger.warning('udp_listen has not been called')
+        #     time.sleep(self.task_interval)
+        #     #TODO2: try using Event and wait
+        except (socket.timeout):
+            pass #timeout
+        except (socket.error), e:
+            logger.warning(
+                'Got socket.error when receiving data:\n%s' % e)
+            #logger.exception('See critical log above')
+        else:
+            ip_is_blocked = self.floodbarrier_active and \
+                            self.floodbarrier.ip_blocked(addr[0])
+            if ip_is_blocked:
+                logger.warning('%s blocked' % `addr`)
+            else:
+                (tasks_to_schedule,
+                 msgs_to_send) = self.datagram_received_f(
+                    data, addr)
+        for task in tasks_to_schedule:
+            self.tasks.add(task)
+        for msg, addr in msgs_to_send:
+            self.sendto(msg, addr)
             
     def stop(self):
-        """Stop the thread. It cannot be resumed afterwards????"""
+        """Stop the thread. It cannot be resumed afterwards"""
         #with self._lock:
         self._lock.acquire()
         try:
-            self.stop_flag = True
+            self.running = False
         finally:
             self._lock.release()
-        # wait a little for the thread to end
-        time.sleep(self.task_interval)
-
-
-#     def stop_and_wait(self):
-#         """Stop the thread and wait a little (task_interval)."""
-
-#         self.stop()
-        # wait a little before ending the thread's life
-#        time.sleep(self.task_interval * 2)
 
     def listen_udp(self, port, datagram_received_f):
         """Listen on given port and call the given callback when data is
@@ -322,7 +317,6 @@ class ___ThreadedReactorMock(object):
         pass
 
     stop = start
-#    stop_and_wait = stop
 
     def listen_udp(self, port, data_received_f):
         self.s = _SocketMock()

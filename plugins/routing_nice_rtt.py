@@ -226,7 +226,6 @@ class RoutingManager(object):
             logger.debug('nodes found: %r', nodes)
         self._found_nodes_queue.add(nodes)
 
-        logger.debug('on response received %f', rtt)
         log_distance = self.my_node.log_distance(node_)
         try:
             sbucket = self.table.get_sbucket(log_distance)

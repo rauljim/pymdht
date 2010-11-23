@@ -75,10 +75,6 @@ class Querier(object):
         # There are pending queries from node (let's find the right one (TID)
         query_found = False
         for query_index, query in enumerate(addr_query_list):
-            logger.debug('response node: %s, query:\n(%s, %s)' % (
-                `addr`,
-                `query.tid`,
-                `query.msg.query`))
             if query.matching_tid(response_msg.tid):
                 query_found = True
                 break
@@ -87,6 +83,11 @@ class Querier(object):
                 response_msg, addr))
             return # ignore response 
         # This response matches query. Notify query.
+        logger.debug(
+            'response node: %s, related query: (%s), delay %f s.' % (
+                `addr`,
+                `query.msg.query`,
+                time.time() - query.query_ts))
         query.on_response_received(response_msg)
         return query
         # keep the query around (the timeout will delete it)

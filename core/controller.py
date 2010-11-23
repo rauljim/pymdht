@@ -53,7 +53,6 @@ class Controller:
                                                        bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_time = time.time()
-        self._next_maintenance_ts = current_time
         self._next_save_state_ts = current_time + SAVE_STATE_DELAY
         
     def finalize(self):
@@ -95,7 +94,7 @@ class Controller:
         tasks_to_schedule = []
         msgs_to_send = []
         logger.critical('get_peers %d %r' % (bt_port, info_hash))
-        if time.time() > self._next_maintenance_ts + 1:
+        if time.time() > self._last_seen_minitwisted_ts + 10:
             logger.critical('minitwisted crashed or stopped!')
             return
         # look if I'm tracking this info_hash
@@ -132,9 +131,11 @@ class Controller:
         self._routing_m.print_stats()
 
     def main_loop(self):
+        logger.debug('main_loop BEGIN')
         tasks_to_schedule = []
         msgs_to_send = []
         current_time = time.time()
+        self._last_seen_minitwisted_ts = current_time
         # Routing table maintenance
         (maintenance_delay,
          queries_to_send,
@@ -159,9 +160,8 @@ class Controller:
             self._next_save_state_ts = current_time + SAVE_STATE_DELAY
         # Schedule next call to main_loop 
         tasks_to_schedule.append(Task(maintenance_delay, self.main_loop))
-        self._next_maintenance_ts = (current_time
-                                     + maintenance_delay)
         # Return control to reactor
+        logger.debug('main_loop END %r' % tasks_to_schedule)
         return tasks_to_schedule, msgs_to_send
 
     def _maintenance_lookup(self, target):
@@ -170,15 +170,17 @@ class Controller:
     def on_datagram_received(self, data, addr):
         tasks_to_schedule = []
         msgs_to_send = []
+        self._last_seen_minitwisted_ts = time.time()
         try:
             msg = message.IncomingMsg(data, addr)
         except(message.MsgError):
-            return # ignore message
+            # ignore message
+            return tasks_to_schedule, msgs_to_send
 
         if msg.type == message.QUERY:
             if msg.sender_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
-                return
+                return tasks_to_schedule, msgs_to_send
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.encode(msg.tid)
@@ -190,7 +192,7 @@ class Controller:
             related_query = self._querier.on_response_received(msg, addr)
             if not related_query:
                 # Query timed out or unrequested response
-                return
+                return tasks_to_schedule, msgs_to_send
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -223,7 +225,7 @@ class Controller:
             related_query = self._querier.on_error_received(msg, addr)
             if not related_query:
                 # Query timed out or unrequested response
-                return
+                return tasks_to_schedule, msgs_to_send
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
@@ -250,7 +252,7 @@ class Controller:
                 self._routing_m.on_error_received(addr)
 
         else: # unknown type
-            return
+            return tasks_to_schedule, msgs_to_send
         tasks, msgs = self._send_queries(maintenance_queries_to_send)
         tasks_to_schedule.extend(tasks)
         msgs_to_send.extend(msgs)
