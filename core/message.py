@@ -228,8 +228,8 @@ class IncomingMsg(object):
         except (MsgError):
             raise
         except:
-            logger.critical(
-                'This bencoded message crashed:\n%s' % repr(bencoded_msg)) 
+            logger.warning(
+                'This bencoded message is broken:\n%s' % repr(bencoded_msg)) 
             raise MsgError, 'Invalid message'
 
     def __repr__(self):

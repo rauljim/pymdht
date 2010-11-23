@@ -56,7 +56,7 @@ class Controller:
         self._next_maintenance_ts = current_time
         self._next_save_state_ts = current_time + SAVE_STATE_DELAY
         
-    def stop(self):
+    def finalize(self):
         #TODO2: stop each manager, save routing table
         return
 
@@ -100,7 +100,7 @@ class Controller:
             return
         # look if I'm tracking this info_hash
         peers = self._tracker.get(info_hash)
-        if peers:
+        if peers and callback_f and callable(callback_f):
             callback_f(lookup_id, peers)
         # do the lookup
         log_distance = info_hash.log_distance(self._my_id)
@@ -115,13 +115,17 @@ class Controller:
         tasks_to_schedule.extend(lookup_tasks_to_schedule)
         msgs_to_send.extend(lookup_msgs_to_send)
         if not lookup_queries_to_send:
+
+            #TODO: hold this get_peers and retry later
+            
             # There are no nodes in my routing table, announce to myself
             (announce_tasks_to_schedule,
              announce_msgs_to_send) = self._announce(lookup_obj)
             tasks_to_schedule.extend(announce_tasks_to_schedule)
             msgs_to_send.extend(announce_msgs_to_send)
             # callback with None (end of lookup)
-            callback_f(lookup_id, None)
+            if callback_f and callable(callback_f):
+                callback_f(lookup_id, None)
         return tasks_to_schedule, msgs_to_send
         
     def print_routing_table_stats(self):
@@ -170,60 +174,81 @@ class Controller:
             msg = message.IncomingMsg(data, addr)
         except(message.MsgError):
             return # ignore message
-        if msg.sender_id == self._my_id:
-            logger.debug('Got a msg from myself:\n%r', msg)
-            return
-        # Got a query, we need to respond and inform routing table
+
         if msg.type == message.QUERY:
+            if msg.sender_id == self._my_id:
+                logger.debug('Got a msg from myself:\n%r', msg)
+                return
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.encode(msg.tid)
                 msgs_to_send.append((bencoded_response, addr))
             maintenance_queries_to_send = self._routing_m.on_query_received(
                 msg.sender_node)
-        # Got a response, we need to inform routing table and querier
-        elif msg.type in (message.RESPONSE, message.ERROR):
+            
+        elif msg.type == message.RESPONSE:
             related_query = self._querier.on_response_received(msg, addr)
             if not related_query:
                 # Query timed out or unrequested response
                 return
             # lookup related tasks
             if related_query.lookup_obj:
-                if msg.type == message.RESPONSE:
-                    (lookup_queries_to_send,
-                     peers,
-                     num_parallel_queries,
-                     lookup_done
-                     ) = related_query.lookup_obj.on_response_received(
-                        msg, msg.sender_node)
-                else: #ERROR
-                    peers = None # an error msg doesn't have peers
-                    (lookup_queries_to_send,
-                     num_parallel_queries,
-                     lookup_done
-                     ) = related_query.lookup_obj.on_error_received(
-                        msg, msg.sender_node)
+                (lookup_queries_to_send,
+                 peers,
+                 num_parallel_queries,
+                 lookup_done
+                 ) = related_query.lookup_obj.on_response_received(
+                    msg, msg.sender_node)
                 tasks, msgs = self._send_queries(lookup_queries_to_send)
                 tasks_to_schedule.extend(tasks)
                 msgs_to_send.extend(msgs)
-                if related_query.lookup_obj.callback_f:
-                    lookup_id = related_query.lookup_obj.lookup_id
-                    if peers:
-                        related_query.lookup_obj.callback_f(lookup_id, peers)
-                    if lookup_done:
-                        related_query.lookup_obj.callback_f(lookup_id, None)
+
+                if lookup_done:
                         tasks, msgs = self._announce(related_query.lookup_obj)
                         tasks_to_schedule.extend(tasks)
                         msgs_to_send.extend(msgs)
+                callback_f = related_query.lookup_obj.callback_f
+                if callback_f and callable(callback_f):
+                    lookup_id = related_query.lookup_obj.lookup_id
+                    if peers:
+                        callback_f(lookup_id, peers)
+                    if lookup_done:
+                        callback_f(lookup_id, None)
             # maintenance related tasks
-            if msg.type == message.RESPONSE:
-                maintenance_queries_to_send = \
-                    self._routing_m.on_response_received(
-                    msg.sender_node, related_query.rtt, msg.all_nodes)
-            else:
-                maintenance_queries_to_send = \
-                    self._routing_m.on_error_received(
-                    msg.sender_node)
+            maintenance_queries_to_send = \
+                self._routing_m.on_response_received(
+                msg.sender_node, related_query.rtt, msg.all_nodes)
+
+        elif msg.type == message.ERROR:
+            related_query = self._querier.on_error_received(msg, addr)
+            if not related_query:
+                # Query timed out or unrequested response
+                return
+            # lookup related tasks
+            if related_query.lookup_obj:
+                peers = None # an error msg doesn't have peers
+                (lookup_queries_to_send,
+                 num_parallel_queries,
+                 lookup_done
+                 ) = related_query.lookup_obj.on_error_received(
+                    msg, addr)
+                tasks, msgs = self._send_queries(lookup_queries_to_send)
+                tasks_to_schedule.extend(tasks)
+                msgs_to_send.extend(msgs)
+
+                if lookup_done:
+                    tasks, msgs = self._announce(related_query.lookup_obj)
+                    tasks_to_schedule.extend(tasks)
+                    msgs_to_send.extend(msgs)
+                callback_f = related_query.lookup_obj.callback_f
+                if callback_f and callable(callback_f):
+                    lookup_id = related_query.lookup_obj.lookup_id
+                    if lookup_done:
+                        callback_f(lookup_id, None)
+            # maintenance related tasks
+            maintenance_queries_to_send = \
+                self._routing_m.on_error_received(addr)
+
         else: # unknown type
             return
         tasks, msgs = self._send_queries(maintenance_queries_to_send)
@@ -272,14 +297,23 @@ class Controller:
              num_parallel_queries,
              lookup_done
              ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
-            self._send_queries(lookup_queries_to_send)
-            if lookup_done and related_query.lookup_obj.callback_f:
-                self._announce(related_query.lookup_obj)
+            tasks, msgs = self._send_queries(lookup_queries_to_send)
+            tasks_to_schedule.extend(tasks)
+            msgs_to_send.extend(msgs)
+
+            callback_f = related_query.lookup_obj.callback_f
+            if lookup_done and callback_f and callable(callback_f):
+                tasks, msgs = self._announce(related_query.lookup_obj)
+                tasks_to_schedule.extend(tasks)
+                msgs_to_send.extend(msgs)
                 lookup_id = related_query.lookup_obj.lookup_id
                 related_query.lookup_obj.callback_f(lookup_id, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(
             related_query.dstnode)
-        self._send_queries(maintenance_queries_to_send)
+        tasks, msgs = self._send_queries(maintenance_queries_to_send)
+        tasks_to_schedule.extend(tasks)
+        msgs_to_send.extend(msgs)
+        return tasks_to_schedule, msgs_to_send
 
     def _announce(self, lookup_obj):
         queries_to_send, announce_to_myself = lookup_obj.announce()
@@ -306,5 +340,5 @@ class Controller:
         
 BOOTSTRAP_NODES = (
     Node(('67.215.242.138', 6881)), #router.bittorrent.com
-    Node(('192.16.127.98', 7005)), #KTH node
+    Node(('192.16.127.98', 7000)), #KTH node
     )

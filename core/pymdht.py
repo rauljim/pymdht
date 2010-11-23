@@ -49,7 +49,7 @@ class Pymdht:
 
     def stop(self):
         """Stop the DHT."""
-        self.controller.stop()
+        #self.controller.stop()
         self.reactor.stop()
         time.sleep(.1) # Give time for the controller (reactor) to stop
     

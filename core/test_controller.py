@@ -19,8 +19,7 @@ class TestController:
                                                 None)
 
     def test_start_stop(self):
-        self.controller.start()
-        self.controller.stop()
+        self.controller.main_loop()
 
     def test_load_save_state(self):
         #TODO: change state
@@ -30,19 +29,17 @@ class TestController:
         #TODO: check state
 
     def test_get_peers(self):
-        self.controller.start()
         self.controller.get_peers(None, tc.INFO_HASH, None, 0)
-        self.controller.stop()
 
     def test_complete(self):
         # controller.start() starts reactor (we don't want to use reactor in
         # tests), sets _running, and calls main_loop
         self.controller._running = True
-        # controller.start calls _main_loop, which does maintenance (bootstrap)
-        self.controller._main_loop()
+        # controller.start calls main_loop, which does maintenance (bootstrap)
+        self.controller.main_loop()
         # minitwisted informs of a response
         data = message.OutgoingPingResponse(tc.SERVER_ID).encode('\0\0')
-        self.controller._on_datagram_received(data, tc.SERVER_ADDR)
-        self.controller._main_loop() # maintenance (maintenance lookup)        
+        self.controller.on_datagram_received(data, tc.SERVER_ADDR)
+        self.controller.main_loop() # maintenance (maintenance lookup)
         
         
