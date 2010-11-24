@@ -23,6 +23,7 @@ import core.identifier as identifier
 import core.pymdht as pymdht
 
 MAX_PORT = 2**16 - 1
+#SCORING_PERIOD = 2 #0.2
 
 dht = None
 stop_server = False
@@ -70,6 +71,7 @@ class SessionHandler(SocketServer.StreamRequestHandler):
         SocketServer.StreamRequestHandler.__init__(self, *args, **kwargs)
         
     def _on_peers_found(self, channel, peers):
+        #current_time = time.time()
         if not channel.open:
             print 'Got peers but channel is CLOSED'
             return
@@ -79,6 +81,7 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             self.wfile.write('%d CLOSE\r\n' % (channel.send))
             return
         print 'got %d peer' % len(peers)
+        scored_peers = []
         for peer in peers:
             if peer not in channel.peers:
                 channel.peers.add(peer)
@@ -87,11 +90,15 @@ class SessionHandler(SocketServer.StreamRequestHandler):
                 msg_tail = '\r\n'
                 if geo_score:
                     peer_score = geo_score.score_peer(peer[0])
-                    msg_score = ' SCORE %d' % (peer_score)
+                    scored_peers.append((peer[0], peer_score))
+                    sorted_scored_peers = sorted(scored_peers, key = lambda elem:elem[1])
+                    msg_score = ' SCORE %d' % (peer_score)                    
                 else:
                     msg_score = ''
                 msg = ''.join((msg_head, msg_score, msg_tail))
-                self.wfile.write(msg)
+                self.wfile.write(sorted_scored_peers)
+                #self.wfile.write(msg)
+        del scored_peers
         return
 
     def _on_new_channel(self, splitted_line):
