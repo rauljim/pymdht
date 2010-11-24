@@ -44,24 +44,30 @@ class ThreadedReactor(threading.Thread):
         threading.Thread.__init__(self)
         self.setDaemon(True)
         
-        self.running = False
-        self._lock = threading.RLock()
+        self._stop_flag = False
+        self._stop_flag_lock = threading.RLock()
 
-        self.last_task_run_ts = 0
+        self._get_peers_queue = []
+        self._get_peers_queue_lock = threading.RLock()
+
         self.task_interval = task_interval
         self.floodbarrier_active = floodbarrier_active
-        self.tasks = TaskManager()
         if self.floodbarrier_active:
             self.floodbarrier = FloodBarrier()
 
     #@profile
-    def run(self):
-        self.running = True
+    def run(self, main_loop_f):
+        self.main_loop_f
+        running = True
         try:
-            while self.running:
+            while running:
+                self._stop_flag_lock.acquire()
+                try:
+                    running = not self._stop_flag
+                finally:
+                    self._stop_flag_lock.release()
                 self._protected_run()
         except:
-            self.running = False
             logger.critical('MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
         print 'Reactor stopped!'
@@ -69,37 +75,29 @@ class ThreadedReactor(threading.Thread):
 
     def _protected_run(self):
         """Main loop activated by calling self.start()"""
+
+        # Deal with call_asap requests
+        self._get_peers_queue_lock.acquire()
+        try:
+            #TODO: retry for 5 seconds if no msgs_to_send
+            for (callback_f, args, kwds) in self._get_peers_queue:
+                (self._next_call_ts,
+                 msgs_to_send) = callbac_f(*args, **kwds)
+                for msg, addr in msgs_to_send:
+                    self.sendto(msg, addr)
+        finally:
+            self._get_peers_queue_lock.release()
         
-        tasks_to_schedule = []
-        msgs_to_send = []
-        # Perfom scheduled tasks
-        if time.time() - self.last_task_run_ts > self.task_interval:
-            #with self._lock:
-            self._lock.acquire()
-            try:
-                while True:
-                    task = self.tasks.consume_task()
-                    if task is None:
-                        break
-                    (tasks_to_schedule,
-                     msgs_to_send) = task.fire_callback()
-                    self.last_task_run_ts = time.time()
-            finally:
-                self._lock.release()
-        for task in tasks_to_schedule:
-            self.tasks.add(task)
+        # Call main_loop
+        if time.time() > self._next_call_ts:
+            (self._next_call_ts,
+             msgs_to_send) = self._main_loop_f()
         for msg, addr in msgs_to_send:
-            logger.debug('TASK Sending to %r\n%r' % (addr, msg))
             self.sendto(msg, addr)
+
         # Get data from the network
-        tasks_to_schedule = []
-        msgs_to_send = []
         try:
             data, addr = self.s.recvfrom(BUFFER_SIZE)
-        # except (AttributeError):
-        #     logger.warning('udp_listen has not been called')
-        #     time.sleep(self.task_interval)
-        #     #TODO2: try using Event and wait
         except (socket.timeout):
             pass #timeout
         except (socket.error), e:
@@ -111,23 +109,21 @@ class ThreadedReactor(threading.Thread):
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
                 logger.warning('%s blocked' % `addr`)
-            else:
-                (tasks_to_schedule,
-                 msgs_to_send) = self.datagram_received_f(
-                    data, addr)
-        for task in tasks_to_schedule:
-            self.tasks.add(task)
-        for msg, addr in msgs_to_send:
-            self.sendto(msg, addr)
+                return
+            (self._next_call_ts,
+             msgs_to_send) = self.datagram_received_f(
+                data, addr)
+             for msg, addr in msgs_to_send:
+                 self.sendto(msg, addr)
             
     def stop(self):
         """Stop the thread. It cannot be resumed afterwards"""
-        #with self._lock:
-        self._lock.acquire()
+
+        self._stop_flag_lock.acquire()
         try:
-            self.running = False
+            self._stop_flag = True
         finally:
-            self._lock.release()
+            self._stop_flag_lock.release()
 
     def listen_udp(self, port, datagram_received_f):
         """Listen on given port and call the given callback when data is
@@ -142,45 +138,34 @@ class ThreadedReactor(threading.Thread):
         self.s.bind(my_addr)
         return self.s
         
-    def call_later(self, delay, callback_f, *args, **kwds):
-        """Call the given callback with given arguments in the future (delay
-        seconds).
-
-        """
-        #with self._lock:
-        self._lock.acquire()
-        try:
-            task = Task(delay, callback_f, *args, **kwds)
-            self.tasks.add(task)
-        finally:
-            self._lock.release()
-        return task
-            
     def call_asap(self, callback_f, *args, **kwds):
-        """Same as call_later with delay 0 seconds. That is, call as soon as
-        possible""" 
-        return self.call_later(0, callback_f, *args, **kwds)
+        """Call the given callback with given arguments as soon as possible
+        (next time _protected_run is called).
         
+        """ 
+        self._get_peers_queue_lock.acquire()
+        try:
+            self._get_peers_queue.append((callback_f, args, kwds))
+        finally:
+            self._get_peers_queue_lock.release()
+        return
         
     def sendto(self, data, addr):
         """Send data to addr using the UDP port used by listen_udp."""
         #with self._lock:
         self._lock.acquire()
         try:
-            try:
-                bytes_sent = self.s.sendto(data, addr)
-                if bytes_sent != len(data):
-                    logger.critical(
-                        'Just %d bytes sent out of %d (Data follows)' % (
-                            bytes_sent,
-                            len(data)))
-                    logger.critical('Data: %s' % data)
-            except (socket.error):
-                logger.warning(
-                    'Got socket.error when sending data to %r\n%r' % (addr,
-                                                                      data))
-        finally:
-            self._lock.release()
+            bytes_sent = self.s.sendto(data, addr)
+            if bytes_sent != len(data):
+                logger.critical(
+                    'Just %d bytes sent out of %d (Data follows)' % (
+                        bytes_sent,
+                        len(data)))
+                logger.critical('Data: %s' % data)
+        except (socket.error):
+            logger.warning(
+                'Got socket.error when sending data to %r\n%r' % (addr,
+                                                                  data))
 
 
 class ThreadedReactorSocketError(ThreadedReactor):
