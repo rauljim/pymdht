@@ -13,7 +13,7 @@ from identifier import Id
 import message
 import token_manager
 import tracker
-from minitwisted import Task
+from task_manager import Task
 from querier import Querier
 from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
 from node import Node
@@ -54,6 +54,7 @@ class Controller:
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_time = time.time()
         self._next_save_state_ts = current_time + SAVE_STATE_DELAY
+        self._last_seen_minitwisted_ts = 0
         
     def finalize(self):
         #TODO2: stop each manager, save routing table
