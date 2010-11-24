@@ -25,6 +25,8 @@ import core.pymdht as pymdht
 MAX_PORT = 2**16 - 1
 #SCORING_PERIOD = 2 #0.2
 
+NUM_PEERS_PER_BURST = 10
+
 dht = None
 stop_server = False
 
@@ -85,20 +87,23 @@ class SessionHandler(SocketServer.StreamRequestHandler):
         for peer in peers:
             if peer not in channel.peers:
                 channel.peers.add(peer)
-                msg_head = '%d PEER %s:%d' % (channel.send,
-                                              peer[0], peer[1])
-                msg_tail = '\r\n'
                 if geo_score:
                     peer_score = geo_score.score_peer(peer[0])
-                    scored_peers.append((peer[0], peer_score))
-                    sorted_scored_peers = sorted(scored_peers, key = lambda elem:elem[1])
-                    msg_score = ' SCORE %d' % (peer_score)                    
                 else:
-                    msg_score = ''
-                msg = ''.join((msg_head, msg_score, msg_tail))
-                self.wfile.write(sorted_scored_peers)
-                #self.wfile.write(msg)
-        del scored_peers
+                    peer_score = 0
+                scored_peers.append((peer, peer_score))
+
+        if geo_score:
+            sorted_scored_peers = sorted(scored_peers, key = lambda elem:elem[1])
+            #TODO: is the top 10 OK?
+            sorted_scored_peers = sorted_scored_peers[:NUM_PEERS_PER_BURST]
+        else:
+            sorted_scored_peers = scored_peers
+        for peer, score in sorted_scored_peers:
+            msg = '%d PEER %s:%d SCORE %d\r\n' % (channel.send,
+                                                       peer[0], peer[1],
+                                                       score)
+            self.wfile.write(msg)
         return
 
     def _on_new_channel(self, splitted_line):
