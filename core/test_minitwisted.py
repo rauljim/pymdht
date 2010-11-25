@@ -3,131 +3,129 @@
 # See LICENSE.txt for more information
 
 from __future__ import with_statement
+
+import logging
 import sys
 import threading
-import ptime as time
-
-import logging, logging_conf
+import socket
 
 from nose.tools import eq_, ok_, assert_raises
 
+import logging_conf
+import ptime as time
 import test_const as tc
 from testing_mocks import MockTime, MockTimeoutSocket
+
+import minitwisted
+from minitwisted import Task, TaskManager, ThreadedReactor
 
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
+DATA1 = 'testing...1'
+DATA2 = 'testing...2'
+DATA3 = 'testing...3...................'
+MSG1 = (DATA1, tc.SERVER_ADDR)
+MSG2 = (DATA2, tc.SERVER2_ADDR)
+MSG3 = (DATA3, tc.SERVER2_ADDR)
 
-import minitwisted
-from minitwisted import Task, TaskManager, ThreadedReactor
-from minitwisted import ThreadedReactorSocketError, _SocketMock
 
 
-ADDRS= (tc.CLIENT_ADDR, tc.SERVER_ADDR)
-DATA = 'testing...'
 
-        
 class TestMinitwisted:
 
     def _main_loop(self):
-        pass
-    
+        with self.lock:
+            self.main_loop_call_counter += 1
+        return time.time() + tc.TASK_INTERVAL*10, []
+
+    def _main_loop_return_msgs(self):
+        return time.time() + tc.TASK_INTERVAL*10, [MSG1]
+
+    def _callback(self, value):
+        with self.lock:
+            self.callback_values.append(value)
+        return time.time() + 100, []
+
+    def _very_long_callback(self, value):
+        time.sleep(tc.TASK_INTERVAL*11)
+
+    def _on_datagram_received(self, data, addr):
+        with self.lock:
+            self.datagrams_received.append((data, addr))
+        return time.time() + 100, []
+
+    def _crashing_callback(self):
+        raise Exception, 'Crash testing'
+
     def setup(self):
-        global time
-        #TODO: mock time and socket
-        #time = minitwisted.time = MockTime()
-        #minitwisted.socket = MockSocket()
-        
-        self.lock = threading.Lock()
+        self.main_loop_call_counter = 0
+        self.callback_values = []
         self.datagrams_received = []
-        self.callback_order = []
-        self.client_r = ThreadedReactor(self._main_loop,
-                                        task_interval=tc.TASK_INTERVAL)
-        self.server_r = ThreadedReactor(self._main_loop,
-                                        task_interval=tc.TASK_INTERVAL)
-        self.client_s = self.client_r.listen_udp(tc.CLIENT_ADDR[1],
-                                                 self.on_datagram_received)
-        self.server_s = self.server_r.listen_udp(tc.SERVER_ADDR[1],
-                                                 self.on_datagram_received)
-        self.client_r.start()
-        self.server_r.start()
+        
+        self.lock = threading.RLock()
+        self.reactor = ThreadedReactor(self._main_loop,
+                                       tc.CLIENT_PORT,
+                                       self._on_datagram_received,
+                                       task_interval=tc.TASK_INTERVAL)
+        self.reactor.s = _SocketMock()
+        self.s = self.reactor.s
+        self.reactor.start()
 
-    def test_listen_upd(self):
-        r = ThreadedReactor()
-#        assert_raises(Exception, r.start)
-        logger.warning(''.join(
-            ('TESTING LOGS ** IGNORE EXPECTED WARNING ** ',
-             '(udp_listen has not been called)')))
-        assert_raises(AttributeError, r.sendto,
-                      DATA, tc.SERVER_ADDR)
-        r.stop()
-        return
-    ##################
-        while 1: #waiting for data
+    def test_call_main_loop(self):
+        time.sleep(tc.TASK_INTERVAL/2)
+        # main_loop is called right away
+        with self.lock:
+            eq_(self.main_loop_call_counter, 1)
+        time.sleep(.1 + tc.TASK_INTERVAL)
+        with self.lock:
+            eq_(self.main_loop_call_counter, 2)
+        
+    def test_call_asap(self):
+        with self.lock:
+            eq_(self.callback_values, [])
+        self.reactor.call_asap(self._callback, 0)
+        time.sleep(tc.TASK_INTERVAL*2)
+        with self.lock:
+            eq_(self.callback_values, [0])
+    
+        for i in xrange(1, 5):
+            self.reactor.call_asap(self._callback, i)
+            time.sleep(tc.TASK_INTERVAL*2)
             with self.lock:
-                if self.datagrams_received:
-                    break
-            time.sleep(tc.TASK_INTERVAL)
-        with self.lock:
-            first_datagram = self.datagrams_received.pop(0)
-            logger.debug('first_datagram: %s, %s' % (
-                    first_datagram,
-                    (DATA, tc.CLIENT_ADDR)))
-            assert first_datagram, (DATA, tc.CLIENT_ADDR)
-        r.stop()
-            
-    def _test_network_callback(self):
-        self.client_r.sendto(DATA, tc.SERVER_ADDR)
-        time.sleep(tc.TASK_INTERVAL)
-        with self.lock:
-            first_datagram = self.datagrams_received.pop(0)
-            logger.debug('first_datagram: %s, %s' % (
-                    first_datagram,
-                    (DATA, tc.CLIENT_ADDR)))
-            assert first_datagram, (DATA, tc.CLIENT_ADDR)
+                eq_(self.callback_values, range(i + 1))
+    
+    def test_minitwisted_crashed(self):
+#        print 'before crash', self.reactor.isAlive()
+        self.reactor.call_asap(self._crashing_callback)
+        time.sleep(tc.TASK_INTERVAL*2)
+        # from now on, the minitwisted thread is dead
+#        print 'after crash', self.reactor.isAlive()
+        ok_(not self.reactor.isAlive())
 
-    def _test_block_flood(self):
+    def test_on_datagram_received_callback(self):
+        # This is equivalent to sending a datagram to reactor
+        self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+        time.sleep(tc.TASK_INTERVAL*1)
+        with self.lock:
+            data, addr = self.datagrams_received.pop(0)
+            eq_(data, DATA1)
+            eq_(addr, tc.SERVER_ADDR)
+
+    def test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
-
         for _ in xrange(FLOOD_LIMIT):
-            self.client_r.sendto(DATA, tc.SERVER_ADDR)
+            self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+        time.sleep(tc.TASK_INTERVAL*5)
+        with self.lock:
+            eq_(len(self.datagrams_received), FLOOD_LIMIT)
         for _ in xrange(10):
-            self.client_r.sendto(DATA, tc.SERVER_ADDR)
-            logger.warning(
-                "TESTING LOGS ** IGNORE EXPECTED WARNING **")
-            time.sleep(tc.TASK_INTERVAL)
-        return
-######################################
-        with self.lock:
-            logger.debug('datagram processed: %d/%d' % (
-                              len(self.datagrams_received),
-                              FLOOD_LIMIT))
-            print len(self.datagrams_received)
-            assert len(self.datagrams_received) <= FLOOD_LIMIT
-
-    def _test_call_later(self):
-        self.client_r.call_later(.13, self.callback_f, 1)
-        self.client_r.call_later(.11, self.callback_f, 2)
-        self.client_r.call_later(.01, self.callback_f, 3)
-        task4 = self.client_r.call_later(.01, self.callback_f, 4)
-        task4.cancel()
-        time.sleep(.03)
-        with self.lock:
-            logger.debug('callback_order: %s' % self.callback_order)
-            eq_(self.callback_order, [3])
-            self.callback_order = []
-        self.client_r.call_asap(self.callback_f, 5)
-        time.sleep(.03)
-        with self.lock:
-            logger.debug('callback_order: %s' % self.callback_order)
-            eq_(self.callback_order, [5])
-            self.callback_order = []
-        task6 = self.client_r.call_later(.03, self.callback_f, 6)
-        task6.cancel()
-        time.sleep(.1)
-        with self.lock:
-            logger.debug('callback_order: %s' % self.callback_order)
-            eq_(self.callback_order, [2, 1])
+            self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+            time.sleep(tc.TASK_INTERVAL*3)
+            with self.lock:
+                eq_(len(self.datagrams_received), FLOOD_LIMIT)
+                logger.warning(
+                    "TESTING LOGS ** IGNORE EXPECTED WARNING **")
 
     def _test_network_and_delayed(self):
         self.client_r.call_later(.2, self.callback_f, 0)
@@ -142,7 +140,7 @@ class TestMinitwisted:
             assert self.callback_order == [1]
             self.callback_order = []
             assert not self.datagrams_received
-        self.server_r.sendto(DATA, tc.CLIENT_ADDR)
+        self.server_r.sendto(DATA, tc.CLIENT_PORT)
         time.sleep(.02) # wait for network interruption
         with self.lock:
             logger.debug('callback_order: %s' % self.callback_order)
@@ -155,29 +153,130 @@ class TestMinitwisted:
             assert self.callback_order == [0]
             assert not self.datagrams_received
 
-    def _test_sendto_socket_error(self): 
-        logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
-        self.client_r.sendto('z', (tc.NO_ADDR[0], 0))
-
     def teardown(self):
-        self.client_r.stop()
-        self.server_r.stop()
+        self.reactor.stop()
 
-    def on_datagram_received(self, data, addr):
-        tasks_to_schedule = []
-        msgs_to_send = []
+
+class TestSend:
+
+    
+    def _main_loop(self):
+        return time.time() + 100, [MSG1]
+
+    def _callback(self, value):
+        with self.lock:
+            self.callback_values.append(value)
+        return time.time() + 100, [MSG2]
+
+    def _on_datagram_received(self, data, addr):
         with self.lock:
             self.datagrams_received.append((data, addr))
-        return tasks_to_schedule, msgs_to_send
+        return time.time() + 100, [MSG3]
 
-    def callback_f(self, callback_id):
-        tasks_to_schedule = []
-        msgs_to_send = []
-        with self.lock:
-            self.callback_order.append(callback_id)
-        return tasks_to_schedule, msgs_to_send
+    def _crashing_callback(self):
+        raise Exception, 'Crash testing'
+
+    def setup(self):
+        self.main_loop_call_counter = 0
+        self.callback_values = []
+        self.datagrams_received = []
+        
+        self.lock = threading.RLock()
+        self.reactor = ThreadedReactor(self._main_loop,
+                                       tc.CLIENT_PORT,
+                                       self._on_datagram_received,
+                                       task_interval=tc.TASK_INTERVAL)
+        self.reactor.s = _SocketMock()
+        self.s = self.reactor.s
+        self.reactor.start()
+        
+    def test_main_loop_send_data(self):
+        time.sleep(tc.TASK_INTERVAL/2)
+        eq_(self.s.get_datagrams_sent(), [MSG1])
+        return
+    
+    def test_call_asap_send_data(self):
+        time.sleep(tc.TASK_INTERVAL/2)
+        eq_(self.s.get_datagrams_sent(), [MSG1])
+        self.reactor.call_asap(self._callback, 1)
+        time.sleep(tc.TASK_INTERVAL*2)
+        eq_(self.s.get_datagrams_sent(), [MSG1, MSG2])
+        
+    def test_on_datagram_received_send_data(self): 
+        time.sleep(tc.TASK_INTERVAL/2)
+        eq_(self.s.get_datagrams_sent(), [MSG1])
+        self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+        time.sleep(tc.TASK_INTERVAL/5)
+        eq_(self.s.get_datagrams_sent(), [MSG1, MSG3])
+        
+    def teardown(self):
+        self.reactor.stop()
+
+        
+class TestSocketError:
+
+    def _main_loop(self):
+        return time.time() + tc.TASK_INTERVAL*10000, [MSG1]
+
+    def _on_datagram_received(self):
+        return
+    
+    def setup(self):
+        self.main_loop_call_counter = 0
+        self.callback_values = []
+        self.datagrams_received = []
+        
+        self.lock = threading.RLock()
+        self.reactor = ThreadedReactor(self._main_loop,
+                                       tc.CLIENT_PORT,
+                                       self._on_datagram_received,
+                                       task_interval=tc.TASK_INTERVAL)
+        self.reactor.s = _SocketErrorMock()
+        self.reactor.start()
+
+    def test_sendto_socket_error(self): 
+        time.sleep(tc.TASK_INTERVAL/5)
+
+    def teardown(self):
+        self.reactor.stop()
 
 
+
+
+class TestError:
+
+    def _main_loop(self):
+        return time.time() + 100, []
+
+    def _very_long_callback(self):
+        time.sleep(tc.TASK_INTERVAL*15)
+        return time.time() + 100, []
+
+    def _on_datagram_received(self, data, addr):
+        return time.time() + 100, []
+
+    def _crashing_callback(self):
+        raise Exception, 'Crash testing'
+
+    def test_failed_join(self):
+        self.lock = threading.RLock()
+        self.reactor = ThreadedReactor(self._main_loop,
+                                       tc.CLIENT_PORT,
+                                       self._on_datagram_received,
+                                       task_interval=tc.TASK_INTERVAL)
+        self.reactor.s = _SocketMock()
+        self.s = self.reactor.s
+        self.reactor.start()
+        self.reactor.call_asap(self._very_long_callback)
+        time.sleep(tc.TASK_INTERVAL*2)
+        assert_raises(Exception, self.reactor.stop)
+    
+
+
+
+
+    
+        
 class _TestSocketErrors:
 
     def _callback(self, *args, **kwargs):
@@ -186,7 +285,7 @@ class _TestSocketErrors:
     def setup(self):
         self.callback_fired = False
         self.r = ThreadedReactorSocketError()
-        self.r.listen_udp(tc.CLIENT_ADDR[1], lambda x,y:None)
+        self.r.listen_udp(tc.CLIENT_PORT, lambda x,y:None)
 
     def test_sendto(self):
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
@@ -208,35 +307,44 @@ class _TestSocketErrors:
         self.r.sendto('z'*12345, tc.NO_ADDR)
             
 
+class _SocketMock(object):
+
+    def __init__(self):
+        self.lock = threading.RLock()
+        self.datagrams_sent = []
+        self.datagrams_received = []
+        
+    def sendto(self, data, addr):
+        with self.lock:
+            self.datagrams_sent.append((data, addr))
+        return min(20, len(data))
+    
+    def recvfrom(self, buffer_size):
+        datagram_received = None
+        for i in xrange(9):
+            time.sleep(tc.TASK_INTERVAL/10)
+            with self.lock:
+                if self.datagrams_received:
+                    datagram_received = self.datagrams_received.pop(0)
+            if datagram_received:
+                return datagram_received
+        raise socket.timeout
+
+    def put_datagram_received(self, data, addr):
+        with self.lock:
+            self.datagrams_received.append((data, addr))
+
+    def get_datagrams_sent(self):
+        with self.lock:
+            datagrams_sent = [d for d in self.datagrams_sent]
+        return datagrams_sent
+        
+class _SocketErrorMock(object):
+
+    def sendto(self, data, addr):
+        raise socket.error
+
+    def recvfrom(self, buffer_size):
+        raise socket.error
 
         
-class _TestMockThreadedReactor:
-
-    def setup(self):
-        pass
-
-    def _callback(self, *args):
-        pass
-
-    def test_mock_threaded_reactor(self):
-        '''
-        Just making sure that the interface is the same
-
-        '''
-        r = ThreadedReactor(task_interval=.1)
-        rm = ThreadedReactorMock(task_interval=.1)
-
-        r.listen_udp(tc.CLIENT_ADDR[1], lambda x,y:None)
-        rm.listen_udp(tc.CLIENT_ADDR[1], lambda x,y:None)
-
-        r.start()
-        rm.start()
-
-        r.sendto(DATA, tc.CLIENT_ADDR)
-        rm.sendto(DATA, tc.CLIENT_ADDR)
-        
-        r.call_later(.1, self._callback)
-        rm.call_later(.1, self._callback)
-#        time.sleep(.002)
-        r.stop()
-        rm.stop()
