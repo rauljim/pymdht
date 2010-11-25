@@ -29,6 +29,9 @@ DATA = 'testing...'
         
 class TestMinitwisted:
 
+    def _main_loop(self):
+        pass
+    
     def setup(self):
         global time
         #TODO: mock time and socket
@@ -38,8 +41,10 @@ class TestMinitwisted:
         self.lock = threading.Lock()
         self.datagrams_received = []
         self.callback_order = []
-        self.client_r = ThreadedReactor(task_interval=tc.TASK_INTERVAL)
-        self.server_r = ThreadedReactor(task_interval=tc.TASK_INTERVAL)
+        self.client_r = ThreadedReactor(self._main_loop,
+                                        task_interval=tc.TASK_INTERVAL)
+        self.server_r = ThreadedReactor(self._main_loop,
+                                        task_interval=tc.TASK_INTERVAL)
         self.client_s = self.client_r.listen_udp(tc.CLIENT_ADDR[1],
                                                  self.on_datagram_received)
         self.server_s = self.server_r.listen_udp(tc.SERVER_ADDR[1],
@@ -173,7 +178,7 @@ class TestMinitwisted:
         return tasks_to_schedule, msgs_to_send
 
 
-class TestSocketErrors:
+class _TestSocketErrors:
 
     def _callback(self, *args, **kwargs):
         self.callback_fired = True

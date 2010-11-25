@@ -39,37 +39,42 @@ class ThreadedReactor(threading.Thread):
     It is an instance, not a nasty global
     
     """
-    def __init__(self, task_interval=0.1,
+    def __init__(self, main_loop_f,
+                 task_interval=0.1,
                  floodbarrier_active=True):
         threading.Thread.__init__(self)
         self.setDaemon(True)
         
-        self._stop_flag = False
-        self._stop_flag_lock = threading.RLock()
+        self._running = False
+        self._call_asap_queue = []
+        self._lock = threading.RLock()
 
-        self._get_peers_queue = []
-        self._get_peers_queue_lock = threading.RLock()
-
+        self._main_loop_f = main_loop_f
         self.task_interval = task_interval
         self.floodbarrier_active = floodbarrier_active
         if self.floodbarrier_active:
             self.floodbarrier = FloodBarrier()
 
     #@profile
-    def run(self, main_loop_f):
+    def run(self):
         self.main_loop_f
-        running = True
+        self._running = True
         try:
             while running:
-                self._stop_flag_lock.acquire()
+                self._lock.acquire()
                 try:
-                    running = not self._stop_flag
+                    running = self._running
                 finally:
-                    self._stop_flag_lock.release()
+                    self._lock.release()
                 self._protected_run()
         except:
-            logger.critical('MINITWISTED CRASHED')
+            logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
+        self._lock.acquire()
+        try:
+            self._running = False
+        finally:
+            self._lock.release()
         print 'Reactor stopped!'
         logger.debug('Reactor stopped')
 
@@ -77,16 +82,22 @@ class ThreadedReactor(threading.Thread):
         """Main loop activated by calling self.start()"""
 
         # Deal with call_asap requests
-        self._get_peers_queue_lock.acquire()
-        try:
-            #TODO: retry for 5 seconds if no msgs_to_send
-            for (callback_f, args, kwds) in self._get_peers_queue:
+        while 1:
+            #TODO: retry for 5 seconds if no msgs_to_send (inside controller?)
+            self._lock.acquire()
+            try:
+                if self._running and self._call_asap_queue:
+                    call_asap_tuple = self._call_asap_queue.pop(0)
+            finally:
+                self._lock.release()
+            if call_asap_tuple:
+                callback_f, args, kwds = call_asap_tuple
                 (self._next_call_ts,
                  msgs_to_send) = callbac_f(*args, **kwds)
                 for msg, addr in msgs_to_send:
                     self.sendto(msg, addr)
-        finally:
-            self._get_peers_queue_lock.release()
+            else:
+                break # no more asap calls to make
         
         # Call main_loop
         if time.time() > self._next_call_ts:
@@ -113,17 +124,17 @@ class ThreadedReactor(threading.Thread):
             (self._next_call_ts,
              msgs_to_send) = self.datagram_received_f(
                 data, addr)
-             for msg, addr in msgs_to_send:
-                 self.sendto(msg, addr)
+            for msg, addr in msgs_to_send:
+                self.sendto(msg, addr)
             
     def stop(self):
         """Stop the thread. It cannot be resumed afterwards"""
 
-        self._stop_flag_lock.acquire()
+        self._lock.acquire()
         try:
-            self._stop_flag = True
+            self._runnig = False
         finally:
-            self._stop_flag_lock.release()
+            self._lock.release()
 
     def listen_udp(self, port, datagram_received_f):
         """Listen on given port and call the given callback when data is
