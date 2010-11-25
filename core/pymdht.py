@@ -21,7 +21,7 @@ import logging, logging_conf
 class Pymdht:
     """Pymdht is the interface for the whole package.
 
-    Setting up the DHT is as simple as creating this object.
+    Setting up the DHT node is as simple as creating this object.
     The parameters are:
     - dht_addr: a tuple containing IP address and port number.
     - logs_path: a string containing the path to the log files.
@@ -38,20 +38,15 @@ class Pymdht:
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 private_dht_name)
-        self.reactor = minitwisted.ThreadedReactor()
-        self.reactor.listen_udp(dht_addr[1],
-                                self.controller.on_datagram_received)
-        self.reactor.call_asap(self.controller.main_loop)
+        self.reactor = minitwisted.ThreadedReactor(
+            controller.main_loop,
+            dht_addr[1], controller.on_datagram_received)
         self.reactor.start()
-        #FIXME: put a lock or something
-        time.sleep(.0001)
-        
 
     def stop(self):
-        """Stop the DHT."""
-        #self.controller.stop()
-        self.reactor.stop()
-        time.sleep(.1) # Give time for the controller (reactor) to stop
+        """Stop the DHT node."""
+        #TODO: notify controller so it can do cleanup?
+        self.reactor.stop()#controller.stop)
     
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         """ Start a get peers lookup. Return a Lookup object.

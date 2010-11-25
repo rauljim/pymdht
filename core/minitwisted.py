@@ -133,13 +133,14 @@ class ThreadedReactor(threading.Thread):
             for msg, addr in msgs_to_send:
                 self._sendto(msg, addr)
             
-    def stop(self):
+    def stop(self):#, stop_callback):
         """Stop the thread. It cannot be resumed afterwards"""
 
         self.running = False
         self.join(self.task_interval*10)
         if self.isAlive():
             raise Exception, 'Minitwisted thread is still alive!'
+        #TODO: stop_callback()
 
     def call_asap(self, callback_f, *args, **kwds):
         """Call the given callback with given arguments as soon as possible
