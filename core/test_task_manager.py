@@ -20,14 +20,14 @@ logger = logging.getLogger('dht')
 
 import task_manager
 from task_manager import Task, TaskManager#, ThreadedReactor
-from minitwisted import ThreadedReactorSocketError, _SocketMock
+#from minitwisted import ThreadedReactorSocketError, _SocketMock
 
 
 ADDRS= (tc.CLIENT_ADDR, tc.SERVER_ADDR)
 DATA = 'testing...'
 
 
-class TestTaskManager:
+class _TestTaskManager:
     
     def callback_f(self, callback_id):
         tasks_to_schedule = []

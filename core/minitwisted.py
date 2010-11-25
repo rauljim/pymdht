@@ -38,11 +38,11 @@ class ThreadedReactor(threading.Thread):
                  task_interval=0.1,
                  floodbarrier_active=True):
         threading.Thread.__init__(self)
-        self.setDaemon(True)
+        self.daemon = True
         
+        self._lock = threading.RLock()
         self._running = False
         self._call_asap_queue = []
-        self._lock = threading.RLock()
         self._next_main_loop_call_ts = 0 # call immediately
 
         self._main_loop_f = main_loop_f
@@ -52,37 +52,39 @@ class ThreadedReactor(threading.Thread):
         self.floodbarrier_active = floodbarrier_active
         if self.floodbarrier_active:
             self.floodbarrier = FloodBarrier()
+
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.settimeout(self.task_interval)
         my_addr = ('', self._port)
         self.s.bind(my_addr)
 
-    def run(self):
-        running = self._running = True
-        logger.critical('run')
-        try:
-            while running:
-                self._protected_run()
-                self._lock.acquire()
-                try:
-                    running = self._running
-                finally:
-                    self._lock.release()
-        except:
-            self._lock.acquire()
-            try:
-                self._running = False
-            finally:
-                self._lock.release()
-            #raise
-            logger.critical( 'MINITWISTED CRASHED')
-            logger.exception('MINITWISTED CRASHED')
+    def _get_running(self):
         self._lock.acquire()
         try:
-            self._running = False
+            running = self._running
         finally:
             self._lock.release()
+        return running
+
+    def _set_running(self, running):
+        self._lock.acquire()
+        try:
+            self._running = running
+        finally:
+            self._lock.release()
+    running = property(_get_running, _set_running)
+
+    def run(self):
+        self.running = True
+        logger.critical('run')
+        try:
+            while self.running:
+                self._protected_run()
+        except:
+            logger.critical( 'MINITWISTED CRASHED')
+            logger.exception('MINITWISTED CRASHED')
+        self.running = False
         logger.debug('Reactor stopped')
 
     def _protected_run(self):
@@ -93,7 +95,7 @@ class ThreadedReactor(threading.Thread):
         call_asap_tuple = None
         self._lock.acquire()
         try:
-            if self._running and self._call_asap_queue:
+            if self._call_asap_queue:
                 call_asap_tuple = self._call_asap_queue.pop(0)
         finally:
             self._lock.release()
@@ -134,11 +136,7 @@ class ThreadedReactor(threading.Thread):
     def stop(self):
         """Stop the thread. It cannot be resumed afterwards"""
 
-        self._lock.acquire()
-        try:
-            self._running = False
-        finally:
-            self._lock.release()
+        self.running = False
         self.join(self.task_interval*10)
         if self.isAlive():
             raise Exception, 'Minitwisted thread is still alive!'

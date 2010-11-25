@@ -73,7 +73,7 @@ class TestMinitwisted:
         self.reactor.start()
 
     def test_call_main_loop(self):
-        time.sleep(tc.TASK_INTERVAL/2)
+        time.sleep(tc.TASK_INTERVAL)
         # main_loop is called right away
         with self.lock:
             eq_(self.main_loop_call_counter, 1)
@@ -96,12 +96,10 @@ class TestMinitwisted:
                 eq_(self.callback_values, range(i + 1))
     
     def test_minitwisted_crashed(self):
-#        print 'before crash', self.reactor.isAlive()
         self.reactor.call_asap(self._crashing_callback)
         time.sleep(tc.TASK_INTERVAL*2)
         # from now on, the minitwisted thread is dead
-#        print 'after crash', self.reactor.isAlive()
-        ok_(not self.reactor.isAlive())
+        ok_(not self.reactor.running)
 
     def test_on_datagram_received_callback(self):
         # This is equivalent to sending a datagram to reactor
@@ -191,22 +189,22 @@ class TestSend:
         self.reactor.start()
         
     def test_main_loop_send_data(self):
-        time.sleep(tc.TASK_INTERVAL/2)
+        time.sleep(tc.TASK_INTERVAL)
         eq_(self.s.get_datagrams_sent(), [MSG1])
         return
     
     def test_call_asap_send_data(self):
-        time.sleep(tc.TASK_INTERVAL/2)
+        time.sleep(tc.TASK_INTERVAL)
         eq_(self.s.get_datagrams_sent(), [MSG1])
         self.reactor.call_asap(self._callback, 1)
         time.sleep(tc.TASK_INTERVAL*2)
         eq_(self.s.get_datagrams_sent(), [MSG1, MSG2])
         
     def test_on_datagram_received_send_data(self): 
-        time.sleep(tc.TASK_INTERVAL/2)
+        time.sleep(tc.TASK_INTERVAL)
         eq_(self.s.get_datagrams_sent(), [MSG1])
         self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
-        time.sleep(tc.TASK_INTERVAL/5)
+        time.sleep(tc.TASK_INTERVAL/2)
         eq_(self.s.get_datagrams_sent(), [MSG1, MSG3])
         
     def teardown(self):
