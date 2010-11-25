@@ -174,6 +174,9 @@ class SessionHandler(SocketServer.StreamRequestHandler):
                 global stop_server
                 stop_server = True
                 return
+            if line == 'CRASH':
+                dht.stop()
+                continue
             if line == 'EXIT':
                 return
             splitted_line = line.split()
