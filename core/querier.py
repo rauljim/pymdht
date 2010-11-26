@@ -56,6 +56,7 @@ class Querier(object):
         return current_tid_str # raul: yield created trouble
 
     def register_queries(self, queries):
+        assert len(queries)
         bencoded_msgs = []
         current_ts = time.time()
         timeout_ts = current_ts + TIMEOUT_DELAY
