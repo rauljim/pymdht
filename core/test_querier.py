@@ -20,10 +20,13 @@ from querier import Query, Querier
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
-
-RUN_CPU_INTENSIVE_TESTS = False
-RUN_NETWORK_TESTS = False # Requires a running external DHT node
-
+import random
+if random.random() > .8:
+    RUN_CPU_INTENSIVE_TESTS = True
+    print >>sys.stderr, '>>>>>>>>> Running cpu intensive tests in test_querier'
+else:
+    RUN_CPU_INTENSIVE_TESTS = False
+    
 TIMEOUT_DELAY = 3
 LOOKUP_OBJ = 1
 
@@ -109,9 +112,10 @@ class TestQuerier:
 
     def test_generate_tids(self):
         #TODO: move to message
-        num_tids = 1000
         if RUN_CPU_INTENSIVE_TESTS:
             num_tids =  pow(2, 16) + 2 #CPU intensive
+        else:
+            num_tids = 1000
         for i in xrange(num_tids):
             eq_(self.querier._next_tid(),
                 chr(i%256)+chr((i/256)%256))
@@ -120,33 +124,33 @@ class TestQuerier:
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.CLIENT_ID)
         q = Query(ping_msg, tc.SERVER_NODE)
-        timeout_task = minitwisted.Task(TIMEOUT_DELAY, None)
         # Client registers query
-        bencoded_msg = self.querier.register_query(q, timeout_task)
+        timeout_ts, bencoded_msgs = self.querier.register_queries([q])
         # Client sends bencoded_msg
-        time.sleep(1)
         # Server gets bencoded_msg and creates response
         ping_r_msg_out = message.OutgoingPingResponse(tc.SERVER_ID)
         bencoded_r = ping_r_msg_out.encode(q.tid)
-        # The client receives the bencoded message
+        time.sleep(1)
+        ok_(not self.querier.get_timeout_queries())
+        # The client receives the bencoded message (after 1 second)
         ping_r_in = message.IncomingMsg(bencoded_r,
                                         tc.SERVER_ADDR)
-        stored_q = self.querier.on_response_received(ping_r_in,
-                                                     tc.SERVER_ADDR)
-        assert stored_q is q
+        related_query = self.querier.on_response_received(ping_r_in,
+                                                             tc.SERVER_ADDR)
+        assert related_query is q
 
     def test_ping_with_timeout(self):
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.CLIENT_ID)
         q = Query(ping_msg, tc.SERVER_NODE)
-        timeout_task = minitwisted.Task(TIMEOUT_DELAY, None)
         # Client registers query
-        bencoded_msg = self.querier.register_query(q, timeout_task)
+        bencoded_msg = self.querier.register_queries([q])
         # Client sends bencoded_msg
         time.sleep(3)
         # The server never responds and the timeout is triggered
-        stored_q = self.querier.on_timeout(tc.SERVER_ADDR)
-        assert stored_q is q
+        timeout_queries = self.querier.get_timeout_queries()
+        eq_(len(timeout_queries), 1)
+        assert timeout_queries[0] is q
 
     def test_unsolicited_response(self):
         # Server creates unsolicited response
@@ -158,17 +162,16 @@ class TestQuerier:
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(bencoded_r,
                                         tc.SERVER_ADDR)
-        stored_q = self.querier.on_response_received(ping_r_in,
-                                                     tc.SERVER_ADDR)
-        assert stored_q is None
+        related_query = self.querier.on_response_received(ping_r_in,
+                                                             tc.SERVER_ADDR)
+        assert related_query is None
 
     def test_response_with_different_tid(self):
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.CLIENT_ID)
         q = Query(ping_msg, tc.SERVER_NODE)
-        timeout_task = minitwisted.Task(TIMEOUT_DELAY, None)
         # Client registers query
-        bencoded_msg = self.querier.register_query(q, timeout_task)
+        bencoded_msg = self.querier.register_queries([q])
         # Client sends bencoded_msg
         time.sleep(1)
         # Server gets bencoded_msg and creates response
@@ -177,31 +180,78 @@ class TestQuerier:
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(bencoded_r,
                                         tc.SERVER_ADDR)
-        stored_q = self.querier.on_response_received(ping_r_in,
-                                                     tc.SERVER_ADDR)
-        assert stored_q is None
-
-    def test_error(self):
+        related_query = self.querier.on_response_received(ping_r_in,
+                                                             tc.SERVER_ADDR)
+        assert related_query is None
+        
+    def test_error_received(self):
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.CLIENT_ID)
         q = Query(ping_msg, tc.SERVER_NODE)
-        timeout_task = minitwisted.Task(TIMEOUT_DELAY, None)
         # Client registers query
-        bencoded_msg = self.querier.register_query(q, timeout_task)
+        bencoded_msg = self.querier.register_queries([q])
         # Client sends bencoded_msg
         time.sleep(1)
         # Server gets bencoded_msg and creates response
         ping_r_msg_out = message.OutgoingErrorMsg(message.GENERIC_E)
-        bencoded_r = ping_r_msg_out.encode(tc.TID)
+        bencoded_r = ping_r_msg_out.encode(q.tid)
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(bencoded_r,
                                         tc.SERVER_ADDR)
-        stored_q = self.querier.on_error_received(ping_r_in,
-                                                  tc.SERVER_ADDR)
-        assert stored_q is None
+        related_query = self.querier.on_error_received(ping_r_in,
+                                                          tc.SERVER_ADDR)
+        assert related_query is q 
 
-
-        
+    def test_many_queries(self):
+        # Client creates a query
+        ping_msg = message.OutgoingPingQuery(tc.CLIENT_ID)
+        queries = [Query(ping_msg, tc.SERVER_NODE) for i in xrange(10)]
+        # Client registers query
+        bencoded_msg = self.querier.register_queries(queries)
+        # Client sends bencoded_msg
+        time.sleep(1)
+        # response for queries[3]
+        ping_r_msg_out = message.OutgoingPingResponse(tc.SERVER_ID)
+        bencoded_r = ping_r_msg_out.encode(queries[3].tid)
+        ping_r_in = message.IncomingMsg(bencoded_r,
+                                        tc.SERVER_ADDR)
+        related_query = self.querier.on_response_received(ping_r_in,
+                                                          tc.SERVER_ADDR)
+        assert related_query is queries[3]
+        # error for queries[2]
+        ping_r_msg_out = message.OutgoingErrorMsg(message.GENERIC_E)
+        bencoded_r = ping_r_msg_out.encode(queries[2].tid)
+        ping_r_in = message.IncomingMsg(bencoded_r,
+                                        tc.SERVER_ADDR)
+        related_query = self.querier.on_error_received(ping_r_in,
+                                                          tc.SERVER_ADDR)
+        assert related_query is queries[2]
+        # response to wrong addr
+        ping_r_msg_out = message.OutgoingPingResponse(tc.SERVER_ID)
+        bencoded_r = ping_r_msg_out.encode(queries[5].tid)
+        ping_r_in = message.IncomingMsg(bencoded_r,
+                                        tc.SERVER_ADDR)
+        related_query = self.querier.on_response_received(ping_r_in,
+                                                          tc.SERVER2_ADDR)
+        assert related_query is None
+        # response with wrong tid
+        ping_r_msg_out = message.OutgoingPingResponse(tc.SERVER_ID)
+        bencoded_r = ping_r_msg_out.encode('ZZ')
+        ping_r_in = message.IncomingMsg(bencoded_r,
+                                        tc.SERVER_ADDR)
+        related_query = self.querier.on_response_received(ping_r_in,
+                                                          tc.SERVER_ADDR)
+        assert related_query is None
+        # Still no time to trigger timeouts
+        ok_(not self.querier.get_timeout_queries())
+        time.sleep(1)
+        # Now, the timeouts can be triggered
+        timeout_queries = self.querier.get_timeout_queries()
+        expected_queries = queries[:2] + queries[4:]
+        eq_(len(timeout_queries), len(expected_queries))
+        for related_query, expected_query in zip(
+            timeout_queries, expected_queries):
+            assert related_query is expected_query
 
     def tear_down(self):
         global time
@@ -209,7 +259,7 @@ class TestQuerier:
         time = querier.time = time.actual_time
 
         
-class OldTestQuery:
+class _OldTestQuery:
         
     def _setup(self):
         global time
