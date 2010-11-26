@@ -62,8 +62,8 @@ class Querier(object):
         timeout_ts = current_ts + TIMEOUT_DELAY
         for query in queries:
             query.tid = self._next_tid()
-            logger.debug('sending to node: %r\n%r' % (query.dstnode,
-                                                      query.msg))
+            logger.debug('registering query to node: %r\n%r' % (query.dstnode,
+                                                                query.msg))
             query.query_ts = current_ts
             self._timeouts.append((timeout_ts, query))
             # if node is not in the dictionary, it will create an empty list

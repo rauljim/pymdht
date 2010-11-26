@@ -11,6 +11,7 @@ from querier import Query
 
 logger = logging.getLogger('dht')
 
+MAINTENANCE_DELAY = 8
 
 class RoutingManager(object):
     
@@ -25,16 +26,18 @@ class RoutingManager(object):
         
     def do_maintenance(self):
         self.maintenance_counter += 1
-        maintenance_delay = .0000001
+        maintenance_delay = MAINTENANCE_DELAY
         if self.maintenance_counter == 1:
             # bootstrap ping
             msg = message.OutgoingPingQuery(self.my_node.id)
             queries_to_send = [Query(msg, tc.SERVER_NODE)]
             maintenance_lookup_target = None
         elif self.maintenance_counter == 2:
+            # maintenance lookup
             queries_to_send = []
-            maintenance_lookup_target = tc.CLIENT_ID
+            maintenance_lookup_target = self.my_node.id
         else:
+            # nothing to do
             queries_to_send = []
             maintenance_lookup_target = None
         return (maintenance_delay, queries_to_send,
@@ -56,13 +59,18 @@ class RoutingManager(object):
         rnode.rtt = rtt
         sbucket.main.add(rnode)
         queries_to_send = []
+        print 'table', self.get_main_rnodes()
         return queries_to_send
         
-    def on_error_received(self, node_):
+    def on_error_received(self, node_): 
         queries_to_send = []
         return queries_to_send
     
     def on_timeout(self, node_):
+        print 'routing: on_timeout'
+        log_distance = self.my_node.log_distance(node_)
+        sbucket = self.table.get_sbucket(log_distance)
+        sbucket.main.remove(node_)
         queries_to_send = []
         return queries_to_send
             

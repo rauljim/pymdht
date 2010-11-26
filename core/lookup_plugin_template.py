@@ -4,6 +4,7 @@
 
 import ptime as time
 import message
+import querier
 
 import logging
 
@@ -15,11 +16,13 @@ class GetPeersLookup(object):
     def __init__(self, lookup_id,
                  info_hash, callback_f,
                  bt_port=0):
-        pass
-
+        self.info_hash = info_hash
+        self.callback_f = callback_f
+        self.bt_port = bt_port
     
     def start(self, bootstrap_rnodes):
-        queries_to_send = []
+        queries_to_send = [querier.Query(self._get_peers_msg, bn)
+                           for bn in bootstrap_rnodes]
         return queries_to_send
         
     def on_response_received(self, response_msg, node_):

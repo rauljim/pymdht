@@ -5,8 +5,9 @@
 from nose.tools import ok_, eq_
 
 import sys
-import logging, logging_conf
+import logging
 
+import ptime as time
 import node
 import identifier
 import message
@@ -16,6 +17,7 @@ from testing_mocks import MockTime
 
 import querier
 from querier import Query, Querier
+import logging_conf
 
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')

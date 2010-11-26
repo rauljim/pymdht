@@ -151,7 +151,7 @@ class GetPeersLookup(object):
         self.callback_f = callback_f
         self._lookup_queue = _LookupQueue(info_hash, 20)
                                      
-        self._info_hash = info_hash
+        self.info_hash = info_hash
         self._bt_port = bt_port
         self._lock = threading.RLock()
 
@@ -246,9 +246,9 @@ class GetPeersLookup(object):
         '''
         if len(nodes_to_announce) < ANNOUNCE_REDUNDANCY:
             announce_to_myself = True
-        elif (self._my_id.log_distance(self._info_hash) <
+        elif (self._my_id.log_distance(self.info_hash) <
               nodes_to_announce[ANNOUNCE_REDUNDANCY-1].id.log_distance(
-                self._info_hash)):
+                self.info_hash)):
             nodes_to_announce = nodes_to_announce[:-1]
             announce_to_myself = True
         '''
@@ -256,7 +256,7 @@ class GetPeersLookup(object):
         for qnode in nodes_to_announce:
             logger.debug('announcing to %r' % qnode.node)
             msg = message.OutgoingAnnouncePeerQuery(
-                self._my_id, self._info_hash,
+                self._my_id, self.info_hash,
                 self._bt_port, qnode.token)
             queries_to_send.append(Query(msg, qnode.node, self))
         return queries_to_send, announce_to_myself
