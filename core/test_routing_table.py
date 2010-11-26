@@ -174,7 +174,6 @@ class TestRoutingTable:
 
         # Add server_node to main bucket
         m_bucket.add(tc.SERVER_NODE)
-        self.rt.update_lowest_index(log_distance)
         self.rt.num_rnodes += 1
         ok_(m_bucket.there_is_room())
         ok_(not m_bucket.there_is_room(MAX_RNODES))
@@ -192,7 +191,6 @@ class TestRoutingTable:
         new_node = node.Node(tc.SERVER_NODE.addr,
                              tc.SERVER_NODE.id.generate_close_id(1))
         m_bucket.add(new_node)
-        self.rt.update_lowest_index(log_distance)
         self.rt.num_rnodes += 1
         # full bucket
         ok_(not m_bucket.there_is_room())
@@ -218,10 +216,7 @@ class TestRoutingTable:
         m_bucket = sbucket.main
         
         m_bucket.remove(new_node)
-        self.rt.update_lowest_index(log_distance)
-        print '>>>'
         print self.rt.get_main_rnodes()
-        print '>>>'
         self.rt.num_rnodes -= 1
         # there is one slot in the bucket
         ok_(m_bucket.there_is_room())
@@ -280,7 +275,6 @@ class TestRoutingTable:
             sbucket = self.rt.get_sbucket(log_distance)
             sbucket.main.add(node_.get_rnode(log_distance))
             self.rt.num_rnodes += 1
-            self.rt.update_lowest_index(log_distance)
 
         eq_(self.rt.get_closest_rnodes(0, 8, True),
             nodes)
@@ -327,13 +321,6 @@ class TestRoutingTable:
         assert_raises(IndexError, self.rt.get_sbucket, 160)
         assert_raises(IndexError, self.rt.get_sbucket, 161)
 
-    def test_update_lowest_index_when_empty_table(self):
-        sbucket = self.rt.get_sbucket(20)
-        sbucket.main.add(tc.CLIENT_NODE.get_rnode(20))
-        self.rt.update_lowest_index(20) 
-        sbucket.main.remove(tc.CLIENT_NODE)
-        self.rt.update_lowest_index(20) 
-        
     def test_complete_coverage(self):
 
         eq_(self.rt.get_closest_rnodes(76, 8, False), [tc.CLIENT_NODE])
