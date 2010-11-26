@@ -61,6 +61,7 @@ class Querier(object):
         current_ts = time.time()
         timeout_ts = current_ts + TIMEOUT_DELAY
         for query in queries:
+            logger.critical('%r' % (query))
             query.tid = self._next_tid()
             logger.debug('registering query to node: %r\n%r' % (query.dstnode,
                                                                 query.msg))

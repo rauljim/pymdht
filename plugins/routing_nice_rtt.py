@@ -125,9 +125,6 @@ class RoutingManager(object):
                 queries_to_send, maintenance_lookup_target)
 
     def _ping_a_staled_rnode(self):
-        # Don't have self._next_stale_maintenance_index lower than
-        # lowest_bucket
-        
         starting_index = self._next_stale_maintenance_index
         result = None
         while not result:
@@ -247,7 +244,6 @@ class RoutingManager(object):
             #TODO: leave this for the maintenance task
             if m_bucket.there_is_room():
                 m_bucket.add(rnode)
-                self.table.update_lowest_index(log_distance)
                 self.table.num_rnodes += 1
                 self._update_rnode_on_response_received(rnode, rtt)
                 r_bucket.remove(rnode)
@@ -258,7 +254,6 @@ class RoutingManager(object):
         if m_bucket.there_is_room():
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
-            self.table.update_lowest_index(log_distance)
             self.table.num_rnodes += 1
             self._update_rnode_on_response_received(rnode, rtt)
             return
@@ -305,12 +300,12 @@ class RoutingManager(object):
     
     def on_timeout(self, node_):
         if not node_.id:
-            return # This is a bootstrap node (just addr, no id)
+            return [] # This is a bootstrap node (just addr, no id)
         log_distance = self.my_node.log_distance(node_)
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except (IndexError):
-            return # Got a timeout from myself, WTF? Just ignore.
+            return [] # Got a timeout from myself, WTF? Just ignore.
         m_bucket = sbucket.main
         r_bucket = sbucket.replacement
         rnode = m_bucket.get_rnode(node_)
@@ -318,7 +313,6 @@ class RoutingManager(object):
             # node in routing table: kick it out
             self._update_rnode_on_timeout(rnode)
             m_bucket.remove(rnode)
-            self.table.update_lowest_index(log_distance)
             self.table.num_rnodes -= 1
 
             for r_rnode in r_bucket.sorted_by_rtt():
@@ -336,6 +330,7 @@ class RoutingManager(object):
         if rnode:
             # Node in replacement table: just update rnode
             self._update_rnode_on_timeout(rnode)
+        return []
             
     def get_closest_rnodes(self, log_distance, num_nodes, exclude_myself):
         if not num_nodes:

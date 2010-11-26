@@ -39,8 +39,8 @@ class Pymdht:
                                                 lookup_m_mod,
                                                 private_dht_name)
         self.reactor = minitwisted.ThreadedReactor(
-            controller.main_loop,
-            dht_addr[1], controller.on_datagram_received)
+            self.controller.main_loop,
+            dht_addr[1], self.controller.on_datagram_received)
         self.reactor.start()
 
     def stop(self):

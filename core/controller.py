@@ -101,20 +101,23 @@ class Controller:
         return self._next_main_loop_call_ts, self._try_do_lookup()
         
     def _try_do_lookup(self):
+        print 'trying lookup'
         msgs_to_send = []
         if (self._next_lookup_attempt_ts and
             time.time() < self._next_lookup_attempt_ts):
-            # It's too early to retry this lookup
+            print "It's too early to retry this lookup"
             return msgs_to_send
         if self._pending_lookups:
             lookup_obj = self._pending_lookups[0]
         else:
             return msgs_to_send
+        print 'lookup: getting bootstrapped'
         log_distance = lookup_obj.info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                               None,
                                                               True)
         if bootstrap_rnodes:
+            print 'lookup: ready to go'
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
             peers = self._tracker.get(info_hash)
@@ -126,6 +129,7 @@ class Controller:
             msgs_to_send = self._register_queries(queries_to_send)
             self._next_lookup_attempt_ts = None
         else:
+            print 'lookup: no bootrap nodes'
             self._next_lookup_attempt_ts = time.time() + .2
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                self._next_lookup_attempt_ts)
@@ -150,8 +154,15 @@ class Controller:
         timeout_queries = self._querier.get_timeout_queries()
         for query in timeout_queries:
             if query.lookup_obj:
-                queries_to_send.extend(query.lookup_obj.on_timeout())
-            queries_to_send.extend(self._routing_m.on_timeout(query.dstnode))
+                (queries, _, loookup_done) = query.lookup_obj.on_timeout(
+                    query.dstnode)
+                queries_to_send.extend(queries)
+                logger.critical(queries_to_send)
+
+            queries_to_send.extend(
+                self._routing_m.on_timeout(query.dstnode))
+            logger.critical(queries_to_send)
+
         # Routing table maintenance
         (maintenance_delay,
          queries,
@@ -159,6 +170,8 @@ class Controller:
         self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                            current_ts + maintenance_delay)
         queries_to_send.extend(queries)
+        logger.critical(queries_to_send)
+
         if maintenance_lookup_target:
             log_distance = maintenance_lookup_target.log_distance(
                 self._my_id)
@@ -167,6 +180,8 @@ class Controller:
             lookup_obj = self._lookup_m.maintenance_lookup(
                 maintenance_lookup_target)
             queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
+            logger.critical(queries_to_send)
+                    
         # Auto-save routing table
         if current_ts > self._next_save_state_ts:
             raise Exception
@@ -176,6 +191,7 @@ class Controller:
                                                self._next_save_state_ts)
         # Return control to reactor
         msgs_to_send = self._register_queries(queries_to_send)
+        logger.critical(queries_to_send)
         return self._next_main_loop_call_ts, msgs_to_send
 
     def _maintenance_lookup(self, target):
