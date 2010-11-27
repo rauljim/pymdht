@@ -101,7 +101,6 @@ class Controller:
         return self._next_main_loop_call_ts, self._try_do_lookup()
         
     def _try_do_lookup(self):
-        print 'trying lookup'
         msgs_to_send = []
         if (self._next_lookup_attempt_ts and
             time.time() < self._next_lookup_attempt_ts):
@@ -120,7 +119,7 @@ class Controller:
             print 'lookup: ready to go'
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
-            peers = self._tracker.get(info_hash)
+            peers = self._tracker.get(lookup_obj.info_hash)
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
                 callback_f(lookup_id, peers)
@@ -184,7 +183,6 @@ class Controller:
                     
         # Auto-save routing table
         if current_ts > self._next_save_state_ts:
-            raise Exception
             self.save_state()
             self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
@@ -243,7 +241,6 @@ class Controller:
                     if lookup_done:
                         callback_f(lookup_id, None)
             # maintenance related tasks
-            print 'received>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><'
             maintenance_queries_to_send = \
                 self._routing_m.on_response_received(
                 msg.sender_node, related_query.rtt, msg.all_nodes)
@@ -362,9 +359,9 @@ class Controller:
             queries_to_send)
         self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                            timeout_call_ts)
-        print 'register', time.time(), timeout_call_ts,
-        print self._next_main_loop_call_ts,
-        print msgs_to_send[0]
+#        print 'register', time.time(), timeout_call_ts,
+#        print self._next_main_loop_call_ts,
+#        print msgs_to_send[0]
         return msgs_to_send
                     
         
