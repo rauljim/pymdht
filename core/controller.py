@@ -152,16 +152,19 @@ class Controller:
         # Take care of timeouts
         timeout_queries = self._querier.get_timeout_queries()
         for query in timeout_queries:
+            queries_to_send.extend(self._on_timeout(query))
+            '''
             if query.lookup_obj:
-                (queries, _, loookup_done) = query.lookup_obj.on_timeout(
+                (queries, pq, loookup_done) = query.lookup_obj.on_timeout(
                     query.dstnode)
+                print 'init parallel queries', pq
                 queries_to_send.extend(queries)
                 logger.critical(queries_to_send)
 
             queries_to_send.extend(
                 self._routing_m.on_timeout(query.dstnode))
             logger.critical(queries_to_send)
-
+            '''
         # Routing table maintenance
         (maintenance_delay,
          queries,
@@ -180,7 +183,9 @@ class Controller:
                 maintenance_lookup_target)
             queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
             logger.critical(queries_to_send)
-                    
+
+
+            
         # Auto-save routing table
         if current_ts > self._next_save_state_ts:
             self.save_state()
@@ -227,6 +232,7 @@ class Controller:
                  lookup_done
                  ) = related_query.lookup_obj.on_response_received(
                     msg, msg.sender_node)
+                print 'on_response', num_parallel_queries
                 msgs = self._register_queries(lookup_queries_to_send)
                 msgs_to_send.extend(msgs)
 
@@ -258,6 +264,7 @@ class Controller:
                  lookup_done
                  ) = related_query.lookup_obj.on_error_received(
                     msg, addr)
+                print 'on error', num_parallel_queries 
                 msgs = self._register_queries(lookup_queries_to_send)
                 msgs_to_send.extend(msgs)
 
@@ -319,29 +326,24 @@ class Controller:
     def _on_response_received(self, msg):
         pass
 
-    def _____on_timeout(self, addr):
-        related_query = self._querier.on_timeout(addr)
-        if not related_query:
-            return # timeout cancelled (got response/error already)
+    def _on_timeout(self, related_query):
+        queries_to_send = []
         if related_query.lookup_obj:
             (lookup_queries_to_send,
              num_parallel_queries,
              lookup_done
              ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
-            msgs = self._register_queries(lookup_queries_to_send)
-            msgs_to_send.extend(msgs)
-
+            queries_to_send.extend(lookup_queries_to_send)
+            print 'on_timeout', num_parallel_queries
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done and callback_f and callable(callback_f):
-                msgs = self._announce(related_query.lookup_obj)
-                msgs_to_send.extend(msgs)
+                queries_to_send.extend(self._announce(
+                        related_query.lookup_obj))
                 lookup_id = related_query.lookup_obj.lookup_id
                 related_query.lookup_obj.callback_f(lookup_id, None)
-        maintenance_queries_to_send = self._routing_m.on_timeout(
-            related_query.dstnode)
-        msgs = self._send_queries(maintenance_queries_to_send)
-        msgs_to_send.extend(msgs)
-        return self._next_main_loop_call_ts, msgs_to_send
+        queries_to_send.extend(self._routing_m.on_timeout(
+                related_query.dstnode))
+        return queries_to_send
 
     def _announce(self, lookup_obj):
         queries_to_send, announce_to_myself = lookup_obj.announce()
