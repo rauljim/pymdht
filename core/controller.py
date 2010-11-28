@@ -237,7 +237,10 @@ class Controller:
                 msgs_to_send.extend(msgs)
 
                 if lookup_done:
-                        msgs = self._announce(related_query.lookup_obj)
+                        queries_to_send = self._announce(
+                            related_query.lookup_obj)
+                        msgs_to_send = self._register_queries(
+                            queries_to_send)
                         msgs_to_send.extend(msgs)
                 callback_f = related_query.lookup_obj.callback_f
                 if callback_f and callable(callback_f):
@@ -347,7 +350,7 @@ class Controller:
 
     def _announce(self, lookup_obj):
         queries_to_send, announce_to_myself = lookup_obj.announce()
-        return self._register_queries(queries_to_send)
+        return queries_to_send
         '''
         if announce_to_myself:
             self._tracker.put(lookup_obj._info_hash,
