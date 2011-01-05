@@ -14,7 +14,7 @@ from nose.tools import eq_, ok_, assert_raises
 import logging_conf
 import ptime as time
 import test_const as tc
-from testing_mocks import MockTime, MockTimeoutSocket
+from testing_mocks import MockTimeoutSocket#, MockTime
 
 import minitwisted
 from minitwisted import Task, TaskManager, ThreadedReactor
@@ -91,13 +91,13 @@ class TestMinitwisted:
     
         for i in xrange(1, 5):
             self.reactor.call_asap(self._callback, i)
-            time.sleep(tc.TASK_INTERVAL*2)
+            time.sleep(tc.TASK_INTERVAL*3)
             with self.lock:
                 eq_(self.callback_values, range(i + 1))
     
     def test_minitwisted_crashed(self):
         self.reactor.call_asap(self._crashing_callback)
-        time.sleep(tc.TASK_INTERVAL*2)
+        time.sleep(tc.TASK_INTERVAL*3)
         # from now on, the minitwisted thread is dead
         ok_(not self.reactor.running)
 

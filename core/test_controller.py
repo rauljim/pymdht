@@ -21,7 +21,7 @@ logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
 
-def assert_almost_equal(result, expected, tolerance=.01):
+def assert_almost_equal(result, expected, tolerance=.05):
     if not expected-tolerance < result < expected+tolerance:
         assert False, 'result: %f, expected: %f' % (result,
                                                     expected)
@@ -38,13 +38,6 @@ class TestController:
 
     def _test_start_stop(self):
         self.controller.main_loop()
-
-    def test_load_save_state(self):
-        #TODO: change state
-        self.controller.save_state()
-        #TODO:check file
-        self.controller.load_state()
-        #TODO: check state
 
     def test_simple(self):
         q = querier.Query(message.OutgoingPingQuery(self.my_id),

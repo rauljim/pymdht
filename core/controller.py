@@ -8,6 +8,7 @@ import cPickle
 
 import logging, logging_conf
 
+import state
 import identifier
 from identifier import Id
 import message
@@ -38,16 +39,22 @@ class Controller:
         message.private_dht_name = private_dht_name
         
         self.state_filename = os.path.join(state_path, STATE_FILENAME)
-        self.load_state()
-        if not self._my_id:
+        try:
+            saved_id, saved_nodes = state.load(self.state_filename)
+        except:
+            logger.exception("Loading state")
+            saved_id, saved_nodes = None, None
+        if saved_id:
+            self._my_id = saved_id
+            bootstrap_nodes = saved_nodes
+        else:
             self._my_id = identifier.RandomId()
+            bootstrap_nodes = BOOTSTRAP_NODES
         self._my_node = Node(dht_addr, self._my_id)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
         self._querier = Querier(self._my_id)
-        bootstrap_nodes = self.loaded_nodes or BOOTSTRAP_NODES
-        del self.loaded_nodes
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
@@ -61,37 +68,6 @@ class Controller:
         #TODO2: stop each manager, save routing table
         return
 
-    def save_state(self):
-        rnodes = self._routing_m.get_main_rnodes()
-        f = open(self.state_filename, 'w')
-        f.write('%r\n' % self._my_id)
-        for rnode in rnodes:
-            f.write('%d\t%r\t%s\t%d\t%f\n' % (
-                    self._my_id.log_distance(rnode.id),
-                    rnode.id, rnode.addr[0], rnode.addr[1],
-                    rnode.rtt * 1000))
-        f.close()
-
-    def load_state(self):
-        self._my_id = None
-        self.loaded_nodes = []
-        try:
-            f = open(self.state_filename)
-        except(IOError):
-            return
-        # the first line contains this node's identifier
-        hex_id = f.readline().strip()
-        self._my_id = Id(hex_id)
-        # the rest of the lines contain routing table nodes
-        # FORMAT
-        # log_distance hex_id ip port rtt
-        for line in f:
-            _, hex_id, ip, port, _ = line.split()
-            addr = (ip, int(port))
-            node_ = Node(addr, Id(hex_id))
-            self.loaded_nodes.append(node_)
-        f.close
-        
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         logger.critical('get_peers %d %r' % (bt_port, info_hash))
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
@@ -188,7 +164,8 @@ class Controller:
             
         # Auto-save routing table
         if current_ts > self._next_save_state_ts:
-            self.save_state()
+            state.save(self._routing_m.get_main_rnodes,
+                       self.state_filename)
             self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                self._next_save_state_ts)
