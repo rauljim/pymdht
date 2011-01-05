@@ -119,6 +119,7 @@ class TestController:
         eq_(len(queries), 1)
         ping, addr = queries[0]
         #this get_peers fails because there are no nodes in the routing table
+        print 'get_peers'
         ts, queries = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
         eq_(len(queries), 0)
         #fabricate response
@@ -127,8 +128,15 @@ class TestController:
         data = pong.encode(ping.tid)
         # get a node in the routing table
         self.controller.on_datagram_received(data, addr)
+        # This call does nothing because it's too early
+        print 'main_loop -> fail'
+        ts, queries = self.controller.main_loop()
+        #eq_(ts, ping_timeout_ts)
+        eq_(queries, [])
         # Controller retries lookup  get_peers
+        print 'sleep'
         time.sleep(ts - time.time())
+        print 'main_lookup -> OK'
         ts, queries = self.controller.main_loop()
         # The lookup starts with a single node
         ok_(queries)

@@ -59,7 +59,6 @@ class Controller:
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_main_loop_call_ts = 0
-        self._next_lookup_attempt_ts = 0
         self._pending_lookups = []
         
     def finalize(self):
@@ -77,11 +76,8 @@ class Controller:
         return self._next_main_loop_call_ts, msgs_to_send
         
     def _try_do_lookup(self):
+        print '------ TRY ------'
         queries_to_send = []
-        if (self._next_lookup_attempt_ts and
-            time.time() < self._next_lookup_attempt_ts):
-            print "It's too early to retry this lookup"
-            return queries_to_send
         if self._pending_lookups:
             lookup_obj = self._pending_lookups[0]
         else:
@@ -102,12 +98,11 @@ class Controller:
                 callback_f(lookup_id, peers)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
-            self._next_lookup_attempt_ts = None
         else:
             print 'lookup: no bootrap nodes'
-            self._next_lookup_attempt_ts = time.time() + .2
+            next_lookup_attempt_ts = time.time() + .2
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
-                                               self._next_lookup_attempt_ts)
+                                               next_lookup_attempt_ts)
         return queries_to_send
         
     def print_routing_table_stats(self):
