@@ -164,7 +164,8 @@ class Controller:
             
         # Auto-save routing table
         if current_ts > self._next_save_state_ts:
-            state.save(self._routing_m.get_main_rnodes,
+            state.save(self._my_id,
+                       self._routing_m.get_main_rnodes(),
                        self.state_filename)
             self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
