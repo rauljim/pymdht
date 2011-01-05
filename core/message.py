@@ -101,9 +101,6 @@ class OutgoingMsgBase(object):
     def __repr__(self):
         return str(self.__class__) + str(self)
 
-    def __eq__(self, other):
-        return self._dict == other._dict
-
     def encode(self, tid):
         # We use the lock to prevent that two threads encode at the same
         # time. For instance, when doing get_peers lookup the main thread
@@ -231,8 +228,8 @@ class IncomingMsg(object):
         except (MsgError):
             raise
         except:
-            logger.critical(
-                'This bencoded message crashed:\n%s' % repr(bencoded_msg)) 
+            logger.warning(
+                'This bencoded message is broken:\n%s' % repr(bencoded_msg)) 
             raise MsgError, 'Invalid message'
 
     def __repr__(self):

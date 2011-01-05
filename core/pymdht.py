@@ -11,12 +11,11 @@ the DHT.
 Find usage examples in server_dht.py and interactive_dht.py.
 
 """
-import sys
-
 import ptime as time
 
 import controller
 import logging, logging_conf
+
 
 class Pymdht:
     """Pymdht is the interface for the whole package.
@@ -62,7 +61,7 @@ class Pymdht:
                                          callback_f, bt_port)
 
     def remove_torrent(self, info_hash):
-        pass
+        return
             
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()

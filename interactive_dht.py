@@ -79,13 +79,13 @@ Available commands are:
             except:
                 print 'Invalid bt_port (%r)' % input[2]
                 continue
-            success, peers = dht.get_peers(time.time(), info_hash,
+            success = dht.get_peers(time.time(), info_hash,
                                            _on_peers_found, bt_port)
             if not success:
                 print 'Lookup failed'
-            if peers:
-                print '[local] %d peer(s)' % (len(peers))
-                print peers
+#            if peers:
+#                print '[local] %d peer(s)' % (len(peers))
+#                print peers
                 
         
 if __name__ == '__main__':
@@ -97,7 +97,7 @@ if __name__ == '__main__':
                       metavar='INT', default=7000,
                       help="port to be used")
     parser.add_option("-x", "--path", dest="path",
-                      metavar='PATH', default='interactive_logs/',
+                      metavar='PATH', default='.',
                       help="state.dat and logs location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',

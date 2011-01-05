@@ -1,13 +1,6 @@
 import GeoIP
 import math
 import os, sys
-
-# IP address and coordinates of my laptop at Forum
-my_ip = '192.16.125.198'
-my_country = "Sweden"
-my_lat = 59.4500007629
-my_lon = 17.9167003632
-
 # longitude/latitude constants
 nauticalMilePerLat = 60.00721
 nauticalMilePerLongitude = 60.10793
@@ -20,8 +13,9 @@ geo_city_file = "/usr/share/GeoIP/GeoIPCity.dat"
 
 class Geo:
 
-    def __init__(self):
+    def __init__(self, my_ip):
         self.gi = GeoIP.open(geo_city_file, GeoIP.GEOIP_STANDARD)
+        self.my_ip = my_ip
 
     def get_city(self, ip):
         try:
@@ -45,6 +39,17 @@ class Geo:
         else:
             return None
 
+    def get_my_country(self):
+        try:
+            gir = self.gi.record_by_addr(self.my_ip)
+        except AttributError:
+            return None
+
+        if gir:
+            return gir['country_name']
+        else:
+            return None
+
     def get_coordinates(self, ip):
         try:
             gir = self.gi.record_by_addr(ip)
@@ -56,11 +61,21 @@ class Geo:
         else:
             return None, None
 
-    def is_in_same_country(self, ip):
-        return (self.get_country(ip) == my_country)
+    def get_my_coordinates(self):
+        try:
+            gir = self.gi.record_by_addr(self.my_ip)
+        except AttributError:
+            return None, None
 
+        if gir:
+            return gir['latitude'], gir['longitude']
+        else:
+            return None, None    
+
+    def is_in_same_country(self, ip):
+        return (self.get_country(ip) == self.get_my_country())
         
-    def calc_distance(self, lat1, lon1, lat2=my_lat, lon2=my_lon):
+    def calc_distance(self, lat1, lon1, lat2, lon2):
         yDistance = (lat2 - lat1) * nauticalMilePerLat
         xDistance = (math.cos(lat1 * rad) + math.cos(lat2 * rad)) * \
                     (lon2 - lon1) * (nauticalMilePerLongitude / 2)
@@ -70,8 +85,9 @@ class Geo:
 
     def score_peer(self, ip):
         peer_addr = ip
+        my_lat, my_lon = self.get_my_coordinates()
         peer_lat, peer_lon = self.get_coordinates(peer_addr)
-        peer_distance = self.calc_distance(peer_lat, peer_lon)
+        peer_distance = self.calc_distance(peer_lat, peer_lon, my_lat, my_lon)
         if (self.is_in_same_country(peer_addr)):
             extra_km = 1
         else:
@@ -81,15 +97,13 @@ class Geo:
         return total_score
 
 def main():
-    
-    #  Testing peer (in Amsterdam)
-    peer_addr = '213.197.62.197'
-    lat1 = 52.3499984741
-    lon1 = 4.91669988632
 
-    peer_score = Geo().score_peer(peer_addr)
-    print "Peer Score:", peer_score
-    
+    my_ip = '192.16.125.198'
+    peer_ip = '213.197.62.197'
+
+    geo_score = Geo(my_ip)
+    peer_score = geo_score.score_peer(peer_ip)
+    print "PEER %s SCORE %d" % (peer_ip, peer_score)
        
 if __name__ == '__main__':
     main()
