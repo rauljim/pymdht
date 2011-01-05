@@ -17,7 +17,14 @@ EXAMPLE
 
 """
 
+import sys
+import logging
+
 from identifier import Id
+from node import Node
+
+logger = logging.getLogger('dht')
+
 
 def save(my_id, rnodes, filename):
     f = open(filename, 'w')
@@ -33,17 +40,25 @@ def load(filename):
     my_id = None
     nodes = []
     try:
+#        print >>sys.stderr, 'opening', filename
         f = open(filename)
+#        print >>sys.stderr, 'OK'
+        hex_id = f.readline().strip()
+        my_id = Id(hex_id)
+#        print >>sys.stderr, 'my id OK'
+        for line in f:
+#            print >>sys.stderr, 'line', line
+            _, hex_id, ip, port, _ = line.split()
+            addr = (ip, int(port))
+            node_ = Node(addr, Id(hex_id))
+            nodes.append(node_)
     except(IOError):
-        return None, None
-    hex_id = f.readline().strip()
-    my_id = Id(hex_id)
-    
-    for line in f:
-        _, hex_id, ip, port, _ = line.split()
-        addr = (ip, int(port))
-        node_ = Node(addr, Id(hex_id))
-        nodes.append(node_)
+        logger.debug("No state saved, loading default.")
+        return None, []
+    except:
+        logger.exception("Error when loading state, loading default.")
+        raise
+        return None, []
     f.close
     return my_id, nodes
         

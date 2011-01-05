@@ -32,18 +32,16 @@ NUM_NODES = 8
 
 class Controller:
 
-    def __init__(self, dht_addr, state_path,
+    def __init__(self, dht_addr, state_filename,
                  routing_m_mod, lookup_m_mod,
                  private_dht_name):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
         
-        self.state_filename = os.path.join(state_path, STATE_FILENAME)
-        try:
-            saved_id, saved_nodes = state.load(self.state_filename)
-        except:
-            logger.exception("Loading state")
-            saved_id, saved_nodes = None, None
+        self.state_filename = state_filename
+        saved_id, saved_nodes = state.load(self.state_filename)
+        import sys
+        print >>sys.stderr, saved_id
         if saved_id:
             self._my_id = saved_id
             bootstrap_nodes = saved_nodes
@@ -74,23 +72,26 @@ class Controller:
                                                               info_hash,
                                                               callback_f,
                                                               bt_port))
-        return self._next_main_loop_call_ts, self._try_do_lookup()
+        queries_to_send =  self._try_do_lookup()
+        msgs_to_send = self._register_queries(queries_to_send)
+        return self._next_main_loop_call_ts, msgs_to_send
         
     def _try_do_lookup(self):
-        msgs_to_send = []
+        queries_to_send = []
         if (self._next_lookup_attempt_ts and
             time.time() < self._next_lookup_attempt_ts):
             print "It's too early to retry this lookup"
-            return msgs_to_send
+            return queries_to_send
         if self._pending_lookups:
             lookup_obj = self._pending_lookups[0]
         else:
-            return msgs_to_send
+            return queries_to_send
         print 'lookup: getting bootstrapped'
         log_distance = lookup_obj.info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                              None,
+                                                              8,
                                                               True)
+        #TODO: remove magic number
         if bootstrap_rnodes:
             print 'lookup: ready to go'
             del self._pending_lookups[0]
@@ -101,14 +102,13 @@ class Controller:
                 callback_f(lookup_id, peers)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
-            msgs_to_send = self._register_queries(queries_to_send)
             self._next_lookup_attempt_ts = None
         else:
             print 'lookup: no bootrap nodes'
             self._next_lookup_attempt_ts = time.time() + .2
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                self._next_lookup_attempt_ts)
-        return msgs_to_send
+        return queries_to_send
         
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
@@ -124,7 +124,7 @@ class Controller:
             # It's too early
             return self._next_main_loop_call_ts, []
         # Retry failed lookup (if any)
-        self._try_do_lookup()
+        queries_to_send.extend(self._try_do_lookup())
         # Take care of timeouts
         timeout_queries = self._querier.get_timeout_queries()
         for query in timeout_queries:

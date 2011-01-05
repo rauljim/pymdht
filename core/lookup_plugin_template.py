@@ -13,12 +13,14 @@ logger = logging.getLogger('dht')
    
 class GetPeersLookup(object):
 
-    def __init__(self, lookup_id,
+    def __init__(self, my_id, lookup_id,
                  info_hash, callback_f,
                  bt_port=0):
         self.info_hash = info_hash
         self.callback_f = callback_f
         self.bt_port = bt_port
+        self._get_peers_msg = message.OutgoingGetPeersQuery(
+            my_id, info_hash)
     
     def start(self, bootstrap_rnodes):
         queries_to_send = [querier.Query(self._get_peers_msg, bn)
@@ -53,7 +55,7 @@ class GetPeersLookup(object):
 class MaintenanceLookup(GetPeersLookup):
 
     def __init__(self, my_id, target):
-        GetPeersLookup.__init__(self, my_id, target, None)
+        GetPeersLookup.__init__(self, my_id, None, target, None, 0)
         self.bootstrap_alpha = 4
         self.normal_alpha = 4
         self.normal_m = 1
@@ -69,7 +71,7 @@ class LookupManager(object):
         self.my_id = my_id
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
-        lookup_q = GetPeersLookup(lookup_id, info_hash,
+        lookup_q = GetPeersLookup(self.my_id, lookup_id, info_hash,
                                   callback_f, bt_port)
         return lookup_q
 

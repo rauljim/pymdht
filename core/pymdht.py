@@ -24,9 +24,11 @@ class Pymdht:
     Setting up the DHT node is as simple as creating this object.
     The parameters are:
     - dht_addr: a tuple containing IP address and port number.
-    - logs_path: a string containing the path to the log files.
+    - state_filename: the complete path to a file to load/store node state.
     - routing_m_mod: the module implementing routing management.
     - lookup_m_mod: the module implementing lookup management.
+    - private_dht_name: name of the private DHT (use global DHT when None)
+    - debug_level: level of logs saved into dht.log (standard logging module).
 
     """
     def __init__(self, dht_addr, conf_path,
@@ -34,7 +36,8 @@ class Pymdht:
                  private_dht_name,
                  debug_level):
         logging_conf.setup(conf_path, debug_level)
-        self.controller = controller.Controller(dht_addr, conf_path,
+        state_filename = os.path.join(state_path, controller.STATE_FILENAME)
+        self.controller = controller.Controller(dht_addr, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 private_dht_name)

@@ -92,10 +92,47 @@ class TestController:
         #this call should trigger timeout
         self.controller.main_loop()
 
-    def _test_get_peers(self):
+    def test_successful_get_peers(self):
+        ts, queries = self.controller.main_loop()
+        ping_timeout_ts =  ts
+        assert_almost_equal(ts, time.time()+2)
+        ping, addr = queries[0]
+        #fabricate response
+        ping = message.IncomingMsg(ping, addr)
+        pong = message.OutgoingPingResponse(tc.SERVER_ID)
+        data = pong.encode(ping.tid)
+        # get a node in the routing table
+        self.controller.on_datagram_received(data, addr)
+        #The lookup starts with a single node
         ts, msgs = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
-        assert_almost_equal(ts, time.time(), 2)
-        eq_(msgs, [])
+        assert_almost_equal(ts, ping_timeout_ts)#time.time()+2)
+        eq_(len(msgs), 1)
+        
+        #retry get_peers
+        time.sleep(ts - time.time())
+        self.controller.main_loop()
+
+    def test_retry_get_peers(self):
+        ts, queries = self.controller.main_loop()
+        ping_timeout_ts =  ts
+        assert_almost_equal(ts, time.time()+2)
+        eq_(len(queries), 1)
+        ping, addr = queries[0]
+        #this get_peers fails because there are no nodes in the routing table
+        ts, queries = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
+        eq_(len(queries), 0)
+        #fabricate response
+        ping = message.IncomingMsg(ping, addr)
+        pong = message.OutgoingPingResponse(tc.SERVER_ID)
+        data = pong.encode(ping.tid)
+        # get a node in the routing table
+        self.controller.on_datagram_received(data, addr)
+        # Controller retries lookup  get_peers
+        time.sleep(ts - time.time())
+        ts, queries = self.controller.main_loop()
+        # The lookup starts with a single node
+        ok_(queries)
+        assert 'get_peers' in queries[0][0]
 
     def _test_complete(self):
         # controller.start() starts reactor (we don't want to use reactor in
@@ -110,3 +147,27 @@ class TestController:
         
     def tear_down(self):
         pass
+
+class TestStateErrors:
+
+    def test(self): 
+        '''self.controller = controller.Controller(tc.CLIENT_ADDR,
+                                                'test_logs/state.dat.broken',
+                                                routing_m_mod,
+                                                lookup_m_mod,
+                                                None)
+'''
+        import sys
+        print >>sys.stderr, 'teststateerrors'
+        self.controller = controller.Controller(tc.CLIENT_ADDR,
+                                                'test_logs/state.dat.good',
+                                                routing_m_mod,
+                                                lookup_m_mod,
+                                                None)
+'''
+        self.controller = controller.Controller(tc.CLIENT_ADDR,
+                                                'test_logs/state.dat.nofile',
+                                                routing_m_mod,
+                                                lookup_m_mod,
+                                                None)
+'''
