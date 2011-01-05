@@ -29,7 +29,8 @@ def assert_almost_equal(result, expected, tolerance=.05):
 class TestController:
 
     def setup(self):
-        self.controller = controller.Controller(tc.CLIENT_ADDR, 'test_logs',
+        self.controller = controller.Controller(tc.CLIENT_ADDR,
+                                                'test_logs/state.dat',
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 None)
@@ -142,6 +143,10 @@ class TestController:
         ok_(queries)
         assert 'get_peers' in queries[0][0]
 
+    def test_save_state(self):
+        time.sleep(controller.SAVE_STATE_DELAY)
+        self.controller.main_loop()
+        
     def _test_complete(self):
         # controller.start() starts reactor (we don't want to use reactor in
         # tests), sets _running, and calls main_loop
