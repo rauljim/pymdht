@@ -11,6 +11,8 @@ the DHT.
 Find usage examples in server_dht.py and interactive_dht.py.
 
 """
+
+import os
 import ptime as time
 
 import minitwisted
@@ -36,7 +38,7 @@ class Pymdht:
                  private_dht_name,
                  debug_level):
         logging_conf.setup(conf_path, debug_level)
-        state_filename = os.path.join(state_path, controller.STATE_FILENAME)
+        state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(dht_addr, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
