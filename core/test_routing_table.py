@@ -2,6 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import ptime as time
 import logging, logging_conf
 
 from nose.tools import eq_, ok_, assert_raises, assert_false, assert_not_equal
@@ -67,7 +68,6 @@ class TestBucket:
         # RNODES[1] gets refreshed
         rnode = self.b.get_rnode(tc.NODES[1])
         #########################rnode.on_response_received()
-        import ptime as time
         rnode.last_seen = time.time()
         ##############
         eq_(self.b.get_stalest_rnode(), tc.NODES[2])

@@ -13,7 +13,6 @@ import identifier
 import message
 import minitwisted
 import test_const as tc
-from testing_mocks import MockTime
 
 import querier
 from querier import Query, Querier
@@ -35,8 +34,7 @@ LOOKUP_OBJ = 1
 class TestQuery:
 
     def setup(self):
-        global time
-        time = querier.time = MockTime()
+        time.mock_mode()
         
     def test_ping_with_response(self):
         # Client creates a query
@@ -104,12 +102,13 @@ class TestQuery:
         assert 1 < q.rtt < 1.1
         assert q.lookup_obj is None
 
+    def teardown(self):
+        time.normal_mode()
 
 class TestQuerier:
 
     def setup(self):
-        global time
-        time = querier.time = MockTime()
+        time.mock_mode()
         self.querier = Querier(tc.CLIENT_ID)
 
     def test_generate_tids(self):
@@ -255,7 +254,6 @@ class TestQuerier:
             timeout_queries, expected_queries):
             assert related_query is expected_query
 
-    def tear_down(self):
-        global time
-        time.unmock()
-        time = querier.time = time.actual_time
+    def teardown(self):
+        time.normal_mode()
+

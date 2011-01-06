@@ -29,6 +29,8 @@ def assert_almost_equal(result, expected, tolerance=.05):
 class TestController:
 
     def setup(self):
+        time.mock_mode()
+        
         self.controller = controller.Controller(tc.CLIENT_ADDR,
                                                 'test_logs/state.dat',
                                                 routing_m_mod,
@@ -158,8 +160,8 @@ class TestController:
         self.controller.on_datagram_received(data, tc.SERVER_ADDR)
         self.controller.main_loop() # maintenance (maintenance lookup)
         
-    def tear_down(self):
-        pass
+    def teardown(self):
+        time.normal_mode()
 
 class TestStateErrors:
 

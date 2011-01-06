@@ -18,7 +18,7 @@ import logging
 import ptime as time
 
 from floodbarrier import FloodBarrier
-from task_manager import Task, TaskManager
+from task_manager import Task
 
 logger = logging.getLogger('dht')
 

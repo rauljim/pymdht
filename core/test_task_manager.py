@@ -12,7 +12,7 @@ import logging, logging_conf
 from nose.tools import eq_, ok_, assert_raises
 
 import test_const as tc
-from testing_mocks import MockTime, MockTimeoutSocket
+from testing_mocks import MockTimeoutSocket
 
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
@@ -36,8 +36,7 @@ class _TestTaskManager:
         return tasks_to_schedule, msgs_to_send
         
     def setup(self):
-        global time
-        time = task_manager.time = MockTime()
+        time.mock_mode()
         # Order in which callbacks have been fired
         self.callback_order = []
         self.task_m = TaskManager()
@@ -130,5 +129,4 @@ class _TestTaskManager:
         eq_(self.callback_order, [1,2])
 
     def teardown(self):
-        global time
-        time = task_manager.time = time.actual_time
+        time.normal_mode()
