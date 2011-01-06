@@ -45,6 +45,8 @@ class Controller:
         if saved_id:
             self._my_id = saved_id
             bootstrap_nodes = saved_nodes
+            #TODO: include bootstrap nodes also because all saved nodes might
+            #be down
         else:
             self._my_id = identifier.RandomId()
             bootstrap_nodes = BOOTSTRAP_NODES
@@ -60,11 +62,11 @@ class Controller:
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_main_loop_call_ts = 0
         self._pending_lookups = []
-        
+        '''        
     def finalize(self):
         #TODO2: stop each manager, save routing table
         return
-
+        '''
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         logger.critical('get_peers %d %r' % (bt_port, info_hash))
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
@@ -93,6 +95,8 @@ class Controller:
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
             peers = self._tracker.get(lookup_obj.info_hash)
+            if peers:
+                print 'got local peers!!!!!!!!!!!!!!!!!!!'
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
                 callback_f(lookup_obj.lookup_id, peers)

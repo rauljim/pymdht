@@ -10,6 +10,7 @@ import ptime as time
 import test_const as tc
 import message
 import querier
+import identifier
 
 import controller
 
@@ -50,6 +51,10 @@ class TestController:
         assert_almost_equal(ts, expected_ts)
         eq_(len(msgs), 1)
         eq_(msgs[0], expected_msgs[0])
+
+    def test_with_unexistent_state_file(self):
+        controller.Controller(tc.CLIENT_ADDR, 'test_logs/state.dat.no',
+                              routing_m_mod, lookup_m_mod, None)
 
     def test_adding_and_removing_node(self):
         # The routing table is initially empty
@@ -107,13 +112,20 @@ class TestController:
         # get a node in the routing table
         self.controller.on_datagram_received(data, addr)
         #The lookup starts with a single node
-        ts, msgs = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
+        lookup_result = []
+        ts, msgs = self.controller.get_peers(lookup_result, tc.INFO_HASH,
+                                             lambda x,y: x.append(y), 0)
         assert_almost_equal(ts, ping_timeout_ts)#time.time()+2)
         eq_(len(msgs), 1)
-        
-        #retry get_peers
-        time.sleep(ts - time.time())
-        self.controller.main_loop()
+
+        # Now a get_peers with local results
+        info_hash = identifier.Id('info_hash info_hash ')
+        self.controller._tracker.put(info_hash, tc.CLIENT_ADDR)
+        lookup_result = []
+        self.controller.get_peers(lookup_result, info_hash,
+                                  lambda x,y: x.append(y), 0)
+        eq_(len(lookup_result), 1) # the node is tracking this info_hash
+        eq_(lookup_result[0][0], tc.CLIENT_ADDR)
 
     def test_retry_get_peers(self):
         ts, queries = self.controller.main_loop()
@@ -148,8 +160,23 @@ class TestController:
     def test_save_state(self):
         time.sleep(controller.SAVE_STATE_DELAY)
         self.controller.main_loop()
+
+    def test_bad_datagram_received(self):
+        ts, msgs = self.controller.on_datagram_received('aa', tc.CLIENT_ADDR)
+        assert not msgs
+
+    def test_query_received(self):
+        #TODO
+        pass
+
+    def test_error_received(self):
+        #TODO
+        pass
         
-    def _test_complete(self):
+    def test_complete(self):
+        self.controller.print_routing_table_stats()
+
+    def _old(self):
         # controller.start() starts reactor (we don't want to use reactor in
         # tests), sets _running, and calls main_loop
         self.controller._running = True

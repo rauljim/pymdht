@@ -46,7 +46,9 @@ class Tracker(object):
         self.num_peers += 1
 
     def get(self, k):
+        print 'getting', k
         ts_peers = self._tracker_dict.get(k, [])
+        print 'peers', ts_peers
         self._cleanup_key(k)
         return [ts_peer[1] for ts_peer in ts_peers[-MAX_PEERS:]]
 

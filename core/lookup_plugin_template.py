@@ -16,6 +16,7 @@ class GetPeersLookup(object):
     def __init__(self, my_id, lookup_id,
                  info_hash, callback_f,
                  bt_port=0):
+        self.lookup_id = lookup_id
         self.info_hash = info_hash
         self.callback_f = callback_f
         self.bt_port = bt_port
