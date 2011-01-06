@@ -90,7 +90,6 @@ class Controller:
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
             peers = self._tracker.get(lookup_obj.info_hash)
-            if peers:
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
                 callback_f(lookup_obj.lookup_id, peers)
