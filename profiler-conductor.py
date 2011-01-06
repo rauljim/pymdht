@@ -7,6 +7,7 @@ import os
 import pdb
 import random
 import datetime
+import shutil
 
 import logging
 import core.ptime as time
@@ -67,6 +68,10 @@ def main():
 
     results_path = timestamp_str + '_tag'
     os.mkdir(results_path)
+
+    shutil.copy('profiler-conductor.py', results_path)
+    shutil.copy('infohashes.dat', results_path)
+    
     
     nodes = []
     for mod, addr, node_name, r_mod, l_mod in _randompopper(CONFIG):
