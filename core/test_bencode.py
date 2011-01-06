@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-from nose.tools import assert_raises, raises
+from nose.tools import assert_raises, ok_, eq_
 
 import cStringIO
 import logging, logging_conf
@@ -150,3 +150,7 @@ class TestDecode:
             else:
                 debug_print(i, bencoded, expected, 'NO EXCEPTION RAISED')
                 assert False
+
+    def test_decode_unexpected_error(self):
+        assert_raises(DecodeError, decode, 'llee', 'z')
+

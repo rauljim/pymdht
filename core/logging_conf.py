@@ -37,7 +37,6 @@ def setup(logs_path, logs_level):
 
     logger_conf = logging.FileHandler(
         os.path.join(logs_path, 'dht.log'), 'w')
-    #print "Logging to", os.path.join(logs_path, 'dht.log')
     logger_conf.setLevel(logs_level)
     logger_conf.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(logger_conf)

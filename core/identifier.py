@@ -224,17 +224,13 @@ class Id(object):
         byte_index = len(self.bin_id) - byte_num - 1 # -1 correction
         int_byte = ord(self.bin_id[byte_index])
         import sys
-#        print >>sys.stderr, 'byte', int_byte, 'bit_num', bit_num,
         # Flip bit
         int_byte = int_byte ^ (1 << bit_num)
-#        print >>sys.stderr, 'flipped byte', int_byte,
-#        print >>sys.stderr, 'before for', int_byte,
         for i in range(bit_num):
             # Put bit to 0
             int_byte = int_byte & (255 - (1 << i))
             # Replace bit for random bit
             int_byte = int_byte + (random.randint(0, 1) << i)
-#        print >>sys.stderr, 'result', int_byte
         id_byte = chr(int_byte)
         # Produce random ending bytes
         end_bytes = ''.join([chr(random.randint(0, 255)) \

@@ -11,8 +11,11 @@ the DHT.
 Find usage examples in server_dht.py and interactive_dht.py.
 
 """
+
+import os
 import ptime as time
 
+import minitwisted
 import controller
 import logging, logging_conf
 
@@ -20,12 +23,14 @@ import logging, logging_conf
 class Pymdht:
     """Pymdht is the interface for the whole package.
 
-    Setting up the DHT is as simple as creating this object.
+    Setting up the DHT node is as simple as creating this object.
     The parameters are:
     - dht_addr: a tuple containing IP address and port number.
-    - logs_path: a string containing the path to the log files.
+    - state_filename: the complete path to a file to load/store node state.
     - routing_m_mod: the module implementing routing management.
     - lookup_m_mod: the module implementing lookup management.
+    - private_dht_name: name of the private DHT (use global DHT when None)
+    - debug_level: level of logs saved into dht.log (standard logging module).
 
     """
     def __init__(self, dht_addr, conf_path,
@@ -33,32 +38,41 @@ class Pymdht:
                  private_dht_name,
                  debug_level):
         logging_conf.setup(conf_path, debug_level)
-        self.controller = controller.Controller(dht_addr, conf_path,
+        state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
+        self.controller = controller.Controller(dht_addr, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 private_dht_name)
-        self.controller.start()
+        self.reactor = minitwisted.ThreadedReactor(
+            self.controller.main_loop,
+            dht_addr[1], self.controller.on_datagram_received)
+        self.reactor.start()
 
     def stop(self):
-        """Stop the DHT."""
-        self.controller.stop()
-        time.sleep(.1) # Give time for the controller (reactor) to stop
+        """Stop the DHT node."""
+        #TODO: notify controller so it can do cleanup?
+        self.reactor.stop()#controller.stop)
     
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         """ Start a get peers lookup. Return a Lookup object.
         
         The info_hash must be an identifier.Id object.
         
-        The callback_f must expect one parameter. When peers are
-        discovered, the callback is called with a list of peers as paramenter.
-        The list of peers is a list of addresses (<IPv4, port> pairs).
+        The callback_f must expect two parameters (lookup_id and list of
+        peeers). When peers are discovered, the callback is called with a list
+        of peers as paramenter.  The list of peers is a list of addresses
+        (<IPv4, port> pairs).
 
-        The bt_port parameter is optional. When provided, ANNOUNCE messages
+        The bt_port parameter is optional. When non-zero, ANNOUNCE messages
         will be send using the provided port number.
 
+        Notice that the callback can be fired even before this call ends. Your
+        callback needs to be ready to get peers BEFORE calling this fuction.
+        
         """
-        return self.controller.get_peers(lookup_id, info_hash,
-                                         callback_f, bt_port)
+        self.reactor.call_asap(self.controller.get_peers,
+                               lookup_id, info_hash,
+                               callback_f, bt_port)
 
     def remove_torrent(self, info_hash):
         return

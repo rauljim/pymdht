@@ -121,7 +121,6 @@ class RoutingTable(object):
         self.nodes_per_bucket = nodes_per_bucket
         self.sbuckets = [None] * NUM_SBUCKETS
         self.num_rnodes = 0
-        self.lowest_index = NUM_SBUCKETS
         return
 
     def get_sbucket(self, log_distance):
@@ -133,27 +132,11 @@ class RoutingTable(object):
             sbucket = SuperBucket(index, self.nodes_per_bucket[index])
             self.sbuckets[index] = sbucket
         return sbucket
-
-    def update_lowest_index(self, index):
-        if index < self.lowest_index:
-            sbucket = self.sbuckets[index]
-            if sbucket and sbucket.main:
-                self.lowest_index = sbucket.index
-            return
-        if index == self.lowest_index:
-            for i in range(index, NUM_SBUCKETS):
-                sbucket = self.sbuckets[i]
-                if sbucket and sbucket.main:
-                    self.lowest_index = i
-                    return
-            #in case the table is completely empty
-            #(and self.lowest_index is not set in the for)
-            self.lowest_index = NUM_SBUCKETS
         
     def get_closest_rnodes(self, log_distance, max_rnodes, exclude_myself):
         result = []
         index = log_distance
-        for i in range(index, self.lowest_index - 1, -1):
+        for i in range(index, 0, -1):
             sbucket = self.sbuckets[i]
             if not sbucket:
                 continue
@@ -184,7 +167,7 @@ class RoutingTable(object):
     
     def get_main_rnodes(self):
         rnodes = []
-        for i in range(self.lowest_index, NUM_SBUCKETS):
+        for i in range(0, NUM_SBUCKETS):
             sbucket = self.sbuckets[i]
             if sbucket:
                 rnodes.extend(sbucket.main.rnodes)
@@ -192,8 +175,7 @@ class RoutingTable(object):
 
     def print_stats(self):
         num_nodes = 0
-        for i in range(self.lowest_index, NUM_SBUCKETS):
-            sbucket = self.sbuckets[i]
+        for i, sbucket in enumerate(self.sbuckets):
             if sbucket and len(sbucket.main):
                 print i, len(sbucket.main), len(sbucket.replacement)
         print 'Total:', self.num_rnodes
