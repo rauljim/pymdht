@@ -59,7 +59,6 @@ class RoutingManager(object):
         rnode.rtt = rtt
         sbucket.main.add(rnode)
         queries_to_send = []
-        print 'table', self.get_main_rnodes()
         return queries_to_send
         
     def on_error_received(self, node_): 
@@ -67,7 +66,6 @@ class RoutingManager(object):
         return queries_to_send
     
     def on_timeout(self, node_):
-        print 'routing: on_timeout'
         log_distance = self.my_node.log_distance(node_)
         sbucket = self.table.get_sbucket(log_distance)
         sbucket.main.remove(node_)

@@ -138,7 +138,6 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
             assert_raises(m.MsgError, m.IncomingMsg, data, tc.CLIENT_ADDR)
             # tid must be a non-empty string
             bad_tids = self.bad_non_empty_string
-            print bad_tids
             for tid in bad_tids:
                 self._check_bad_msg(msg, tid)
 

@@ -40,8 +40,6 @@ class Controller:
         
         self.state_filename = state_filename
         saved_id, saved_nodes = state.load(self.state_filename)
-        import sys
-        print >>sys.stderr, saved_id
         if saved_id:
             self._my_id = saved_id
             bootstrap_nodes = saved_nodes
@@ -78,32 +76,27 @@ class Controller:
         return self._next_main_loop_call_ts, msgs_to_send
         
     def _try_do_lookup(self):
-        print '------ TRY ------'
         queries_to_send = []
         if self._pending_lookups:
             lookup_obj = self._pending_lookups[0]
         else:
             return queries_to_send
-        print 'lookup: getting bootstrapped'
         log_distance = lookup_obj.info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                               8,
                                                               True)
         #TODO: remove magic number
         if bootstrap_rnodes:
-            print 'lookup: ready to go'
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
             peers = self._tracker.get(lookup_obj.info_hash)
             if peers:
-                print 'got local peers!!!!!!!!!!!!!!!!!!!'
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
                 callback_f(lookup_obj.lookup_id, peers)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
         else:
-            print 'lookup: no bootrap nodes'
             next_lookup_attempt_ts = time.time() + .2
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                next_lookup_attempt_ts)
@@ -193,7 +186,6 @@ class Controller:
                  lookup_done
                  ) = related_query.lookup_obj.on_response_received(
                     msg, msg.sender_node)
-                print 'on_response', num_parallel_queries
                 msgs = self._register_queries(lookup_queries_to_send)
                 msgs_to_send.extend(msgs)
 
@@ -228,7 +220,6 @@ class Controller:
                  lookup_done
                  ) = related_query.lookup_obj.on_error_received(
                     msg, addr)
-                print 'on error', num_parallel_queries 
                 msgs = self._register_queries(lookup_queries_to_send)
                 msgs_to_send.extend(msgs)
 
@@ -298,7 +289,6 @@ class Controller:
              lookup_done
              ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
             queries_to_send.extend(lookup_queries_to_send)
-            print 'on_timeout', num_parallel_queries
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done and callback_f and callable(callback_f):
                 queries_to_send.extend(self._announce(

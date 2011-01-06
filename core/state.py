@@ -40,14 +40,10 @@ def load(filename):
     my_id = None
     nodes = []
     try:
-#        print >>sys.stderr, 'opening', filename
         f = open(filename)
-#        print >>sys.stderr, 'OK'
         hex_id = f.readline().strip()
         my_id = Id(hex_id)
-#        print >>sys.stderr, 'my id OK'
         for line in f:
-#            print >>sys.stderr, 'line', line
             _, hex_id, ip, port, _ = line.split()
             addr = (ip, int(port))
             node_ = Node(addr, Id(hex_id))
