@@ -124,18 +124,7 @@ class Controller:
         timeout_queries = self._querier.get_timeout_queries()
         for query in timeout_queries:
             queries_to_send.extend(self._on_timeout(query))
-            '''
-            if query.lookup_obj:
-                (queries, pq, loookup_done) = query.lookup_obj.on_timeout(
-                    query.dstnode)
-                print 'init parallel queries', pq
-                queries_to_send.extend(queries)
-                logger.critical(queries_to_send)
 
-            queries_to_send.extend(
-                self._routing_m.on_timeout(query.dstnode))
-            logger.critical(queries_to_send)
-            '''
         # Routing table maintenance
         (maintenance_delay,
          queries,
@@ -143,7 +132,6 @@ class Controller:
         self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                            current_ts + maintenance_delay)
         queries_to_send.extend(queries)
-        logger.critical(queries_to_send)
 
         if maintenance_lookup_target:
             log_distance = maintenance_lookup_target.log_distance(
@@ -153,9 +141,6 @@ class Controller:
             lookup_obj = self._lookup_m.maintenance_lookup(
                 maintenance_lookup_target)
             queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
-            logger.critical(queries_to_send)
-
-
             
         # Auto-save routing table
         if current_ts > self._next_save_state_ts:
@@ -167,7 +152,6 @@ class Controller:
                                                self._next_save_state_ts)
         # Return control to reactor
         msgs_to_send = self._register_queries(queries_to_send)
-        logger.critical(queries_to_send)
         return self._next_main_loop_call_ts, msgs_to_send
 
     def _maintenance_lookup(self, target):
@@ -337,9 +321,6 @@ class Controller:
             queries_to_send)
         self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                            timeout_call_ts)
-#        print 'register', time.time(), timeout_call_ts,
-#        print self._next_main_loop_call_ts,
-#        print msgs_to_send[0]
         return msgs_to_send
                     
         
