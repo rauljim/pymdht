@@ -17,7 +17,7 @@ import test_const as tc
 from testing_mocks import MockTimeoutSocket#, MockTime
 
 import minitwisted
-from minitwisted import Task, ThreadedReactor
+from minitwisted import ThreadedReactor
 
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')

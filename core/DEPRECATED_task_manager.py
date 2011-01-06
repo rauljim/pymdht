@@ -6,6 +6,7 @@
 Task manager
 
 '''
+raise DeprecationWarning
 
 import threading
 import ptime as time

@@ -31,7 +31,8 @@ else:
 TIMEOUT_DELAY = 3
 LOOKUP_OBJ = 1
 
-class TestQuery:
+#TODO: get rid of Task()
+class _TestQuery:
 
     def setup(self):
         time.mock_mode()

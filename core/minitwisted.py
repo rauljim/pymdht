@@ -15,10 +15,9 @@ import sys
 import socket
 import threading
 import logging
-import ptime as time
 
+import ptime as time
 from floodbarrier import FloodBarrier
-from task_manager import Task
 
 logger = logging.getLogger('dht')
 
