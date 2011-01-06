@@ -95,7 +95,7 @@ class Controller:
             peers = self._tracker.get(lookup_obj.info_hash)
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
-                callback_f(lookup_id, peers)
+                callback_f(lookup_obj.lookup_id, peers)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
         else:
