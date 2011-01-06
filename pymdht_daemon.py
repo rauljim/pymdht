@@ -213,8 +213,14 @@ def main(options, args):
 
     global geo_score
     if options.geoip_mode:
-        import geo
-        geo_score = geo.Geo(local_ip)
+        try:
+            import geo
+            geo_score = geo.Geo(local_ip)
+        except:
+            print "---------------------------------------"
+            print "Geo module FAILED: you cannot use --geo"
+            print "---------------------------------------"
+            raise
     else:
         geo_score = None
     
@@ -257,8 +263,8 @@ if __name__ == '__main__':
     parser.add_option("-m", "--my-address", dest="my_ip",
                       metavar='IP', default=local_ip,
                       help="local IP address")
-    parser.add_option("--no-geoip", dest="geoip_mode",
-                      action='store_false', default=True,
+    parser.add_option("--geoip", dest="geoip_mode",
+                      action='store_true', default=False,
                       help="do not use geoIP")
 
 
