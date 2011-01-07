@@ -27,16 +27,18 @@ conf = [
     ]
 
 multiparser_mods = [
-    __import__('profiler.parsers.traffic_multiparser'
-               ).parsers.traffic_multiparser,
-    __import__('profiler.parsers.same_ip').parsers.same_ip,
+#    __import__('profiler.parsers.traffic_multiparser'
+#               ).parsers.traffic_multiparser,
+#    __import__('profiler.parsers.same_ip').parsers.same_ip,
+#    __import__('profiler.parsers.announce').parsers.announce,
+    __import__('profiler.parsers.infohashes').parsers.infohashes,
     ]
 
 parser_mods = [
-    __import__('profiler.parsers.lookup_parser').parsers.lookup_parser,
-    __import__('profiler.parsers.maintenance_parser'
-               ).parsers.maintenance_parser,
-    __import__('profiler.parsers.rtt_parser').parsers.rtt_parser,
+#    __import__('profiler.parsers.lookup_parser').parsers.lookup_parser,
+#    __import__('profiler.parsers.maintenance_parser'
+#               ).parsers.maintenance_parser,
+#    __import__('profiler.parsers.rtt_parser').parsers.rtt_parser,
     ]    
 
 class NodeParser(object):
