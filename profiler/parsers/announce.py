@@ -138,7 +138,7 @@ class Parser(object):
                     total_announces += num_announces
                     total_same_port += num_same_port
                     print v, num_announces,
-                    100. * num_same_port / num_announces
+                    print 100. * num_same_port / num_announces
                 print 'TOTAL', total_announces,
                 print 100. * total_same_port / total_announces
                         

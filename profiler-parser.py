@@ -30,8 +30,8 @@ multiparser_mods = [
 #    __import__('profiler.parsers.traffic_multiparser'
 #               ).parsers.traffic_multiparser,
 #    __import__('profiler.parsers.same_ip').parsers.same_ip,
-#    __import__('profiler.parsers.announce').parsers.announce,
-    __import__('profiler.parsers.infohashes').parsers.infohashes,
+    __import__('profiler.parsers.announce').parsers.announce,
+#    __import__('profiler.parsers.infohashes').parsers.infohashes,
     ]
 
 parser_mods = [
