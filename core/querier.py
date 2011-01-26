@@ -57,7 +57,7 @@ class Querier(object):
 
     def register_queries(self, queries):
         assert len(queries)
-        bencoded_msgs = []
+        datagrams = []
         current_ts = time.time()
         timeout_ts = current_ts + TIMEOUT_DELAY
         for query in queries:
@@ -68,27 +68,29 @@ class Querier(object):
             self._timeouts.append((timeout_ts, query))
             # if node is not in the dictionary, it will create an empty list
             self._pending.setdefault(query.dstnode.addr, []).append(query)
-            bencoded_msgs.append((query.msg.encode(query.tid),
-                                  query.dstnode.addr))
-        return timeout_ts, bencoded_msgs
+            datagrams.append(message.Datagram(query.msg.encode(query.tid),
+                                              query.dstnode.addr))
+        return timeout_ts, datagrams
 
-    def on_response_received(self, response_msg, addr):
+    def on_response_received(self, response_msg):
         # message already sanitized by IncomingMsg
         logger.debug('response received: %s' % repr(response_msg))
-        related_query = self._find_related_query(addr, response_msg.tid)
+        related_query = self._find_related_query(response_msg.sender_addr,
+                                                 response_msg.tid)
         if related_query:
             # This response matches query. Notify query.
             related_query.on_response_received(response_msg)
         else:
             logger.warning('No query for this response\n%s\nsource: %s' % (
-                    response_msg, addr))
+                    response_msg, response_msg.sender_addr))
         return related_query
             
-    def on_error_received(self, error_msg, addr):
+    def on_error_received(self, error_msg):
         logger.warning('Error message received:\n%s\nSource: %s',
                         `error_msg`,
-                        `addr`)
-        related_query = self._find_related_query(addr, error_msg.tid)
+                        `error_msg.sender_addr`)
+        related_query = self._find_related_query(error_msg.sender_addr,
+                                                 error_msg.tid)
         if related_query:
             related_query.on_error_received(error_msg)
         return related_query

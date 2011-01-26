@@ -106,6 +106,8 @@ class OutgoingMsgBase(object):
         # time. For instance, when doing get_peers lookup the main thread
         # sends many queries while the networking thread receives a response
         # and encode a new msg for a new query.
+        # TODO: I think this comment is outdated. The threads do not interact
+        # that way anymore.
         self._lock.acquire()
         assert not TID in self._dict
         self._dict[TID] = tid
@@ -211,7 +213,9 @@ class OutgoingErrorMsg(OutgoingMsgBase):
 
 class IncomingMsg(object):
 
-    def __init__(self, bencoded_msg, sender_addr):
+    def __init__(self, datagram):
+        bencoded_msg = datagram.data
+        sender_addr = datagram.addr
         self.sender_addr = sender_addr
         try:
             # bencode.decode may raise bencode.DecodeError
@@ -358,3 +362,14 @@ class IncomingMsg(object):
                           str(self._msg_dict[ERROR][1])]
         except:
             raise MsgError, 'Invalid error message'
+
+
+class Datagram(object):
+
+    def __init__(self, data, addr):
+        self.data = data
+        self.addr = addr
+
+    def __eq__(self, other):
+        return (self.data == other.data and 
+                self.addr == other.addr)
