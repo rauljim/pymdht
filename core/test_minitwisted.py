@@ -14,6 +14,7 @@ from nose.tools import eq_, ok_, assert_raises
 import logging_conf
 import ptime as time
 import test_const as tc
+from message import Datagram
 from testing_mocks import MockTimeoutSocket#, MockTime
 
 import minitwisted
@@ -25,9 +26,9 @@ logger = logging.getLogger('dht')
 DATA1 = 'testing...1'
 DATA2 = 'testing...2'
 DATA3 = 'testing...3...................'
-MSG1 = (DATA1, tc.SERVER_ADDR)
-MSG2 = (DATA2, tc.SERVER2_ADDR)
-MSG3 = (DATA3, tc.SERVER2_ADDR)
+DATAGRAM1 = Datagram(DATA1, tc.SERVER_ADDR)
+DATAGRAM2 = Datagram(DATA2, tc.SERVER2_ADDR)
+DATAGRAM3 = Datagram(DATA3, tc.SERVER2_ADDR)
 
 
 
@@ -39,8 +40,8 @@ class TestMinitwisted:
             self.main_loop_call_counter += 1
         return time.time() + tc.TASK_INTERVAL*10, []
 
-    def _main_loop_return_msgs(self):
-        return time.time() + tc.TASK_INTERVAL*10, [MSG1]
+    def _main_loop_return_datagrams(self):
+        return time.time() + tc.TASK_INTERVAL*10, [DATAGRAM1]
 
     def _callback(self, value):
         with self.lock:
@@ -50,9 +51,10 @@ class TestMinitwisted:
     def _very_long_callback(self, value):
         time.sleep(tc.TASK_INTERVAL*11)
 
-    def _on_datagram_received(self, data, addr):
+    def _on_datagram_received(self, datagram):
+        print 'on_datagram', datagram, datagram.data, datagram.addr
         with self.lock:
-            self.datagrams_received.append((data, addr))
+            self.datagrams_received.append(datagram)
         return time.time() + 100, []
 
     def _crashing_callback(self):
@@ -79,6 +81,7 @@ class TestMinitwisted:
             eq_(self.main_loop_call_counter, 1)
         time.sleep(.1 + tc.TASK_INTERVAL)
         with self.lock:
+            #FIXME: this crashes when recompiling
             eq_(self.main_loop_call_counter, 2)
         
     def test_call_asap(self):
@@ -103,22 +106,25 @@ class TestMinitwisted:
 
     def test_on_datagram_received_callback(self):
         # This is equivalent to sending a datagram to reactor
-        self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+        self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
+        datagram = Datagram(DATA1, tc.SERVER_ADDR)
+        print '--------------', datagram, datagram.data, datagram.addr
         time.sleep(tc.TASK_INTERVAL*1)
         with self.lock:
-            data, addr = self.datagrams_received.pop(0)
-            eq_(data, DATA1)
-            eq_(addr, tc.SERVER_ADDR)
+            datagram = self.datagrams_received.pop(0)
+            print 'popped>>>>>>>>>>>>>>>', datagram
+            eq_(datagram.data, DATA1)
+            eq_(datagram.addr, tc.SERVER_ADDR)
 
     def test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
         for _ in xrange(FLOOD_LIMIT):
-            self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+            self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         time.sleep(tc.TASK_INTERVAL*5)
         with self.lock:
             eq_(len(self.datagrams_received), FLOOD_LIMIT)
         for _ in xrange(10):
-            self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+            self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
             time.sleep(tc.TASK_INTERVAL*3)
             with self.lock:
                 eq_(len(self.datagrams_received), FLOOD_LIMIT)
@@ -144,7 +150,9 @@ class TestMinitwisted:
             logger.debug('callback_order: %s' % self.callback_order)
             assert self.callback_order == []
             logger.debug('callback_order: %s' % self.callback_order)
-            assert self.datagrams_received.pop(0) == (DATA, tc.SERVER_ADDR)
+            datagram = self.datagrams_received.pop(0)
+            eq_(datagram.data, DATA)
+            eq_(datagram.addr, tc.SERVER_ADDR)
             task2.cancel() #inside critical region??
         time.sleep(.1) # wait for task 0 (task 2 should be cancelled)
         with self.lock:
@@ -159,17 +167,17 @@ class TestSend:
 
     
     def _main_loop(self):
-        return time.time() + 100, [MSG1]
+        return time.time() + 100, [DATAGRAM1]
 
     def _callback(self, value):
         with self.lock:
             self.callback_values.append(value)
-        return time.time() + 100, [MSG2]
+        return time.time() + 100, [DATAGRAM2]
 
-    def _on_datagram_received(self, data, addr):
+    def _on_datagram_received(self, datagram):
         with self.lock:
-            self.datagrams_received.append((data, addr))
-        return time.time() + 100, [MSG3]
+            self.datagrams_received.append(datagram)
+        return time.time() + 100, [DATAGRAM3]
 
     def _crashing_callback(self):
         raise Exception, 'Crash testing'
@@ -190,22 +198,22 @@ class TestSend:
         
     def test_main_loop_send_data(self):
         time.sleep(tc.TASK_INTERVAL)
-        eq_(self.s.get_datagrams_sent(), [MSG1])
+        eq_(self.s.get_datagrams_sent(), [DATAGRAM1])
         return
     
     def test_call_asap_send_data(self):
         time.sleep(tc.TASK_INTERVAL)
-        eq_(self.s.get_datagrams_sent(), [MSG1])
+        eq_(self.s.get_datagrams_sent(), [DATAGRAM1])
         self.reactor.call_asap(self._callback, 1)
         time.sleep(tc.TASK_INTERVAL*2)
-        eq_(self.s.get_datagrams_sent(), [MSG1, MSG2])
+        eq_(self.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM2])
         
     def test_on_datagram_received_send_data(self): 
         time.sleep(tc.TASK_INTERVAL)
-        eq_(self.s.get_datagrams_sent(), [MSG1])
-        self.s.put_datagram_received(DATA1, tc.SERVER_ADDR)
+        eq_(self.s.get_datagrams_sent(), [DATAGRAM1])
+        self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         time.sleep(tc.TASK_INTERVAL/2)
-        eq_(self.s.get_datagrams_sent(), [MSG1, MSG3])
+        eq_(self.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
     def teardown(self):
         self.reactor.stop()
@@ -214,7 +222,7 @@ class TestSend:
 class TestSocketError:
 
     def _main_loop(self):
-        return time.time() + tc.TASK_INTERVAL*10000, [MSG1]
+        return time.time() + tc.TASK_INTERVAL*10000, [DATAGRAM1]
 
     def _on_datagram_received(self):
         return
@@ -241,7 +249,7 @@ class TestSocketError:
 
 
 
-class TestError:
+class _TestError:
 
     def _main_loop(self):
         return time.time() + 100, []
@@ -250,7 +258,7 @@ class TestError:
         time.sleep(tc.TASK_INTERVAL*15)
         return time.time() + 100, []
 
-    def _on_datagram_received(self, data, addr):
+    def _on_datagram_received(self, datagram):
         return time.time() + 100, []
 
     def _crashing_callback(self):
@@ -314,7 +322,7 @@ class _SocketMock(object):
         
     def sendto(self, data, addr):
         with self.lock:
-            self.datagrams_sent.append((data, addr))
+            self.datagrams_sent.append(Datagram(data, addr))
         return min(20, len(data))
     
     def recvfrom(self, buffer_size):
@@ -325,12 +333,12 @@ class _SocketMock(object):
                 if self.datagrams_received:
                     datagram_received = self.datagrams_received.pop(0)
             if datagram_received:
-                return datagram_received
+                return (datagram_received.data, datagram_received.addr)
         raise socket.timeout
 
-    def put_datagram_received(self, data, addr):
+    def put_datagram_received(self, datagram):
         with self.lock:
-            self.datagrams_received.append((data, addr))
+            self.datagrams_received.append(datagram)
 
     def get_datagrams_sent(self):
         with self.lock:

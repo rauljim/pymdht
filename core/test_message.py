@@ -10,6 +10,7 @@ import logging, logging_conf
 import test_const as tc
 import bencode
 import message as m
+from message import Datagram
 import message_tools as mt
 
 logging_conf.testing_setup(__name__)
@@ -82,11 +83,11 @@ class TestMsgExchanges:
         #client
         data = outgoing_query.encode(tc.TID) # querier.register_query()
         #server
-        incoming_query = m.IncomingMsg(data, tc.CLIENT_ADDR)
+        incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         eq_(incoming_query.type, m.QUERY)
         data = outgoing_response.encode(incoming_query.tid)
         #client
-        incoming_response = m.IncomingMsg(data, tc.SERVER_ADDR)
+        incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
         assert incoming_response.type is m.RESPONSE
 
 
@@ -126,7 +127,8 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
                     'de', # empty dictionary
                     )
         for data in bencodes:
-            assert_raises(m.MsgError, m.IncomingMsg, data, tc.CLIENT_ADDR)
+            assert_raises(m.MsgError, m.IncomingMsg,
+                          Datagram(data, tc.CLIENT_ADDR))
 
 
     def test_bad_tids(self):
@@ -135,7 +137,8 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
             # msg.encode adds tid
             # a direct encode of the msg._dict produces bencode without tid
             data = bencode.encode(msg._dict)
-            assert_raises(m.MsgError, m.IncomingMsg, data, tc.CLIENT_ADDR)
+            assert_raises(m.MsgError, m.IncomingMsg,
+                          Datagram(data, tc.CLIENT_ADDR))
             # tid must be a non-empty string
             bad_tids = self.bad_non_empty_string
             for tid in bad_tids:
@@ -158,7 +161,8 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
              
     def _check_bad_msg(self, msg, tid=tc.TID):
         data = msg.encode(tid)
-        assert_raises(m.MsgError, m.IncomingMsg, data, tc.CLIENT_ADDR)
+        assert_raises(m.MsgError, m.IncomingMsg,
+                      Datagram(data, tc.CLIENT_ADDR))
     '''    
     def _test_ping_error(self):
         outgoing_query = m.OutgoingPingQuery(tc.CLIENT_ID)
@@ -219,13 +223,14 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         outgoing_query = m.OutgoingFindNodeQuery(tc.CLIENT_ID, tc.NODE_ID)
         data = outgoing_query.encode(tc.TID)
         #server
-        incoming_query = m.IncomingMsg(data, tc.CLIENT_ADDR)
+        incoming_query = m.IncomingMsg(
+            Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
         outgoing_response = m.OutgoingFindNodeResponse(tc.SERVER_ID,
                                                      tc.NODES)
         data = outgoing_response.encode(incoming_query.tid)
         #client
-        incoming_response = m.IncomingMsg(data, tc.SERVER_ADDR)
+        incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
         eq_(incoming_response.type, m.RESPONSE)
         #incoming_response.sanitize_response(outgoing_query.query)
         for n1, n2 in zip(tc.NODES, incoming_response.all_nodes):
@@ -244,14 +249,14 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         outgoing_query = m.OutgoingGetPeersQuery(tc.CLIENT_ID, tc.INFO_HASH)
         data = outgoing_query.encode(tc.TID)
         #server
-        incoming_query = m.IncomingMsg(data, tc.CLIENT_ADDR)
+        incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
         outgoing_response = m.OutgoingGetPeersResponse(tc.SERVER_ID,
                                                      tc.TOKEN,
                                                      tc.NODES)
         data = outgoing_response.encode(incoming_query.tid)
         #client
-        incoming_response = m.IncomingMsg(data, tc.SERVER_ADDR)
+        incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
         assert incoming_response.type is m.RESPONSE
         #incoming_response.sanitize_response(outgoing_query.query)
         for n1, n2 in zip(tc.NODES, incoming_response.all_nodes):
@@ -262,7 +267,7 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         outgoing_query = m.OutgoingGetPeersQuery(tc.CLIENT_ID, tc.INFO_HASH)
         data = outgoing_query.encode(tc.TID)
         #server
-        incoming_query = m.IncomingMsg(data, tc.CLIENT_ADDR)
+        incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
         outgoing_response = m.OutgoingGetPeersResponse(tc.SERVER_ID,
                                                        tc.TOKEN,
@@ -270,7 +275,7 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
                                                        tc.PEERS)
         data = outgoing_response.encode(incoming_query.tid)
         #client
-        incoming_response = m.IncomingMsg(data, tc.SERVER_ADDR)
+        incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
         assert incoming_response.type is m.RESPONSE
         #incoming_response.sanitize_response(outgoing_query.query)
         for p1, p2 in zip(tc.PEERS, incoming_response.peers):
@@ -289,12 +294,12 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         outgoing_query.tid = tc.TID
         data = outgoing_query.encode(tc.TID)
         #server
-        incoming_query = m.IncomingMsg(data, tc.CLIENT_ADDR)
+        incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
         outgoing_response = m.OutgoingAnnouncePeerResponse(tc.SERVER_ID)
         data = outgoing_response.encode(incoming_query.tid)
         #client
-        incoming_response = m.IncomingMsg(data, tc.SERVER_ADDR)
+        incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
         assert incoming_response.type is m.RESPONSE
         #incoming_response.sanitize_response(outgoing_query.query)
 
@@ -320,48 +325,49 @@ class TestIncomingMsg:
 
     def setup(self):
         b_ping = m.OutgoingPingQuery(tc.CLIENT_ID).encode(tc.TID)
-        self.msg_d = m.IncomingMsg(b_ping, tc.CLIENT_ADDR)._msg_dict
+        self.msg_d = m.IncomingMsg(
+            Datagram(b_ping, tc.CLIENT_ADDR))._msg_dict
 
 
     def test_tid_error(self):
         # no TID
         del self.msg_d[m.TID] 
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         # invalid m.TID
         self.msg_d[m.TID] = 1
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         self.msg_d[m.TID] = []
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         self.msg_d[m.TID] = {}
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         
     def test_type_error(self):
         # no TYPE
         del self.msg_d[m.TYPE] 
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         # invalid m.TYPE
         self.msg_d[m.TYPE] = 1
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         self.msg_d[m.TYPE] = []
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         self.msg_d[m.TYPE] = {}
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
         # unknown m.TYPE
         self.msg_d[m.TYPE] = 'z'
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
 
     def test_version_not_present(self):
         del self.msg_d[m.VERSION]
-        m.IncomingMsg(bencode.encode(self.msg_d), tc.CLIENT_ADDR)
+        m.IncomingMsg(Datagram(bencode.encode(self.msg_d), tc.CLIENT_ADDR))
 
     def test_unknown_error(self):
         error_code = (999, "some weird error string")
@@ -370,13 +376,13 @@ class TestIncomingMsg:
         logger.info(
             "TEST LOGGING ** IGNORE EXPECTED INFO ** Unknown error: %r",
             error_code)
-        _ = m.IncomingMsg(b_err, tc.CLIENT_ADDR)
+        _ = m.IncomingMsg(Datagram(b_err, tc.CLIENT_ADDR))
 
     def test_nodes2(self):
         response = m.OutgoingGetPeersResponse(tc.CLIENT_ID, peers=tc.PEERS)
         response._dict[m.RESPONSE][m.NODES2] = mt.compact_nodes2(tc.NODES)
         bencoded = response.encode(tc.TID)
-        m.IncomingMsg(bencoded, tc.CLIENT_ADDR)
+        m.IncomingMsg(Datagram(bencoded, tc.CLIENT_ADDR))
 
 
         
@@ -389,21 +395,25 @@ b_ap_q = m.OutgoingAnnouncePeerQuery(tc.CLIENT_ID, tc.INFO_HASH,
 class TestSanitizeQueryError:
 
     def setup(self):
-        self.ping_d = m.IncomingMsg(b_ping_q, tc.CLIENT_ADDR)._msg_dict
-        self.fn_d = m.IncomingMsg(b_fn_q, tc.CLIENT_ADDR)._msg_dict
-        self.gp_d = m.IncomingMsg(b_gp_q, tc.CLIENT_ADDR)._msg_dict
-        self.ap_d = m.IncomingMsg(b_ap_q, tc.CLIENT_ADDR)._msg_dict
+        self.ping_d = m.IncomingMsg(
+            Datagram(b_ping_q, tc.CLIENT_ADDR))._msg_dict
+        self.fn_d = m.IncomingMsg(
+            Datagram(b_fn_q, tc.CLIENT_ADDR))._msg_dict
+        self.gp_d = m.IncomingMsg(
+            Datagram(b_gp_q, tc.CLIENT_ADDR))._msg_dict
+        self.ap_d = m.IncomingMsg(
+            Datagram(b_ap_q, tc.CLIENT_ADDR))._msg_dict
 
     def test_weird_msg(self):
         self.ping_d[m.ARGS] = []
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.ARGS] = 1
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.ARGS] = 'ZZZZ'
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         
         
         
@@ -411,46 +421,46 @@ class TestSanitizeQueryError:
         # no sender_id
         del self.ping_d[m.ARGS][m.ID]
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         # bad ID
         self.ping_d[m.ARGS][m.ID] = 'a'
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.ARGS][m.ID] = 1
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.ARGS][m.ID] = []
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.ARGS][m.ID] = {}
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
 
     def test_query(self): 
         # no m.QUERY
         del self.ping_d[m.QUERY]
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         # bad m.QUERY
         self.ping_d[m.QUERY] = 1
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.QUERY] = []
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         self.ping_d[m.QUERY] = {}
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
         # unknown m.QUERY is not an error at this point
         # responder will process it and send an errror msg if necesary
         self.ping_d[m.QUERY] = 'a'
-        m.IncomingMsg(bencode.encode(self.ping_d), tc.CLIENT_ADDR)
+        m.IncomingMsg(Datagram(bencode.encode(self.ping_d), tc.CLIENT_ADDR))
 
     def test_announce(self):
         # Port must be integer
         self.ap_d[m.ARGS][m.PORT] = 'a'
         assert_raises(m.MsgError, m.IncomingMsg,
-                      bencode.encode(self.ap_d), tc.CLIENT_ADDR)
+                      Datagram(bencode.encode(self.ap_d), tc.CLIENT_ADDR))
 
         
 b_ping_r = m.OutgoingPingResponse(tc.CLIENT_ID).encode(tc.TID)
@@ -462,10 +472,10 @@ b_ap_r = m.OutgoingAnnouncePeerResponse(tc.CLIENT_ID).encode(tc.TID)
 class TestSanitizeResponseError:
 
     def setup(self):
-        self.ping_r = m.IncomingMsg(b_ping_r, tc.SERVER_ADDR)
-        self.fn2_r = m.IncomingMsg(b_fn2_r, tc.SERVER_ADDR)
-        self.gp_r = m.IncomingMsg(b_gp_r, tc.SERVER_ADDR)
-        self.ap_r = m.IncomingMsg(b_ap_r, tc.SERVER_ADDR)
+        self.ping_r = m.IncomingMsg(Datagram(b_ping_r, tc.SERVER_ADDR))
+        self.fn2_r = m.IncomingMsg(Datagram(b_fn2_r, tc.SERVER_ADDR))
+        self.gp_r = m.IncomingMsg(Datagram(b_gp_r, tc.SERVER_ADDR))
+        self.ap_r = m.IncomingMsg(Datagram(b_ap_r, tc.SERVER_ADDR))
 '''
     def _test_sanitize(self):
         self.ping_r.sanitize_response(m.PING)
@@ -496,10 +506,11 @@ class TestSanitizeErrorError:
 
     def test(self):
         msg_out = m.OutgoingErrorMsg(1).encode(tc.TID)
-        assert_raises(m.MsgError, m.IncomingMsg, msg_out, tc.CLIENT_ADDR)
+        assert_raises(m.MsgError, m.IncomingMsg,
+                      Datagram(msg_out, tc.CLIENT_ADDR))
         # Unknown error doesn't raise m.MsgError
         msg_out = m.OutgoingErrorMsg((1,1)).encode(tc.TID)
-        _ = m.IncomingMsg(msg_out, tc.SERVER_ADDR)
+        _ = m.IncomingMsg(Datagram(msg_out, tc.SERVER_ADDR))
     
 
 
@@ -508,7 +519,8 @@ class TestPrinting:
     
     def test_printing(self):
         out_msg = m.OutgoingPingQuery(tc.CLIENT_ID)
-        in_msg = m.IncomingMsg(out_msg.encode(tc.TID), tc.CLIENT_ADDR)
+        in_msg = m.IncomingMsg(
+            Datagram(out_msg.encode(tc.TID), tc.CLIENT_ADDR))
         str(out_msg)
         repr(out_msg)
         repr(in_msg)
@@ -531,18 +543,18 @@ class TestPrivateDHT:
 
         # Receiver in the public DHT accepts messages (ignores private flag)
         m.private_dht_name = None
-        m.IncomingMsg(bencoded_public, tc.CLIENT_ADDR)
-        m.IncomingMsg(bencoded_private1, tc.CLIENT_ADDR)
-        m.IncomingMsg(bencoded_private2, tc.CLIENT_ADDR)
+        m.IncomingMsg(Datagram(bencoded_public, tc.CLIENT_ADDR))
+        m.IncomingMsg(Datagram(bencoded_private1, tc.CLIENT_ADDR))
+        m.IncomingMsg(Datagram(bencoded_private2, tc.CLIENT_ADDR))
 
         # Receiver in the private DHT accepts ONLY messages from the
         # private DHT it belongs to
         m.private_dht_name = 'PRIVATE1'
-        assert_raises(m.MsgError,
-                      m.IncomingMsg, bencoded_public, tc.CLIENT_ADDR)
-        m.IncomingMsg(bencoded_private1, tc.CLIENT_ADDR)
-        assert_raises(m.MsgError,
-                      m.IncomingMsg, bencoded_private2, tc.CLIENT_ADDR)
+        assert_raises(m.MsgError, m.IncomingMsg,
+                      Datagram(bencoded_public, tc.CLIENT_ADDR))
+        m.IncomingMsg(Datagram(bencoded_private1, tc.CLIENT_ADDR))
+        assert_raises(m.MsgError, m.IncomingMsg,
+                      Datagram(bencoded_private2, tc.CLIENT_ADDR))
 
     def teardown(self):
         m.private_dht_name = None
