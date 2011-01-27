@@ -14,10 +14,10 @@ sanitized before attempting to use message's attributes.
 """
 
 import sys
-import threading
 
 import logging
 
+import ptime as time
 import bencode
 from identifier import Id, ID_SIZE_BYTES, IdError
 from node import Node
@@ -92,8 +92,7 @@ class OutgoingMsgBase(object):
         self._dict = {VERSION: NEXTSHARE_VERSION}
         if private_dht_name:
             self._dict['d'] = private_dht_name
-        self._lock = threading.RLock()
-
+        self._already_encoded = False
     
     def __str__(self):
         return str(self._dict)
@@ -101,27 +100,22 @@ class OutgoingMsgBase(object):
     def __repr__(self):
         return str(self.__class__) + str(self)
 
-    def encode(self, tid):
-        # We use the lock to prevent that two threads encode at the same
-        # time. For instance, when doing get_peers lookup the main thread
-        # sends many queries while the networking thread receives a response
-        # and encode a new msg for a new query.
-        # TODO: I think this comment is outdated. The threads do not interact
-        # that way anymore.
-        self._lock.acquire()
+    def stamp(self, tid, dst_node):
         assert not TID in self._dict
         self._dict[TID] = tid
-        result = bencode.encode(self._dict)
-        del self._dict[TID]
-        self._lock.release()
-        return result
+        self.dst_node = dst_node
+        self.sending_ts = time.time()
+        return bencode.encode(self._dict)
       
 class OutgoingQueryBase(OutgoingMsgBase):
 
-    def __init__(self, sender_id):
+    def __init__(self, src_id):
         OutgoingMsgBase.__init__(self)
         self._dict[TYPE] = QUERY
-        self._dict[ARGS] = {ID: str(sender_id)}
+        self._dict[ARGS] = {ID: str(src_id)}
+        self.lookup_obj = None
+        self.got_response = False
+        self.got_error = False
 
     @property
     def query(self):
@@ -129,31 +123,32 @@ class OutgoingQueryBase(OutgoingMsgBase):
     
 class OutgoingPingQuery(OutgoingQueryBase):
     
-    def __init__(self, sender_id):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, src_id):
+        OutgoingQueryBase.__init__(self, src_id)
         self._dict[QUERY] = PING
 
         
 class OutgoingFindNodeQuery(OutgoingQueryBase):
 
-    def __init__(self, sender_id, target):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, src_id, target, lookup_obj):
+        OutgoingQueryBase.__init__(self, src_id)
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
 
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
 
-    def __init__(self, sender_id, info_hash):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, src_id, info_hash, lookup_obj):
+        OutgoingQueryBase.__init__(self, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
+        self.loockup_obj = lookup_obj
 
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
     
-    def __init__(self, sender_id, info_hash, port, token):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, src_id, info_hash, port, token):
+        OutgoingQueryBase.__init__(self, src_id)
         self._dict[QUERY] = ANNOUNCE_PEER
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self._dict[ARGS][PORT] = port
@@ -163,30 +158,30 @@ class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
 
 class OutgoingResponseBase(OutgoingMsgBase):
 
-    def __init__(self, sender_id):
+    def __init__(self, src_id):
         OutgoingMsgBase.__init__(self)
         self._dict[TYPE] = RESPONSE
-        self._dict[RESPONSE] = {ID: str(sender_id)}
+        self._dict[RESPONSE] = {ID: str(src_id)}
         
         
 class OutgoingPingResponse(OutgoingResponseBase):
 
-    def __init__(self, sender_id):
-        OutgoingResponseBase.__init__(self, sender_id)
+    def __init__(self, src_id):
+        OutgoingResponseBase.__init__(self, src_id)
 
 
 class OutgoingFindNodeResponse(OutgoingResponseBase):
 
-    def __init__(self, sender_id, nodes):
-        OutgoingResponseBase.__init__(self, sender_id)
+    def __init__(self, src_id, nodes):
+        OutgoingResponseBase.__init__(self, src_id)
         self._dict[RESPONSE][NODES] = mt.compact_nodes(nodes)
 
                           
 class OutgoingGetPeersResponse(OutgoingResponseBase):
 
-    def __init__(self, sender_id, token=None, nodes=None, peers=None):
+    def __init__(self, src_id, token=None, nodes=None, peers=None):
         assert nodes or peers
-        OutgoingResponseBase.__init__(self, sender_id)
+        OutgoingResponseBase.__init__(self, src_id)
         if token:
             self._dict[RESPONSE][TOKEN] = token
         if nodes:
@@ -197,8 +192,8 @@ class OutgoingGetPeersResponse(OutgoingResponseBase):
             
 class OutgoingAnnouncePeerResponse(OutgoingResponseBase):
     
-    def __init__(self, sender_id):
-        OutgoingResponseBase.__init__(self, sender_id)
+    def __init__(self, src_id):
+        OutgoingResponseBase.__init__(self, src_id)
 
 ###################################
 
@@ -215,8 +210,8 @@ class IncomingMsg(object):
 
     def __init__(self, datagram):
         bencoded_msg = datagram.data
-        sender_addr = datagram.addr
-        self.sender_addr = sender_addr
+        src_addr = datagram.addr
+        self.src_addr = src_addr
         try:
             # bencode.decode may raise bencode.DecodeError
             self._msg_dict = bencode.decode(bencoded_msg)
@@ -311,9 +306,9 @@ class IncomingMsg(object):
             and self.version.startswith(NEXTSHARE_VERSION[:2])
     
     def _sanitize_query(self):
-        # sender_id
-        self.sender_id = self._get_id(ARGS, ID)
-        self.sender_node = Node(self.sender_addr, self.sender_id)
+        # src_id
+        self.src_id = self._get_id(ARGS, ID)
+        self.src_node = Node(self.src_addr, self.src_id)
         # query
         self.query = self._get_str(QUERY)
         if self.query in [GET_PEERS, ANNOUNCE_PEER]:
@@ -328,9 +323,9 @@ class IncomingMsg(object):
         return
         
     def _sanitize_response(self):
-        # sender_id
-        self.sender_id = self._get_id(RESPONSE, ID)
-        self.sender_node = Node(self.sender_addr, self.sender_id)
+        # src_id
+        self.src_id = self._get_id(RESPONSE, ID)
+        self.src_node = Node(self.src_addr, self.src_id)
         # all nodes
         self.all_nodes = []
         # nodes

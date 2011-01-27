@@ -81,11 +81,6 @@ class RoutingManager(object):
         self.bootstrap_nodes = iter(bootstrap_nodes)
         
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
-        self.ping_msg = message.OutgoingPingQuery(my_node.id)
-        self.find_closest_msg = message.OutgoingFindNodeQuery(
-            my_node.id,
-            my_node.id)
-
         # maintenance variables
         self._next_stale_maintenance_index = 0
         self._maintenance_mode = BOOTSTRAP_MODE
@@ -164,11 +159,13 @@ class RoutingManager(object):
     def _get_maintenance_query(self, node_):
         if not node_.id: 
             # Bootstrap nodes don't have id
-            return Query(self.find_closest_msg, node_)
+            return Query(message.OutgoingFindNodeQuery(
+            self.my_node.id, self.my_node.id), node_, None)
 
         if random.choice((False, True)):
             # 50% chance to send find_node with my id as target
-            return Query(self.find_closest_msg, node_)
+            return Query(message.OutgoingFindNodeQuery(
+            self.my_node.id, self.my_node.id, None), node_)
 
         # 50% chance to send a find_node to fill up a non-full bucket
         target_log_distance = self.table.find_next_bucket_with_room_index(
@@ -176,11 +173,11 @@ class RoutingManager(object):
         if target_log_distance:
             target = self.my_node.id.generate_close_id(target_log_distance)
             return Query(
-                message.OutgoingFindNodeQuery(self.my_node.id, target),
+                message.OutgoingFindNodeQuery(self.my_node.id, target, None),
                 node_)
         else:
             # Every bucket is full. We send a ping instead.
-            return Query(self.ping_msg, node_)
+            return Query(message.OutgoingPingQuery(self.my_node.id), node_)
         
     def on_query_received(self, node_):
         '''

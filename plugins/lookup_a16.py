@@ -146,8 +146,6 @@ class GetPeersLookup(object):
         logger.debug('New lookup (info_hash: %r)' % info_hash)
         self._my_id = my_id
         self.lookup_id = lookup_id
-        self._get_peers_msg = message.OutgoingGetPeersQuery(
-            my_id, info_hash)
         self.callback_f = callback_f
         self._lookup_queue = _LookupQueue(info_hash, 20)
                                      
@@ -164,7 +162,8 @@ class GetPeersLookup(object):
 
         self._running = False
         self._slow_down = False
-
+        self._msg_factory = message.OutgoingGetPeersQuery
+        
     def _get_max_nodes_to_query(self):
         if self._slow_down:
             return min(self.slowdown_alpha - self._num_parallel_queries,
@@ -232,7 +231,9 @@ class GetPeersLookup(object):
                 continue
             self._num_parallel_queries += 1
             self.num_queries += len(nodes)
-            queries.append(Query(self._get_peers_msg, node_, self))
+            queries.append(Query(
+                    self._msg_factory(self._my_id, self.info_hash, None),
+                    node_, self))
         return queries
 
     def announce(self):
@@ -267,13 +268,13 @@ class MaintenanceLookup(GetPeersLookup):
     def __init__(self, my_id, target):
         GetPeersLookup.__init__(self, my_id,
                                 None, target, None, 0)
+        self._target = target
         self.bootstrap_alpha = 4
         self.normal_alpha = 4
         self.normal_m = 1
         self.slowdown_alpha = 4
         self.slowdown_m = 1
-        self._get_peers_msg = message.OutgoingFindNodeQuery(my_id,
-                                                            target)
+        self._msg_factory = message.OutgoingFindNodeQuery
             
         
 class LookupManager(object):

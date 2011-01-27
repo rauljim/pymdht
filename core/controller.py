@@ -165,16 +165,16 @@ class Controller:
             return self._next_main_loop_call_ts, datagrams_to_send
 
         if msg.type == message.QUERY:
-            if msg.sender_id == self._my_id:
+            if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
             response_msg = self._get_response(msg)
             if response_msg:
-                bencoded_response = response_msg.encode(msg.tid)
+                bencoded_response = response_msg.stamp(msg.tid, addr)
                 datagrams_to_send.append(
                     message.Datagram(bencoded_response, addr))
             maintenance_queries_to_send = self._routing_m.on_query_received(
-                msg.sender_node)
+                msg.src_node)
             
         elif msg.type == message.RESPONSE:
             related_query = self._querier.on_response_received(msg)
@@ -188,7 +188,7 @@ class Controller:
                  num_parallel_queries,
                  lookup_done
                  ) = related_query.lookup_obj.on_response_received(
-                    msg, msg.sender_node)
+                    msg, msg.src_node)
                 datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
@@ -208,7 +208,7 @@ class Controller:
             # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_response_received(
-                msg.sender_node, related_query.rtt, msg.all_nodes)
+                msg.src_node, related_query.rtt, msg.all_nodes)
 
         elif msg.type == message.ERROR:
             related_query = self._querier.on_error_received(msg)
@@ -273,7 +273,7 @@ class Controller:
                                                     nodes=rnodes,
                                                     peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
-            peer_addr = (msg.sender_addr[0], msg.bt_port)
+            peer_addr = (msg.src_addr[0], msg.bt_port)
             self._tracker.put(msg.info_hash, peer_addr)
             return message.OutgoingAnnouncePeerResponse(self._my_id)
         else:

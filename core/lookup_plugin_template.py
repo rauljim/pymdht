@@ -16,15 +16,17 @@ class GetPeersLookup(object):
     def __init__(self, my_id, lookup_id,
                  info_hash, callback_f,
                  bt_port=0):
+        self._my_id = my_id
         self.lookup_id = lookup_id
         self.info_hash = info_hash
         self.callback_f = callback_f
         self.bt_port = bt_port
-        self._get_peers_msg = message.OutgoingGetPeersQuery(
-            my_id, info_hash)
+        self._msg_factory = message.OutgoingGetPeersQuery
     
     def start(self, bootstrap_rnodes):
-        queries_to_send = [querier.Query(self._get_peers_msg, bn)
+        queries_to_send = [querier.Query(
+                self._msg_factory(
+                    self._my_id, self.info_hash, self.lookup_id), bn)
                            for bn in bootstrap_rnodes]
         return queries_to_send
         
@@ -62,8 +64,7 @@ class MaintenanceLookup(GetPeersLookup):
         self.normal_m = 1
         self.slowdown_alpha = 4
         self.slowdown_m = 1
-        self._get_peers_msg = message.OutgoingFindNodeQuery(my_id,
-                                                            target)
+        self._msg_factory = message.OutgoingFindNodeQuery
             
         
 class LookupManager(object):

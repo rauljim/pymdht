@@ -74,7 +74,8 @@ class TestController:
         # SERVER_NODE replies before the timeout
         tid = message.IncomingMsg(
             Datagram(datagrams[0].data, tc.CLIENT_ADDR)).tid
-        data = message.OutgoingPingResponse(tc.SERVER_ID).encode(tid)
+        data = message.OutgoingPingResponse(tc.SERVER_ID).stamp(
+            tid, tc.CLIENT_NODE)
         eq_(self.controller._routing_m.get_main_rnodes(), [])
         datagram = message.Datagram(data, tc.SERVER_ADDR)
         self.controller.on_datagram_received(datagram)
@@ -86,7 +87,7 @@ class TestController:
         # It returns a maintenance lookup
         ts, datagrams = self.controller.main_loop() 
         q = querier.Query(message.OutgoingFindNodeQuery(self.my_id,
-                                                        self.my_id),
+                                                        self.my_id, None),
                           tc.SERVER_NODE)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         assert_almost_equal(ts, expected_ts)
@@ -112,7 +113,7 @@ class TestController:
         #fabricate response
         ping = message.IncomingMsg(Datagram(ping, addr))
         pong = message.OutgoingPingResponse(tc.SERVER_ID)
-        data = pong.encode(ping.tid)
+        data = pong.stamp(ping.tid, tc.CLIENT_NODE)
         # get a node in the routing table
         self.controller.on_datagram_received(
             message.Datagram(data, addr))
@@ -145,7 +146,7 @@ class TestController:
         #fabricate response
         ping = message.IncomingMsg(Datagram(ping, addr))
         pong = message.OutgoingPingResponse(tc.SERVER_ID)
-        data = pong.encode(ping.tid)
+        data = pong.stamp(ping.tid, tc.CLIENT_NODE)
         # get a node in the routing table
         self.controller.on_datagram_received(
             message.Datagram(data, addr))
@@ -187,7 +188,8 @@ class TestController:
         # controller.start calls main_loop, which does maintenance (bootstrap)
         self.controller.main_loop()
         # minitwisted informs of a response
-        data = message.OutgoingPingResponse(tc.SERVER_ID).encode('\0\0')
+        data = message.OutgoingPingResponse(tc.SERVER_ID).stamp(
+            '\0\0', tc.CLIENT_NODE)
         self.controller.on_datagram_received(
             message.Datagram(data, tc.SERVER_ADDR))
         self.controller.main_loop() # maintenance (maintenance lookup)
