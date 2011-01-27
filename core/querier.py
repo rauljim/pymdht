@@ -61,15 +61,15 @@ class Querier(object):
         current_ts = time.time()
         timeout_ts = current_ts + TIMEOUT_DELAY
         for query in queries:
-            query.tid = self._next_tid()
+            msg = query.msg
+            tid = self._next_tid()
             logger.debug('registering query to node: %r\n%r' % (query.dstnode,
-                                                                query.msg))
-            query.query_ts = current_ts
-            self._timeouts.append((timeout_ts, query))
+                                                                msg))
+            self._timeouts.append((timeout_ts, msg))
             # if node is not in the dictionary, it will create an empty list
-            self._pending.setdefault(query.dstnode.addr, []).append(query)
+            self._pending.setdefault(query.dstnode.addr, []).append(msg)
             datagrams.append(message.Datagram(
-                    query.msg.stamp(query.tid, query.dstnode),
+                    msg.stamp(tid, query.dstnode),
                     query.dstnode.addr))
         return timeout_ts, datagrams
 
@@ -104,11 +104,11 @@ class Querier(object):
             if current_ts < timeout_ts:
                 break
             self._timeouts = self._timeouts[1:]
-            addr_query_list = self._pending[query.dstnode.addr]
+            addr_query_list = self._pending[query.dst_node.addr]
             assert query == addr_query_list.pop(0)
             if not addr_query_list:
                 # The list is empty. Remove the whole list.
-                del self._pending[query.dstnode.addr]
+                del self._pending[query.dst_node.addr]
             if not query.got_response and not query.got_error:
                 timeout_queries.append(query)
         return timeout_queries
@@ -122,9 +122,10 @@ class Querier(object):
         for related_query in addr_query_list:
             if related_query.matching_tid(tid):
                 logger.debug(
-                    'response node: %s, related query: (%s), delay %f s.' % (
+                    'response node: %s, related query: (%s), delay %f s. %r' % (
                         `addr`,
-                        `related_query.msg.query`,
-                        time.time() - related_query.query_ts))
+                        `related_query.query`,
+                        time.time() - related_query.sending_ts,
+                        related_query.lookup_obj))
                 # Do not delete this query (the timeout will delete it)
                 return related_query

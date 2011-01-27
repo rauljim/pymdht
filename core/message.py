@@ -70,11 +70,6 @@ SERVER_E = [202, 'Server Error']
 PROTOCOL_E = [203, 'Protocol Error']
 UNKNOWN_E = [201, 'Method Unknown']
 
-def matching_tid(query_tid, response_tid):
-    '''It just matches the first byte because other nodes return weird
-    TIDs in their responses.'''
-    return query_tid[0] == response_tid[0]
-
 
 class MsgError(Exception):
     """Raised anytime something goes wrong (specially when
@@ -120,7 +115,27 @@ class OutgoingQueryBase(OutgoingMsgBase):
     @property
     def query(self):
         return self._dict[QUERY]
-    
+
+    @property
+    def tid(self):
+        return self._dict[TID]
+
+    def matching_tid(self, response_tid):
+        '''It just matches the first byte because other nodes return weird
+        TIDs in their responses.'''
+        return self._dict[TID][0] == response_tid[0]
+
+    def on_response_received(self, response_msg):
+        self.rtt = time.time() - self.sending_ts
+        if not self.dst_node.id:
+            self.dstnode.id = response_msg.src_id
+        self.got_response = True
+
+    def on_error_received(self, error_msg):
+        self.rtt = time.time() - self.sending_ts
+        self.got_error = True
+
+        
 class OutgoingPingQuery(OutgoingQueryBase):
     
     def __init__(self, src_id):
@@ -142,7 +157,7 @@ class OutgoingGetPeersQuery(OutgoingQueryBase):
         OutgoingQueryBase.__init__(self, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
-        self.loockup_obj = lookup_obj
+        self.lookup_obj = lookup_obj
 
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):

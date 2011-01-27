@@ -289,7 +289,7 @@ class Controller:
             (lookup_queries_to_send,
              num_parallel_queries,
              lookup_done
-             ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
+             ) = related_query.lookup_obj.on_timeout(related_query.dst_node)
             queries_to_send.extend(lookup_queries_to_send)
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done and callback_f and callable(callback_f):
@@ -298,7 +298,7 @@ class Controller:
                 lookup_id = related_query.lookup_obj.lookup_id
                 related_query.lookup_obj.callback_f(lookup_id, None)
         queries_to_send.extend(
-            self._routing_m.on_timeout(related_query.dstnode))
+            self._routing_m.on_timeout(related_query.dst_node))
         return queries_to_send
 
     def _announce(self, lookup_obj):
