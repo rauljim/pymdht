@@ -177,7 +177,7 @@ class Controller:
                 msg.src_node)
             
         elif msg.type == message.RESPONSE:
-            related_query = self._querier.on_response_received(msg)
+            related_query = self._querier.get_related_query(msg)
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
@@ -211,7 +211,7 @@ class Controller:
                 msg.src_node, related_query.rtt, msg.all_nodes)
 
         elif msg.type == message.ERROR:
-            related_query = self._querier.on_response_received(msg)
+            related_query = self._querier.get_related_query(msg)
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send

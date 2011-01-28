@@ -73,7 +73,7 @@ class Querier(object):
                     query.dstnode.addr))
         return timeout_ts, datagrams
 
-    def on_response_received(self, response_msg):
+    def get_related_query(self, response_msg):
         # message already sanitized by IncomingMsg
         if response_msg.type == message.RESPONSE:
             logger.debug('response received: %s' % repr(response_msg))
