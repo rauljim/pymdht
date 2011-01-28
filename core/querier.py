@@ -69,7 +69,7 @@ class Querier(object):
             # if node is not in the dictionary, it will create an empty list
             self._pending.setdefault(query.dst_node.addr, []).append(msg)
             datagrams.append(message.Datagram(
-                    msg.stamp(tid, query.dst_node),
+                    msg.stamp(tid),
                     query.dst_node.addr))
         return timeout_ts, datagrams
 

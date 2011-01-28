@@ -96,11 +96,10 @@ class OutgoingMsgBase(object):
     def __repr__(self):
         return str(self.__class__) + str(self)
 
-    def stamp(self, tid, dst_node):
+    def stamp(self, tid):
         if TID in self._dict:
             raise MsgError, 'Message has already been stamped'
         self._dict[TID] = tid
-        self.dst_node = dst_node
         self.sending_ts = time.time()
         return bencode.encode(self._dict)
       

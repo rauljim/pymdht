@@ -136,7 +136,7 @@ class TestQuerier:
         # Server gets bencoded_msg and creates response
         ping_r_msg_out = message.OutgoingPingResponse(tc.CLIENT_NODE,
                                                       tc.SERVER_ID)
-        bencoded_r = ping_r_msg_out.stamp(ping_msg.tid, tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp(ping_msg.tid)
         time.sleep(1)
         ok_(not self.querier.get_timeout_queries())
         # The client receives the bencoded message (after 1 second)
@@ -166,7 +166,7 @@ class TestQuerier:
         # TODO: consider accepting responses from a different port
         ping_r_msg_out = message.OutgoingPingResponse(tc.CLIENT_NODE,
                                                       tc.SERVER_ID)
-        bencoded_r = ping_r_msg_out.stamp('zz', tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp('zz')
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(
                 Datagram(bencoded_r, tc.SERVER_ADDR))
@@ -185,7 +185,7 @@ class TestQuerier:
         # Server gets bencoded_msg and creates response
         ping_r_msg_out = message.OutgoingPingResponse(tc.CLIENT_NODE,
                                                       tc.SERVER_ID)
-        bencoded_r = ping_r_msg_out.stamp('zz', tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp('zz')
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(
                     Datagram(bencoded_r, tc.SERVER_ADDR))
@@ -203,7 +203,7 @@ class TestQuerier:
         # Server gets bencoded_msg and creates response
         ping_r_msg_out = message.OutgoingErrorMsg(tc.CLIENT_NODE,
                                                   message.GENERIC_E)
-        bencoded_r = ping_r_msg_out.stamp(msg.tid, tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp(msg.tid)
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(
                     Datagram(bencoded_r, tc.SERVER_ADDR))
@@ -222,7 +222,7 @@ class TestQuerier:
         # response for queries[3]
         ping_r_msg_out = message.OutgoingPingResponse(tc.CLIENT_NODE,
                                                       tc.SERVER_ID)
-        bencoded_r = ping_r_msg_out.stamp(msgs[3].tid, tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp(msgs[3].tid)
         ping_r_in = message.IncomingMsg(
                         Datagram(bencoded_r, tc.SERVER_ADDR))
         related_query = self.querier.get_related_query(ping_r_in)
@@ -230,7 +230,7 @@ class TestQuerier:
         # error for queries[2]
         ping_r_msg_out = message.OutgoingErrorMsg(tc.CLIENT_NODE,
                                                   message.GENERIC_E)
-        bencoded_r = ping_r_msg_out.stamp(msgs[2].tid, tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp(msgs[2].tid)
         ping_r_in = message.IncomingMsg(
                         Datagram(bencoded_r, tc.SERVER_ADDR))
         related_query = self.querier.get_related_query(ping_r_in)
@@ -238,7 +238,7 @@ class TestQuerier:
         # response to wrong addr
         ping_r_msg_out = message.OutgoingPingResponse(tc.CLIENT_NODE,
                                                       tc.SERVER_ID)
-        bencoded_r = ping_r_msg_out.stamp(msgs[5].tid, tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp(msgs[5].tid)
         ping_r_in = message.IncomingMsg(
                         Datagram(bencoded_r, tc.SERVER2_ADDR))
         related_query = self.querier.get_related_query(ping_r_in)
@@ -246,7 +246,7 @@ class TestQuerier:
         # response with wrong tid
         ping_r_msg_out = message.OutgoingPingResponse(tc.CLIENT_NODE,
                                                       tc.SERVER_ID)
-        bencoded_r = ping_r_msg_out.stamp('ZZ', tc.CLIENT_NODE)
+        bencoded_r = ping_r_msg_out.stamp('ZZ')
         ping_r_in = message.IncomingMsg(
                         Datagram(bencoded_r, tc.SERVER_ADDR))
         related_query = self.querier.get_related_query(ping_r_in)

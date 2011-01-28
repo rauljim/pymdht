@@ -72,8 +72,8 @@ class TestController:
         # SERVER_NODE gets msg and replies before the timeout
         tid = message.IncomingMsg(
             Datagram(datagrams[0].data, tc.CLIENT_ADDR)).tid
-        data = message.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID).stamp(
-            tid, tc.CLIENT_NODE)
+        data = message.OutgoingPingResponse(tc.CLIENT_NODE,
+                                            tc.SERVER_ID).stamp(tid)
         eq_(self.controller._routing_m.get_main_rnodes(), [])
         datagram = message.Datagram(data, tc.SERVER_ADDR)
         self.controller.on_datagram_received(datagram)
@@ -111,7 +111,7 @@ class TestController:
         #fabricate response
         ping = message.IncomingMsg(Datagram(ping, addr))
         pong = message.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID)
-        data = pong.stamp(ping.tid, tc.CLIENT_NODE)
+        data = pong.stamp(ping.tid)
         # get a node in the routing table
         self.controller.on_datagram_received(
             message.Datagram(data, addr))
@@ -144,7 +144,7 @@ class TestController:
         #fabricate response
         ping = message.IncomingMsg(Datagram(ping, addr))
         pong = message.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID)
-        data = pong.stamp(ping.tid, tc.CLIENT_NODE)
+        data = pong.stamp(ping.tid)
         # get a node in the routing table
         self.controller.on_datagram_received(
             message.Datagram(data, addr))
@@ -187,8 +187,7 @@ class TestController:
         self.controller.main_loop()
         # minitwisted informs of a response
         data = message.OutgoingPingResponse(tc.CLIENT_NODE,
-                                            tc.SERVER_ID).stamp(
-            '\0\0', tc.CLIENT_NODE)
+                                            tc.SERVER_ID).stamp('\0\0')
         self.controller.on_datagram_received(
             message.Datagram(data, tc.SERVER_ADDR))
         self.controller.main_loop() # maintenance (maintenance lookup)
