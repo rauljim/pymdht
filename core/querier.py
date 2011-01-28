@@ -75,18 +75,18 @@ class Querier(object):
 
     def on_response_received(self, response_msg):
         # message already sanitized by IncomingMsg
-        logger.debug('response received: %s' % repr(response_msg))
+        if response_msg.type == message.RESPONSE:
+            logger.debug('response received: %s' % repr(response_msg))
+        elif response_msg.type == message.ERROR:
+            logger.warning('Error message received:\n%s\nSource: %s',
+                           `response_msg`,
+                           `response_msg.src_addr`)
+        else:
+            raise Exception, 'response_msg must be response or error'
         related_query = self._find_related_query(response_msg)
         if not related_query:
             logger.warning('No query for this response\n%s\nsource: %s' % (
                     response_msg, response_msg.src_addr))
-        return related_query
-            
-    def on_error_received(self, error_msg):
-        logger.warning('Error message received:\n%s\nSource: %s',
-                        `error_msg`,
-                        `error_msg.src_addr`)
-        related_query = self._find_related_query(error_msg)
         return related_query
 
     def get_timeout_queries(self):

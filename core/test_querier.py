@@ -198,7 +198,7 @@ class TestQuerier:
         # The client receives the bencoded message
         ping_r_in = message.IncomingMsg(
                     Datagram(bencoded_r, tc.SERVER_ADDR))
-        related_query = self.querier.on_error_received(ping_r_in)
+        related_query = self.querier.on_response_received(ping_r_in)
         assert related_query is msg
 
     def test_many_queries(self):
@@ -222,7 +222,7 @@ class TestQuerier:
         bencoded_r = ping_r_msg_out.stamp(msgs[2].tid, tc.CLIENT_NODE)
         ping_r_in = message.IncomingMsg(
                         Datagram(bencoded_r, tc.SERVER_ADDR))
-        related_query = self.querier.on_error_received(ping_r_in)
+        related_query = self.querier.on_response_received(ping_r_in)
         assert related_query is msgs[2]
         # response to wrong addr
         ping_r_msg_out = message.OutgoingPingResponse(tc.SERVER_ID)
