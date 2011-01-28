@@ -21,7 +21,6 @@ try:
     import core.ptime as time
     import core.identifier as identifier
     import core.message as message
-    from core.querier import Query
     import core.node as node
     from core.node import Node, RoutingNode
     from core.routing_table import RoutingTable
@@ -81,11 +80,6 @@ class RoutingManager(object):
         self.bootstrap_nodes = iter(bootstrap_nodes)
         
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
-        self.ping_msg = message.OutgoingPingQuery(my_node.id)
-        self.find_closest_msg = message.OutgoingFindNodeQuery(
-            my_node.id,
-            my_node.id)
-
         # maintenance variables
         self._next_stale_maintenance_index = 0
         self._maintenance_mode = BOOTSTRAP_MODE
@@ -164,23 +158,25 @@ class RoutingManager(object):
     def _get_maintenance_query(self, node_):
         if not node_.id: 
             # Bootstrap nodes don't have id
-            return Query(self.find_closest_msg, node_)
-
+            return message.OutgoingFindNodeQuery(node_,
+                                                 self.my_node.id,
+                                                 self.my_node.id)
         if random.choice((False, True)):
             # 50% chance to send find_node with my id as target
-            return Query(self.find_closest_msg, node_)
+            return message.OutgoingFindNodeQuery(node_,
+                                                 self.my_node.id,
+                                                 self.my_node.id, None)
 
         # 50% chance to send a find_node to fill up a non-full bucket
         target_log_distance = self.table.find_next_bucket_with_room_index(
             node_=node_)
         if target_log_distance:
             target = self.my_node.id.generate_close_id(target_log_distance)
-            return Query(
-                message.OutgoingFindNodeQuery(self.my_node.id, target),
-                node_)
+            return message.OutgoingFindNodeQuery(node_, self.my_node.id,
+                                                 target, None)
         else:
             # Every bucket is full. We send a ping instead.
-            return Query(self.ping_msg, node_)
+            return message.OutgoingPingQuery(node_, self.my_node.id)
         
     def on_query_received(self, node_):
         '''

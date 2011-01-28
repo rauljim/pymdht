@@ -16,6 +16,7 @@ import socket
 import threading
 import logging
 
+from message import Datagram
 import ptime as time
 from floodbarrier import FloodBarrier
 
@@ -83,6 +84,8 @@ class ThreadedReactor(threading.Thread):
         except:
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
+            print 'MINITWISTED CRASHED'
+            #raise #Uncomment for debuggin only!
         self.running = False
         logger.debug('Reactor stopped')
 
@@ -101,16 +104,16 @@ class ThreadedReactor(threading.Thread):
         if call_asap_tuple:
             callback_f, args, kwds = call_asap_tuple
             (self._next_main_loop_call_ts,
-             msgs_to_send) = callback_f(*args, **kwds)
-            for msg, addr in msgs_to_send:
-                self._sendto(msg, addr)
+             datagrams_to_send) = callback_f(*args, **kwds)
+            for datagram in datagrams_to_send:
+                self._sendto(datagram)
                     
         # Call main_loop
         if time.time() > self._next_main_loop_call_ts:
             (self._next_main_loop_call_ts,
-             msgs_to_send) = self._main_loop_f()
-            for msg, addr in msgs_to_send:
-                self._sendto(msg, addr)
+             datagrams_to_send) = self._main_loop_f()
+            for datagram in datagrams_to_send:
+                self._sendto(datagram)
 
         # Get data from the network
         try:
@@ -124,13 +127,18 @@ class ThreadedReactor(threading.Thread):
             ip_is_blocked = self.floodbarrier_active and \
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
-                logger.warning('%s blocked' % `addr`)
+                import sys
+#                print >>sys.stderr, '>>>>>>>>>>>>>>>>>>', addr
+#                print >>sys.stderr, '>>>>>>>>>>>>>>>>>>', `addr`
+                logger.warning("blocked")
+#                print >>sys.stderr, '>>>>>>>>>>>>>>>>>> DONE'
                 return
+            datagram_received = Datagram(data, addr)
             (self._next_main_loop_call_ts,
-             msgs_to_send) = self._on_datagram_received_f(
-                data, addr)
-            for msg, addr in msgs_to_send:
-                self._sendto(msg, addr)
+             datagrams_to_send) = self._on_datagram_received_f(
+             datagram_received)
+            for datagram in datagrams_to_send:
+                self._sendto(datagram)
             
     def stop(self):#, stop_callback):
         """Stop the thread. It cannot be resumed afterwards"""
@@ -153,18 +161,22 @@ class ThreadedReactor(threading.Thread):
             self._lock.release()
         return
         
-    def _sendto(self, data, addr):
+    def _sendto(self, datagram):
         """Send data to addr using the UDP port used by listen_udp."""
 
         try:
-            bytes_sent = self.s.sendto(data, addr)
-            if bytes_sent != len(data):
+            bytes_sent = self.s.sendto(datagram.data, datagram.addr)
+            if bytes_sent != len(datagram.data):
                 logger.warning(
                     'Just %d bytes sent out of %d (Data follows)' % (
-                        bytes_sent, len(data)))
-                logger.critical('Data: %s' % data)
+                        bytes_sent, len(datagram.data)))
+                logger.critical('Data: %s' % datagram.data)
         except (socket.error):
             logger.warning(
-                'Got socket.error when sending data to %r\n%r' % (addr,
-                                                                  data))
-
+                'Got socket.error when sending data to %r\n%r' % (
+                    datagram.addr, datagram.data))
+        except:
+            print 'datagram >>>>>>>>>>>', datagram
+            print 'data,addr', datagram.data, datagram.addr
+            raise
+            

@@ -52,7 +52,7 @@ class Controller:
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
-        self._querier = Querier(self._my_id)
+        self._querier = Querier()
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
@@ -73,8 +73,8 @@ class Controller:
                                                               callback_f,
                                                               bt_port))
         queries_to_send =  self._try_do_lookup()
-        msgs_to_send = self._register_queries(queries_to_send)
-        return self._next_main_loop_call_ts, msgs_to_send
+        datagrams_to_send = self._register_queries(queries_to_send)
+        return self._next_main_loop_call_ts, datagrams_to_send
         
     def _try_do_lookup(self):
         queries_to_send = []
@@ -148,36 +148,39 @@ class Controller:
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                self._next_save_state_ts)
         # Return control to reactor
-        msgs_to_send = self._register_queries(queries_to_send)
-        return self._next_main_loop_call_ts, msgs_to_send
+        datagrams_to_send = self._register_queries(queries_to_send)
+        return self._next_main_loop_call_ts, datagrams_to_send
 
     def _maintenance_lookup(self, target):
         self._lookup_m.maintenance_lookup(target)
 
-    def on_datagram_received(self, data, addr):
-        msgs_to_send = []
+    def on_datagram_received(self, datagram):
+        data = datagram.data
+        addr = datagram.addr
+        datagrams_to_send = []
         try:
-            msg = message.IncomingMsg(data, addr)
+            msg = message.IncomingMsg(datagram)
         except(message.MsgError):
             # ignore message
-            return self._next_main_loop_call_ts, msgs_to_send
+            return self._next_main_loop_call_ts, datagrams_to_send
 
         if msg.type == message.QUERY:
-            if msg.sender_id == self._my_id:
+            if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
-                return self._next_main_loop_call_ts, msgs_to_send
+                return self._next_main_loop_call_ts, datagrams_to_send
             response_msg = self._get_response(msg)
             if response_msg:
-                bencoded_response = response_msg.encode(msg.tid)
-                msgs_to_send.append((bencoded_response, addr))
+                bencoded_response = response_msg.stamp(msg.tid)
+                datagrams_to_send.append(
+                    message.Datagram(bencoded_response, addr))
             maintenance_queries_to_send = self._routing_m.on_query_received(
-                msg.sender_node)
+                msg.src_node)
             
         elif msg.type == message.RESPONSE:
-            related_query = self._querier.on_response_received(msg, addr)
+            related_query = self._querier.get_related_query(msg)
             if not related_query:
                 # Query timed out or unrequested response
-                return self._next_main_loop_call_ts, msgs_to_send
+                return self._next_main_loop_call_ts, datagrams_to_send
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -185,16 +188,16 @@ class Controller:
                  num_parallel_queries,
                  lookup_done
                  ) = related_query.lookup_obj.on_response_received(
-                    msg, msg.sender_node)
-                msgs = self._register_queries(lookup_queries_to_send)
-                msgs_to_send.extend(msgs)
+                    msg, msg.src_node)
+                datagrams = self._register_queries(lookup_queries_to_send)
+                datagrams_to_send.extend(datagrams)
 
                 if lookup_done:
                         queries_to_send = self._announce(
                             related_query.lookup_obj)
-                        msgs_to_send = self._register_queries(
+                        datagrams = self._register_queries(
                             queries_to_send)
-                        msgs_to_send.extend(msgs)
+                        datagrams_to_send.extend(datagrams)
                 callback_f = related_query.lookup_obj.callback_f
                 if callback_f and callable(callback_f):
                     lookup_id = related_query.lookup_obj.lookup_id
@@ -205,27 +208,26 @@ class Controller:
             # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_response_received(
-                msg.sender_node, related_query.rtt, msg.all_nodes)
+                msg.src_node, related_query.rtt, msg.all_nodes)
 
         elif msg.type == message.ERROR:
-            related_query = self._querier.on_error_received(msg, addr)
+            related_query = self._querier.get_related_query(msg)
             if not related_query:
                 # Query timed out or unrequested response
-                return self._next_main_loop_call_ts, msgs_to_send
+                return self._next_main_loop_call_ts, datagrams_to_send
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
                 (lookup_queries_to_send,
                  num_parallel_queries,
                  lookup_done
-                 ) = related_query.lookup_obj.on_error_received(
-                    msg, addr)
-                msgs = self._register_queries(lookup_queries_to_send)
-                msgs_to_send.extend(msgs)
+                 ) = related_query.lookup_obj.on_error_received(msg)
+                datagrams = self._register_queries(lookup_queries_to_send)
+                datagrams_to_send.extend(datagrams)
 
                 if lookup_done:
-                    msgs = self._announce(related_query.lookup_obj)
-                    msgs_to_send.extend(msgs)
+                    datagrams = self._announce(related_query.lookup_obj)
+                    datagrams_to_send.extend(datagrams)
                 callback_f = related_query.lookup_obj.callback_f
                 if callback_f and callable(callback_f):
                     lookup_id = related_query.lookup_obj.lookup_id
@@ -236,10 +238,10 @@ class Controller:
                 self._routing_m.on_error_received(addr)
 
         else: # unknown type
-            return self._next_main_loop_call_ts, msgs_to_send
-        msgs = self._register_queries(maintenance_queries_to_send)
-        msgs_to_send.extend(msgs)
-        return self._next_main_loop_call_ts, msgs_to_send
+            return self._next_main_loop_call_ts, datagrams_to_send
+        datagrams = self._register_queries(maintenance_queries_to_send)
+        datagrams_to_send.extend(datagrams)
+        return self._next_main_loop_call_ts, datagrams_to_send
 
     def _on_query_received(self):
         return
@@ -251,12 +253,13 @@ class Controller:
     
     def _get_response(self, msg):
         if msg.query == message.PING:
-            return message.OutgoingPingResponse(self._my_id)
+            return message.OutgoingPingResponse(msg.src_node, self._my_id)
         elif msg.query == message.FIND_NODE:
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
-            return message.OutgoingFindNodeResponse(self._my_id,
+            return message.OutgoingFindNodeResponse(msg.src_node,
+                                                    self._my_id,
                                                     rnodes)
         elif msg.query == message.GET_PEERS:
             token = self._token_m.get()
@@ -266,14 +269,16 @@ class Controller:
             peers = self._tracker.get(msg.info_hash)
             if peers:
                 logger.debug('RESPONDING with PEERS:\n%r' % peers)
-            return message.OutgoingGetPeersResponse(self._my_id,
+            return message.OutgoingGetPeersResponse(msg.src_node,
+                                                    self._my_id,
                                                     token,
                                                     nodes=rnodes,
                                                     peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
-            peer_addr = (msg.sender_addr[0], msg.bt_port)
+            peer_addr = (msg.src_addr[0], msg.bt_port)
             self._tracker.put(msg.info_hash, peer_addr)
-            return message.OutgoingAnnouncePeerResponse(self._my_id)
+            return message.OutgoingAnnouncePeerResponse(msg.src_node,
+                                                        self._my_id)
         else:
             logger.debug('Invalid QUERY: %r' % (msg.query))
             #TODO: maybe send an error back?
@@ -287,7 +292,7 @@ class Controller:
             (lookup_queries_to_send,
              num_parallel_queries,
              lookup_done
-             ) = related_query.lookup_obj.on_timeout(related_query.dstnode)
+             ) = related_query.lookup_obj.on_timeout(related_query.dst_node)
             queries_to_send.extend(lookup_queries_to_send)
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done and callback_f and callable(callback_f):
@@ -295,8 +300,8 @@ class Controller:
                         related_query.lookup_obj))
                 lookup_id = related_query.lookup_obj.lookup_id
                 related_query.lookup_obj.callback_f(lookup_id, None)
-        queries_to_send.extend(self._routing_m.on_timeout(
-                related_query.dstnode))
+        queries_to_send.extend(
+            self._routing_m.on_timeout(related_query.dst_node))
         return queries_to_send
 
     def _announce(self, lookup_obj):
@@ -311,11 +316,11 @@ class Controller:
     def _register_queries(self, queries_to_send, lookup_obj=None):
         if not queries_to_send:
             return []
-        timeout_call_ts, msgs_to_send = self._querier.register_queries(
+        timeout_call_ts, datagrams_to_send = self._querier.register_queries(
             queries_to_send)
         self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                            timeout_call_ts)
-        return msgs_to_send
+        return datagrams_to_send
                     
         
 BOOTSTRAP_NODES = (
