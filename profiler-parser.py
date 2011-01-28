@@ -188,7 +188,8 @@ def parse(filenames):
             if not data:
                 continue
             try:
-                msg = message.IncomingMsg(data, src_addr)
+                datagram = message.Datagram(data, src_addr)
+                msg = message.IncomingMsg(datagram)
             except(message.MsgError):
                 #print >>sys.stderr, '>>>ERROR decoding', `data`
                 continue
