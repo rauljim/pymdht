@@ -170,7 +170,7 @@ class Controller:
                 return self._next_main_loop_call_ts, datagrams_to_send
             response_msg = self._get_response(msg)
             if response_msg:
-                bencoded_response = response_msg.stamp(msg.tid, addr)
+                bencoded_response = response_msg.stamp(msg.tid)
                 datagrams_to_send.append(
                     message.Datagram(bencoded_response, addr))
             maintenance_queries_to_send = self._routing_m.on_query_received(
