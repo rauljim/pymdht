@@ -29,7 +29,7 @@ class RoutingManager(object):
         maintenance_delay = MAINTENANCE_DELAY
         if self.maintenance_counter == 1:
             # bootstrap ping
-            msg = message.OutgoingPingQuery(self.my_node.id)
+            msg = message.OutgoingPingQuery(tc.SERVER_NODE, self.my_node.id)
             queries_to_send = [Query(msg, tc.SERVER_NODE)]
             maintenance_lookup_target = None
         elif self.maintenance_counter == 2:

@@ -25,7 +25,7 @@ class GetPeersLookup(object):
     
     def start(self, bootstrap_rnodes):
         queries_to_send = [querier.Query(
-                self._msg_factory(
+                self._msg_factory(bn,
                     self._my_id, self.info_hash, self.lookup_id), bn)
                            for bn in bootstrap_rnodes]
         return queries_to_send

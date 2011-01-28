@@ -232,8 +232,8 @@ class GetPeersLookup(object):
             self._num_parallel_queries += 1
             self.num_queries += len(nodes)
             queries.append(Query(
-                    self._msg_factory(self._my_id, self.info_hash,
-                                      self),
+                    self._msg_factory(node_,
+                                      self._my_id, self.info_hash, self),
                     node_, self))
         return queries
 
@@ -257,7 +257,7 @@ class GetPeersLookup(object):
         queries_to_send = []
         for qnode in nodes_to_announce:
             logger.debug('announcing to %r' % qnode.node)
-            msg = message.OutgoingAnnouncePeerQuery(
+            msg = message.OutgoingAnnouncePeerQuery(qnode.node,
                 self._my_id, self.info_hash,
                 self._bt_port, qnode.token)
             queries_to_send.append(Query(msg, qnode.node, self))

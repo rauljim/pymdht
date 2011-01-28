@@ -83,7 +83,8 @@ class OutgoingMsgBase(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, dst_node):
+        self.dst_node = dst_node
         self._dict = {VERSION: NEXTSHARE_VERSION}
         if private_dht_name:
             self._dict['d'] = private_dht_name
@@ -105,8 +106,8 @@ class OutgoingMsgBase(object):
       
 class OutgoingQueryBase(OutgoingMsgBase):
 
-    def __init__(self, src_id):
-        OutgoingMsgBase.__init__(self)
+    def __init__(self, dst_node, src_id):
+        OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = QUERY
         self._dict[ARGS] = {ID: str(src_id)}
         self.lookup_obj = None
@@ -134,23 +135,23 @@ class OutgoingQueryBase(OutgoingMsgBase):
         
 class OutgoingPingQuery(OutgoingQueryBase):
     
-    def __init__(self, src_id):
-        OutgoingQueryBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = PING
 
         
 class OutgoingFindNodeQuery(OutgoingQueryBase):
 
-    def __init__(self, src_id, target, lookup_obj):
-        OutgoingQueryBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id, target, lookup_obj):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
 
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
 
-    def __init__(self, src_id, info_hash, lookup_obj):
-        OutgoingQueryBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id, info_hash, lookup_obj):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self.lookup_obj = lookup_obj
@@ -158,8 +159,8 @@ class OutgoingGetPeersQuery(OutgoingQueryBase):
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
     
-    def __init__(self, src_id, info_hash, port, token):
-        OutgoingQueryBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id, info_hash, port, token):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = ANNOUNCE_PEER
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self._dict[ARGS][PORT] = port
@@ -169,30 +170,30 @@ class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
 
 class OutgoingResponseBase(OutgoingMsgBase):
 
-    def __init__(self, src_id):
-        OutgoingMsgBase.__init__(self)
+    def __init__(self, dst_node, src_id):
+        OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = RESPONSE
         self._dict[RESPONSE] = {ID: str(src_id)}
         
         
 class OutgoingPingResponse(OutgoingResponseBase):
 
-    def __init__(self, src_id):
-        OutgoingResponseBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id):
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
 
 
 class OutgoingFindNodeResponse(OutgoingResponseBase):
 
-    def __init__(self, src_id, nodes):
-        OutgoingResponseBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id, nodes):
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
         self._dict[RESPONSE][NODES] = mt.compact_nodes(nodes)
 
                           
 class OutgoingGetPeersResponse(OutgoingResponseBase):
 
-    def __init__(self, src_id, token=None, nodes=None, peers=None):
+    def __init__(self, dst_node, src_id, token=None, nodes=None, peers=None):
         assert nodes or peers
-        OutgoingResponseBase.__init__(self, src_id)
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
         if token:
             self._dict[RESPONSE][TOKEN] = token
         if nodes:
@@ -203,15 +204,15 @@ class OutgoingGetPeersResponse(OutgoingResponseBase):
             
 class OutgoingAnnouncePeerResponse(OutgoingResponseBase):
     
-    def __init__(self, src_id):
-        OutgoingResponseBase.__init__(self, src_id)
+    def __init__(self, dst_node, src_id):
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
 
 ###################################
 
 class OutgoingErrorMsg(OutgoingMsgBase):
 
-    def __init__(self, error):
-        OutgoingMsgBase.__init__(self)
+    def __init__(self, dst_node, error):
+        OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = ERROR
         self._dict[ERROR] = error
 

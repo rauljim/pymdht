@@ -45,7 +45,7 @@ class TestController:
         self.controller.main_loop()
 
     def test_simple(self):
-        q = querier.Query(message.OutgoingPingQuery(self.my_id),
+        q = querier.Query(message.OutgoingPingQuery(tc.SERVER_NODE, self.my_id),
                           tc.SERVER_NODE)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         ts, datagrams = self.controller.main_loop()
@@ -61,7 +61,7 @@ class TestController:
         # The routing table is initially empty
         eq_(self.controller._routing_m.get_main_rnodes(), [])
 
-        q = querier.Query(message.OutgoingPingQuery(self.my_id),
+        q = querier.Query(message.OutgoingPingQuery(tc.SERVER_NODE, self.my_id),
                           tc.SERVER_NODE)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         # main_loop is called by reactor.start()
@@ -71,10 +71,10 @@ class TestController:
         eq_(len(datagrams), 1)
         eq_(datagrams[0], expected_datagrams[0])
         time.sleep((ts - time.time()) / 2)
-        # SERVER_NODE replies before the timeout
+        # SERVER_NODE gets msg and replies before the timeout
         tid = message.IncomingMsg(
             Datagram(datagrams[0].data, tc.CLIENT_ADDR)).tid
-        data = message.OutgoingPingResponse(tc.SERVER_ID).stamp(
+        data = message.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID).stamp(
             tid, tc.CLIENT_NODE)
         eq_(self.controller._routing_m.get_main_rnodes(), [])
         datagram = message.Datagram(data, tc.SERVER_ADDR)
@@ -86,7 +86,8 @@ class TestController:
         # main_loop is called to trigger timeout
         # It returns a maintenance lookup
         ts, datagrams = self.controller.main_loop() 
-        q = querier.Query(message.OutgoingFindNodeQuery(self.my_id,
+        q = querier.Query(message.OutgoingFindNodeQuery(tc.SERVER_NODE,
+                                                        self.my_id,
                                                         self.my_id, None),
                           tc.SERVER_NODE)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
@@ -112,7 +113,7 @@ class TestController:
         addr = datagrams[0].addr
         #fabricate response
         ping = message.IncomingMsg(Datagram(ping, addr))
-        pong = message.OutgoingPingResponse(tc.SERVER_ID)
+        pong = message.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID)
         data = pong.stamp(ping.tid, tc.CLIENT_NODE)
         # get a node in the routing table
         self.controller.on_datagram_received(
@@ -145,7 +146,7 @@ class TestController:
         eq_(len(datagrams), 0)
         #fabricate response
         ping = message.IncomingMsg(Datagram(ping, addr))
-        pong = message.OutgoingPingResponse(tc.SERVER_ID)
+        pong = message.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID)
         data = pong.stamp(ping.tid, tc.CLIENT_NODE)
         # get a node in the routing table
         self.controller.on_datagram_received(
@@ -188,7 +189,8 @@ class TestController:
         # controller.start calls main_loop, which does maintenance (bootstrap)
         self.controller.main_loop()
         # minitwisted informs of a response
-        data = message.OutgoingPingResponse(tc.SERVER_ID).stamp(
+        data = message.OutgoingPingResponse(tc.CLIENT_NODE,
+                                            tc.SERVER_ID).stamp(
             '\0\0', tc.CLIENT_NODE)
         self.controller.on_datagram_received(
             message.Datagram(data, tc.SERVER_ADDR))

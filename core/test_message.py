@@ -29,55 +29,73 @@ def _test_matching_tid():
 class TestMsgExchanges:
 
     def test_msg_exhanges(self):
-        self._exchange_msgs(m.OutgoingPingQuery(tc.CLIENT_ID),
-                            m.OutgoingPingResponse(tc.SERVER_ID))
+        self._exchange_msgs(m.OutgoingPingQuery(tc.SERVER_NODE,
+                                                tc.CLIENT_ID),
+                            m.OutgoingPingResponse(tc.CLIENT_NODE,
+                                                   tc.SERVER_ID))
 
-        self._exchange_msgs(m.OutgoingFindNodeQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingFindNodeQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.TARGET_ID, None),
-                            m.OutgoingFindNodeResponse(tc.SERVER_ID,
+                            m.OutgoingFindNodeResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        tc.NODES))
 
         # Test different combinations of token, nodes and peers
-        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.INFO_HASH, None),
-                            m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                            m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        tc.TOKEN,
                                                        tc.NODES,
                                                        tc.PEERS))
-        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.INFO_HASH, None),
-                            m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                            m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        tc.TOKEN,
                                                        tc.NODES))
-        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.INFO_HASH, None),
-                            m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                            m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        tc.TOKEN,
                                                        peers=tc.PEERS))
         assert_raises(AssertionError,
                       m.OutgoingGetPeersResponse,
                       tc.SERVER_ID, tc.TOKEN, None)
-        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.INFO_HASH,None),
-                            m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                            m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        peers=tc.PEERS))
-        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.INFO_HASH, None),
-                            m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                            m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        nodes=tc.NODES))
-        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                    tc.CLIENT_ID,
                                                     tc.INFO_HASH, None),
-                            m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                            m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        nodes=tc.NODES,
                                                        peers=tc.PEERS))
         assert_raises(AssertionError, m.OutgoingGetPeersResponse,
-                      tc.SERVER_ID)
+                      tc.CLIENT_NODE, tc.SERVER_ID)
 
-        self._exchange_msgs(m.OutgoingAnnouncePeerQuery(tc.CLIENT_ID,
+        self._exchange_msgs(m.OutgoingAnnouncePeerQuery(tc.SERVER_NODE,
+                                                        tc.CLIENT_ID,
                                                         tc.INFO_HASH,
                                                         tc.BT_PORT,
                                                         tc.TOKEN),
-                            m.OutgoingAnnouncePeerResponse(tc.SERVER_ID))
+                            m.OutgoingAnnouncePeerResponse(tc.CLIENT_NODE,
+                                                           tc.SERVER_ID))
 
     def _exchange_msgs(self, outgoing_query, outgoing_response):
         #client
@@ -100,26 +118,26 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
                                  ]
 
     def _get_queries(self): 
-        return [m.OutgoingPingQuery(tc.CLIENT_ID),
-                m.OutgoingFindNodeQuery(tc.CLIENT_ID,
+        return [m.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID),
+                m.OutgoingFindNodeQuery(tc.SERVER_NODE, tc.CLIENT_ID,
                                         tc.TARGET_ID, None),
-                m.OutgoingGetPeersQuery(tc.CLIENT_ID,
+                m.OutgoingGetPeersQuery(tc.SERVER_NODE, tc.CLIENT_ID,
                                         tc.INFO_HASH, None),
-                m.OutgoingAnnouncePeerQuery(tc.CLIENT_ID,
+                m.OutgoingAnnouncePeerQuery(tc.SERVER_NODE, tc.CLIENT_ID,
                                             tc.INFO_HASH,
                                             tc.BT_PORT,
                                             tc.TOKEN),
                 ]
 
     def _get_responses(self):
-        return [m.OutgoingPingResponse(tc.SERVER_ID),
-                m.OutgoingFindNodeResponse(tc.SERVER_ID,
+        return [m.OutgoingPingResponse(tc.CLIENT_NODE, tc.SERVER_ID),
+                m.OutgoingFindNodeResponse(tc.CLIENT_NODE, tc.SERVER_ID,
                                            tc.NODES),
-                m.OutgoingGetPeersResponse(tc.SERVER_ID,
+                m.OutgoingGetPeersResponse(tc.CLIENT_NODE, tc.SERVER_ID,
                                            tc.TOKEN,
                                            tc.NODES,
                                            tc.PEERS),
-                m.OutgoingAnnouncePeerResponse(tc.SERVER_ID),
+                m.OutgoingAnnouncePeerResponse(tc.CLIENT_NODE, tc.SERVER_ID),
                 ]
     
     def test_bad_bencode(self):
@@ -223,15 +241,17 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
     
     def test_find_node(self):
         #client
-        outgoing_query = m.OutgoingFindNodeQuery(tc.CLIENT_ID, tc.NODE_ID,
+        outgoing_query = m.OutgoingFindNodeQuery(tc.SERVER_NODE,
+                                                 tc.CLIENT_ID, tc.NODE_ID,
                                                  None)
         data = outgoing_query.stamp(tc.TID, tc.SERVER_NODE)
         #server
         incoming_query = m.IncomingMsg(
             Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
-        outgoing_response = m.OutgoingFindNodeResponse(tc.SERVER_ID,
-                                                     tc.NODES)
+        outgoing_response = m.OutgoingFindNodeResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
+                                                       tc.NODES)
         data = outgoing_response.stamp(incoming_query.tid, tc.CLIENT_NODE)
         #client
         incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
@@ -250,15 +270,17 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         
     def test_get_peers_nodes(self):
         #client
-        outgoing_query = m.OutgoingGetPeersQuery(tc.CLIENT_ID, tc.INFO_HASH,
+        outgoing_query = m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                 tc.CLIENT_ID, tc.INFO_HASH,
                                                  None)
         data = outgoing_query.stamp(tc.TID, tc.SERVER_NODE)
         #server
         incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
-        outgoing_response = m.OutgoingGetPeersResponse(tc.SERVER_ID,
-                                                     tc.TOKEN,
-                                                     tc.NODES)
+        outgoing_response = m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
+                                                       tc.TOKEN,
+                                                       tc.NODES)
         data = outgoing_response.stamp(incoming_query.tid, tc.CLIENT_NODE)
         #client
         incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
@@ -269,13 +291,15 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
 
     def test_get_peers_peers(self):
         #client
-        outgoing_query = m.OutgoingGetPeersQuery(tc.CLIENT_ID, tc.INFO_HASH,
+        outgoing_query = m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                                 tc.CLIENT_ID, tc.INFO_HASH,
                                                  None)
         data = outgoing_query.stamp(tc.TID, tc.SERVER_NODE)
         #server
         incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
-        outgoing_response = m.OutgoingGetPeersResponse(tc.SERVER_ID,
+        outgoing_response = m.OutgoingGetPeersResponse(tc.CLIENT_NODE,
+                                                       tc.SERVER_ID,
                                                        tc.TOKEN,
                                                        tc.NODES,
                                                        tc.PEERS)
@@ -293,15 +317,17 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
 
     def test_announce_peer(self):
         #client
-        outgoing_query = m.OutgoingAnnouncePeerQuery(tc.CLIENT_ID,
-                                                   tc.INFO_HASH,
-                                                   tc.BT_PORT,
-                                                   tc.TOKEN)
+        outgoing_query = m.OutgoingAnnouncePeerQuery(tc.SERVER_NODE,
+                                                     tc.CLIENT_ID,
+                                                     tc.INFO_HASH,
+                                                     tc.BT_PORT,
+                                                     tc.TOKEN)
         data = outgoing_query.stamp(tc.TID, tc.SERVER_NODE)
         #server
         incoming_query = m.IncomingMsg(Datagram(data, tc.CLIENT_ADDR))
         assert incoming_query.type is m.QUERY
-        outgoing_response = m.OutgoingAnnouncePeerResponse(tc.SERVER_ID)
+        outgoing_response = m.OutgoingAnnouncePeerResponse(
+            tc.CLIENT_NODE, tc.SERVER_ID)
         data = outgoing_response.stamp(incoming_query.tid, tc.CLIENT_NODE)
         #client
         incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
@@ -329,7 +355,7 @@ def value_is_string(msg_d, k, valid_values=None):
 class TestIncomingMsg:
 
     def setup(self):
-        b_ping = m.OutgoingPingQuery(tc.CLIENT_ID).stamp(
+        b_ping = m.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID).stamp(
             tc.TID, tc.SERVER_NODE)
         self.msg_d = m.IncomingMsg(
             Datagram(b_ping, tc.CLIENT_ADDR))._msg_dict
@@ -377,7 +403,8 @@ class TestIncomingMsg:
 
     def test_unknown_error(self):
         error_code = (999, "some weird error string")
-        b_err = m.OutgoingErrorMsg(error_code).stamp(tc.TID, tc.SERVER_NODE)
+        b_err = m.OutgoingErrorMsg(tc.SERVER_NODE,
+                                   error_code).stamp(tc.TID, tc.SERVER_NODE)
         
         logger.info(
             "TEST LOGGING ** IGNORE EXPECTED INFO ** Unknown error: %r",
@@ -385,19 +412,22 @@ class TestIncomingMsg:
         _ = m.IncomingMsg(Datagram(b_err, tc.CLIENT_ADDR))
 
     def test_nodes2(self):
-        response = m.OutgoingGetPeersResponse(tc.CLIENT_ID, peers=tc.PEERS)
+        response = m.OutgoingGetPeersResponse(tc.SERVER_NODE,
+                                              tc.CLIENT_ID, peers=tc.PEERS)
         response._dict[m.RESPONSE][m.NODES2] = mt.compact_nodes2(tc.NODES)
         bencoded = response.stamp(tc.TID, tc.SERVER_NODE)
         m.IncomingMsg(Datagram(bencoded, tc.CLIENT_ADDR))
 
 
         
-b_ping_q = m.OutgoingPingQuery(tc.CLIENT_ID).stamp(tc.TID, tc.SERVER_NODE) 
-b_fn_q = m.OutgoingFindNodeQuery(
+b_ping_q = m.OutgoingPingQuery(tc.SERVER_NODE,
+                               tc.CLIENT_ID).stamp(tc.TID, tc.SERVER_NODE) 
+b_fn_q = m.OutgoingFindNodeQuery(tc.SERVER_NODE,
     tc.CLIENT_ID, tc.NODE_ID, None).stamp(tc.TID, tc.SERVER_NODE)
-b_gp_q = m.OutgoingGetPeersQuery(tc.CLIENT_ID, tc.INFO_HASH, None).stamp(
+b_gp_q = m.OutgoingGetPeersQuery(tc.SERVER_NODE,
+                                 tc.CLIENT_ID, tc.INFO_HASH, None).stamp(
     tc.TID, tc.SERVER_NODE)
-b_ap_q = m.OutgoingAnnouncePeerQuery(
+b_ap_q = m.OutgoingAnnouncePeerQuery(tc.SERVER_NODE,
     tc.CLIENT_ID, tc.INFO_HASH, tc.BT_PORT,tc.TOKEN).stamp(
     tc.TID, tc.SERVER_NODE)
 
@@ -472,11 +502,17 @@ class TestSanitizeQueryError:
                       Datagram(bencode.encode(self.ap_d), tc.CLIENT_ADDR))
 
         
-b_ping_r = m.OutgoingPingResponse(tc.CLIENT_ID).stamp(tc.TID, tc.SERVER_NODE)
-b_fn2_r = m.OutgoingFindNodeResponse(tc.CLIENT_ID, tc.NODES).stamp(tc.TID, tc.SERVER_NODE)
-b_gp_r = m.OutgoingGetPeersResponse(tc.CLIENT_ID, tc.TOKEN, tc.NODES,
-                                    peers=tc.PEERS).stamp(tc.TID, tc.SERVER_NODE)
-b_ap_r = m.OutgoingAnnouncePeerResponse(tc.CLIENT_ID).stamp(tc.TID, tc.SERVER_NODE)
+b_ping_r = m.OutgoingPingResponse(tc.SERVER_NODE,
+                                  tc.CLIENT_ID).stamp(tc.TID, tc.SERVER_NODE)
+b_fn2_r = m.OutgoingFindNodeResponse(tc.SERVER_NODE, tc.CLIENT_ID,
+                                     tc.NODES).stamp(tc.TID, tc.SERVER_NODE)
+b_gp_r = m.OutgoingGetPeersResponse(tc.SERVER_NODE, tc.CLIENT_ID,
+                                    tc.TOKEN, tc.NODES,
+                                    peers=tc.PEERS).stamp(tc.TID,
+                                                          tc.SERVER_NODE)
+b_ap_r = m.OutgoingAnnouncePeerResponse(tc.SERVER_NODE,
+                                        tc.CLIENT_ID).stamp(tc.TID,
+                                                            tc.SERVER_NODE)
 
 class TestSanitizeResponseError:
 
@@ -514,11 +550,13 @@ class TestSanitizeResponseError:
 class TestSanitizeErrorError:
 
     def test(self):
-        msg_out = m.OutgoingErrorMsg(1).stamp(tc.TID, tc.SERVER_NODE)
+        msg_out = m.OutgoingErrorMsg(tc.SERVER_NODE,
+                                     1).stamp(tc.TID, tc.SERVER_NODE)
         assert_raises(m.MsgError, m.IncomingMsg,
                       Datagram(msg_out, tc.CLIENT_ADDR))
         # Unknown error doesn't raise m.MsgError
-        msg_out = m.OutgoingErrorMsg((1,1)).stamp(tc.TID, tc.SERVER_NODE)
+        msg_out = m.OutgoingErrorMsg(tc.SERVER_NODE,
+                                     (1,1)).stamp(tc.TID, tc.SERVER_NODE)
         _ = m.IncomingMsg(Datagram(msg_out, tc.SERVER_ADDR))
     
 
@@ -527,7 +565,7 @@ class TestSanitizeErrorError:
 class TestPrinting:
     
     def test_printing(self):
-        out_msg = m.OutgoingPingQuery(tc.CLIENT_ID)
+        out_msg = m.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID)
         in_msg = m.IncomingMsg(
             Datagram(out_msg.stamp(tc.TID, tc.SERVER_NODE), tc.CLIENT_ADDR))
         str(out_msg)
@@ -539,15 +577,15 @@ class TestPrivateDHT:
 
     def test(self):
         # Sender doesn't use private flag
-        ping_public = m.OutgoingPingQuery(tc.CLIENT_ID)
+        ping_public = m.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID)
         bencoded_public = ping_public.stamp(tc.TID, tc.SERVER_NODE)
         # Sender uses private flag PRIVATE1
         m.private_dht_name = 'PRIVATE1'
-        ping_private1 = m.OutgoingPingQuery(tc.CLIENT_ID)
+        ping_private1 = m.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID)
         bencoded_private1 = ping_private1.stamp(tc.TID, tc.SERVER_NODE)
         # Sender uses private flag PRIVATE1
         m.private_dht_name = 'PRIVATE2'
-        ping_private2 = m.OutgoingPingQuery(tc.CLIENT_ID)
+        ping_private2 = m.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID)
         bencoded_private2 = ping_private2.stamp(tc.TID, tc.SERVER_NODE)
 
         # Receiver in the public DHT accepts messages (ignores private flag)
