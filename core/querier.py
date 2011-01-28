@@ -41,8 +41,8 @@ class Query(object):
     
 class Querier(object):
 
-    def __init__(self, my_id):
-        self.my_id = my_id
+    def __init__(self):#, my_id):
+#        self.my_id = my_id
         self._pending = {}
         self._timeouts = []
         self._tid = [0, 0]
@@ -76,12 +76,8 @@ class Querier(object):
     def on_response_received(self, response_msg):
         # message already sanitized by IncomingMsg
         logger.debug('response received: %s' % repr(response_msg))
-        related_query = self._find_related_query(response_msg.src_addr,
-                                                 response_msg.tid)
-        if related_query:
-            # This response matches query. Notify query.
-            related_query.on_response_received(response_msg)
-        else:
+        related_query = self._find_related_query(response_msg)
+        if not related_query:
             logger.warning('No query for this response\n%s\nsource: %s' % (
                     response_msg, response_msg.src_addr))
         return related_query
@@ -90,10 +86,7 @@ class Querier(object):
         logger.warning('Error message received:\n%s\nSource: %s',
                         `error_msg`,
                         `error_msg.src_addr`)
-        related_query = self._find_related_query(error_msg.src_addr,
-                                                 error_msg.tid)
-        if related_query:
-            related_query.on_error_received(error_msg)
+        related_query = self._find_related_query(error_msg)
         return related_query
 
     def get_timeout_queries(self):
@@ -109,18 +102,19 @@ class Querier(object):
             if not addr_query_list:
                 # The list is empty. Remove the whole list.
                 del self._pending[query.dst_node.addr]
-            if not query.got_response and not query.got_error:
+            if not query.got_response:
                 timeout_queries.append(query)
         return timeout_queries
 
-    def _find_related_query(self, addr, tid):
+    def _find_related_query(self, msg):
+        addr = msg.src_addr
         try:
             addr_query_list = self._pending[addr]
         except (KeyError):
             logger.warning('No pending queries for %s', addr)
             return # Ignore response
         for related_query in addr_query_list:
-            if related_query.matching_tid(tid):
+            if related_query.match_response(msg):
                 logger.debug(
                     'response node: %s, related query: (%s), delay %f s. %r' % (
                         `addr`,

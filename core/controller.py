@@ -52,7 +52,7 @@ class Controller:
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
-        self._querier = Querier(self._my_id)
+        self._querier = Querier()
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)

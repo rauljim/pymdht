@@ -39,7 +39,7 @@ class TestController:
                                                 lookup_m_mod,
                                                 None)
         self.my_id = self.controller._my_id
-        self.querier2 = querier.Querier(self.my_id)
+        self.querier2 = querier.Querier()#self.my_id)
 
     def _test_start_stop(self):
         self.controller.main_loop()

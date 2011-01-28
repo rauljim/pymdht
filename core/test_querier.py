@@ -111,7 +111,7 @@ class TestQuerier:
 
     def setup(self):
         time.mock_mode()
-        self.querier = Querier(tc.CLIENT_ID)
+        self.querier = Querier()#tc.CLIENT_ID)
 
     def test_generate_tids(self):
         #TODO: move to message

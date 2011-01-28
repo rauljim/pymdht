@@ -96,7 +96,8 @@ class OutgoingMsgBase(object):
         return str(self.__class__) + str(self)
 
     def stamp(self, tid, dst_node):
-        assert not TID in self._dict
+        if TID in self._dict:
+            raise MsgError, 'Message has already been stamped'
         self._dict[TID] = tid
         self.dst_node = dst_node
         self.sending_ts = time.time()
@@ -110,7 +111,6 @@ class OutgoingQueryBase(OutgoingMsgBase):
         self._dict[ARGS] = {ID: str(src_id)}
         self.lookup_obj = None
         self.got_response = False
-        self.got_error = False
 
     @property
     def query(self):
@@ -120,20 +120,16 @@ class OutgoingQueryBase(OutgoingMsgBase):
     def tid(self):
         return self._dict[TID]
 
-    def matching_tid(self, response_tid):
+    def match_response(self, response_msg):
         '''It just matches the first byte because other nodes return weird
         TIDs in their responses.'''
-        return self._dict[TID][0] == response_tid[0]
-
-    def on_response_received(self, response_msg):
-        self.rtt = time.time() - self.sending_ts
-        if not self.dst_node.id:
-            self.dstnode.id = response_msg.src_id
-        self.got_response = True
-
-    def on_error_received(self, error_msg):
-        self.rtt = time.time() - self.sending_ts
-        self.got_error = True
+        matched = self._dict[TID][0] == response_msg.tid[0]
+        if matched:
+            self.rtt = time.time() - self.sending_ts
+            self.got_response = True            
+            if response_msg.type == RESPONSE and not self.dst_node.id:
+                self.dstnode.id = response_msg.src_id
+        return matched
 
         
 class OutgoingPingQuery(OutgoingQueryBase):
