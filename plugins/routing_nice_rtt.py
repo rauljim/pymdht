@@ -21,7 +21,6 @@ try:
     import core.ptime as time
     import core.identifier as identifier
     import core.message as message
-    from core.querier import Query
     import core.node as node
     from core.node import Node, RoutingNode
     from core.routing_table import RoutingTable
@@ -159,27 +158,25 @@ class RoutingManager(object):
     def _get_maintenance_query(self, node_):
         if not node_.id: 
             # Bootstrap nodes don't have id
-            return Query(message.OutgoingFindNodeQuery(node_,
-            self.my_node.id, self.my_node.id), node_, None)
-
+            return message.OutgoingFindNodeQuery(node_,
+                                                 self.my_node.id,
+                                                 self.my_node.id)
         if random.choice((False, True)):
             # 50% chance to send find_node with my id as target
-            return Query(message.OutgoingFindNodeQuery(node_,
-            self.my_node.id, self.my_node.id, None), node_)
+            return message.OutgoingFindNodeQuery(node_,
+                                                 self.my_node.id,
+                                                 self.my_node.id, None)
 
         # 50% chance to send a find_node to fill up a non-full bucket
         target_log_distance = self.table.find_next_bucket_with_room_index(
             node_=node_)
         if target_log_distance:
             target = self.my_node.id.generate_close_id(target_log_distance)
-            return Query(
-                message.OutgoingFindNodeQuery(node_,
-                                              self.my_node.id, target, None),
-                node_)
+            return message.OutgoingFindNodeQuery(node_, self.my_node.id,
+                                                 target, None)
         else:
             # Every bucket is full. We send a ping instead.
-            return Query(message.OutgoingPingQuery(node_,
-                                                   self.my_node.id), node_)
+            return message.OutgoingPingQuery(node_, self.my_node.id)
         
     def on_query_received(self, node_):
         '''

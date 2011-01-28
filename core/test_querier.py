@@ -16,7 +16,7 @@ import minitwisted
 import test_const as tc
 
 import querier
-from querier import Query, Querier
+from querier import Querier
 import logging_conf
 
 logging_conf.testing_setup(__name__)
@@ -129,7 +129,7 @@ class TestQuerier:
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.SERVER_NODE,
                                              tc.CLIENT_ID)
-        q = Query(ping_msg, tc.SERVER_NODE)
+        q = ping_msg
         # Client registers query
         timeout_ts, bencoded_msgs = self.querier.register_queries([q])
         # Client sends bencoded_msg
@@ -149,7 +149,7 @@ class TestQuerier:
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.SERVER_NODE,
                                              tc.CLIENT_ID)
-        q = Query(ping_msg, tc.SERVER_NODE)
+        q = ping_msg
         # Client registers query
         bencoded_msg = self.querier.register_queries([q])
         # Client sends bencoded_msg
@@ -177,7 +177,7 @@ class TestQuerier:
         # Client creates a query
         ping_msg = message.OutgoingPingQuery(tc.SERVER_NODE,
                                              tc.CLIENT_ID)
-        q = Query(ping_msg, tc.SERVER_NODE)
+        q = ping_msg
         # Client registers query
         bencoded_msg = self.querier.register_queries([q])
         # Client sends bencoded_msg
@@ -195,7 +195,7 @@ class TestQuerier:
     def test_error_received(self):
         # Client creates a query
         msg = message.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID)
-        q = Query(msg, tc.SERVER_NODE)
+        q = msg
         # Client registers query
         bencoded_msg = self.querier.register_queries([q])
         # Client sends bencoded_msg
@@ -214,7 +214,7 @@ class TestQuerier:
         # Client creates a query
         msgs = [message.OutgoingPingQuery(tc.SERVER_NODE, tc.CLIENT_ID
                          ) for i in xrange(10)]
-        queries = [Query(msg, tc.SERVER_NODE) for msg in msgs]
+        queries = msgs
         # Client registers query
         bencoded_msg = self.querier.register_queries(queries)
         # Client sends bencoded_msg

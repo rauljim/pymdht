@@ -45,8 +45,7 @@ class TestController:
         self.controller.main_loop()
 
     def test_simple(self):
-        q = querier.Query(message.OutgoingPingQuery(tc.SERVER_NODE, self.my_id),
-                          tc.SERVER_NODE)
+        q = message.OutgoingPingQuery(tc.SERVER_NODE, self.my_id)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         ts, datagrams = self.controller.main_loop()
         assert_almost_equal(ts, expected_ts)
@@ -61,8 +60,7 @@ class TestController:
         # The routing table is initially empty
         eq_(self.controller._routing_m.get_main_rnodes(), [])
 
-        q = querier.Query(message.OutgoingPingQuery(tc.SERVER_NODE, self.my_id),
-                          tc.SERVER_NODE)
+        q = message.OutgoingPingQuery(tc.SERVER_NODE, self.my_id)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         # main_loop is called by reactor.start()
         # It returns a maintenance ping
@@ -86,10 +84,9 @@ class TestController:
         # main_loop is called to trigger timeout
         # It returns a maintenance lookup
         ts, datagrams = self.controller.main_loop() 
-        q = querier.Query(message.OutgoingFindNodeQuery(tc.SERVER_NODE,
-                                                        self.my_id,
-                                                        self.my_id, None),
-                          tc.SERVER_NODE)
+        q = message.OutgoingFindNodeQuery(tc.SERVER_NODE,
+                                          self.my_id,
+                                          self.my_id, None)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         assert_almost_equal(ts, expected_ts)
         eq_(len(datagrams), 1)
