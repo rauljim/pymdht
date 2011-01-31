@@ -1,0 +1,186 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Plug-ins &mdash; Pymdht v1.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Pymdht v1.0 documentation" href="index.html" />
+    <link rel="next" title="6. Profiling Toolbox" href="profiling.html" />
+    <link rel="prev" title="4. core" href="core.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="profiling.html" title="6. Profiling Toolbox"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="4. core"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Pymdht v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plug-ins">
+<h1>5. Plug-ins<a class="headerlink" href="#plug-ins" title="Permalink to this headline">¶</a></h1>
+<p>In the descriptions below no implementation details are given since these
+modules are designed to be very flexible in that regard. Instead, the
+interfaces are given.</p>
+<div class="section" id="module-routing_plugin_template">
+<span id="routing-management-template"></span><h2>5.1. Routing Management Template<a class="headerlink" href="#module-routing_plugin_template" title="Permalink to this headline">¶</a></h2>
+<p>This module is responsible for the routing table management.</p>
+<dl class="class">
+<dt id="routing_plugin_template.RoutingManager">
+<em class="property">class </em><tt class="descclassname">routing_plugin_template.</tt><tt class="descname">RoutingManager</tt><big>(</big><em>my_node</em>, <em>bootstrap_nodes</em><big>)</big><a class="reference internal" href="_modules/routing_plugin_template.html#RoutingManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#routing_plugin_template.RoutingManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a routing table (using routing_table.RoutingTable) for
+&#8216;my_node&#8217;. Take &#8216;bootstrap_nodes&#8217; as candidates to be added to the
+routing table.</p>
+<dl class="method">
+<dt id="routing_plugin_template.RoutingManager.do_maintenance">
+<tt class="descname">do_maintenance</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/routing_plugin_template.html#RoutingManager.do_maintenance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#routing_plugin_template.RoutingManager.do_maintenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a three-element tuple: (1) the time-stamp when
+&#8216;do_maintenance&#8217; should be called, (2) a list of
+message.OutgoingQueryBase objects ready to be sent, and (3) an
+identifier.Id object representing the target of a maintenance lookup
+(see LookupManager.maintenance_lookup below) to be made by the
+caller. Element 3 will be None when no lookup needs to be done.</p>
+<p>This method will be periodically called (according to the time-stamp
+returned). The implementation should ??</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="routing_plugin_template.RoutingManager.on_error_received">
+<tt class="descname">on_error_received</tt><big>(</big><em>node_</em><big>)</big><a class="reference internal" href="_modules/routing_plugin_template.html#RoutingManager.on_error_received"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#routing_plugin_template.RoutingManager.on_error_received" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of message.OutgoingQueryBase objects ready to be sent.</p>
+<p>This method will be called for every error received.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="routing_plugin_template.RoutingManager.on_query_received">
+<tt class="descname">on_query_received</tt><big>(</big><em>node_</em><big>)</big><a class="reference internal" href="_modules/routing_plugin_template.html#RoutingManager.on_query_received"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#routing_plugin_template.RoutingManager.on_query_received" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of message.OutgoingQueryBase objects ready to be sent.</p>
+<p>This method will be called for every query received.</p>
+<p>Return None when nothing to do
+Return a list of queries when queries need to be sent (the queries
+will be sent out by the caller)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="routing_plugin_template.RoutingManager.on_response_received">
+<tt class="descname">on_response_received</tt><big>(</big><em>node_</em>, <em>rtt</em>, <em>nodes</em><big>)</big><a class="reference internal" href="_modules/routing_plugin_template.html#RoutingManager.on_response_received"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#routing_plugin_template.RoutingManager.on_response_received" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of message.OutgoingQueryBase objects ready to be sent.</p>
+<p>This method will be called for every response received.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="routing_plugin_template.RoutingManager.on_timeout">
+<tt class="descname">on_timeout</tt><big>(</big><em>node_</em><big>)</big><a class="reference internal" href="_modules/routing_plugin_template.html#RoutingManager.on_timeout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#routing_plugin_template.RoutingManager.on_timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of message.OutgoingQueryBase objects ready to be sent.</p>
+<p>This method will be called for every timeout triggered.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-lookup_plugin_template">
+<span id="lookup-management-template"></span><h2>5.2. Lookup Management Template<a class="headerlink" href="#module-lookup_plugin_template" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Plug-ins</a><ul>
+<li><a class="reference internal" href="#module-routing_plugin_template">5.1. Routing Management Template</a></li>
+<li><a class="reference internal" href="#module-lookup_plugin_template">5.2. Lookup Management Template</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="core.html"
+                        title="previous chapter">4. core</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="profiling.html"
+                        title="next chapter">6. Profiling Toolbox</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/plugins.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="profiling.html" title="6. Profiling Toolbox"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="4. core"
+             >previous</a> |</li>
+        <li><a href="index.html">Pymdht v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Raul Jimenez.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

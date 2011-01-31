@@ -1,0 +1,154 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. pymdht &mdash; Pymdht v1.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Pymdht v1.0 documentation" href="index.html" />
+    <link rel="next" title="4. core" href="core.html" />
+    <link rel="prev" title="1. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="4. core"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Pymdht v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pymdht">
+<span id="pymdht"></span><h1>3. pymdht<a class="headerlink" href="#module-pymdht" title="Permalink to this headline">¶</a></h1>
+<p>This module is the API for the whole package.</p>
+<p>You can use the Pymdht class and its methods to interact with
+the DHT.</p>
+<p>Find usage examples in server_dht.py and interactive_dht.py.</p>
+<dl class="class">
+<dt id="pymdht.Pymdht">
+<em class="property">class </em><tt class="descclassname">pymdht.</tt><tt class="descname">Pymdht</tt><big>(</big><em>dht_addr</em>, <em>conf_path</em>, <em>routing_m_mod</em>, <em>lookup_m_mod</em>, <em>private_dht_name</em>, <em>debug_level</em><big>)</big><a class="reference internal" href="_modules/pymdht.html#Pymdht"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pymdht.Pymdht" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pymdht is the interface for the whole package.</p>
+<p>Setting up the DHT node is as simple as creating this object.
+The parameters are:
+- dht_addr: a tuple containing IP address and port number.
+- state_filename: the complete path to a file to load/store node state.
+- routing_m_mod: the module implementing routing management.
+- lookup_m_mod: the module implementing lookup management.
+- private_dht_name: name of the private DHT (use global DHT when None)
+- debug_level: level of logs saved into dht.log (standard logging module).</p>
+<dl class="method">
+<dt id="pymdht.Pymdht.get_peers">
+<tt class="descname">get_peers</tt><big>(</big><em>lookup_id</em>, <em>info_hash</em>, <em>callback_f</em>, <em>bt_port=0</em><big>)</big><a class="reference internal" href="_modules/pymdht.html#Pymdht.get_peers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pymdht.Pymdht.get_peers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a get peers lookup. Return a Lookup object.</p>
+<p>The info_hash must be an identifier.Id object.</p>
+<p>The callback_f must expect two parameters (lookup_id and list of
+peeers). When peers are discovered, the callback is called with a list
+of peers as paramenter.  The list of peers is a list of addresses
+(&lt;IPv4, port&gt; pairs).</p>
+<p>The bt_port parameter is optional. When non-zero, ANNOUNCE messages
+will be send using the provided port number.</p>
+<p>Notice that the callback can be fired even before this call ends. Your
+callback needs to be ready to get peers BEFORE calling this fuction.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pymdht.Pymdht.stop">
+<tt class="descname">stop</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pymdht.html#Pymdht.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pymdht.Pymdht.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop the DHT node.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">1. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="core.html"
+                        title="next chapter">4. core</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/pymdht.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="4. core"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="1. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Pymdht v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Raul Jimenez.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

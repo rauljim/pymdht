@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>message &mdash; Pymdht v1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Pymdht v1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Pymdht v1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for message</h1><div class="highlight"><pre>
+<span class="c"># Copyright (C) 2009-2010 Raul Jimenez</span>
+<span class="c"># Released under GNU LGPL 2.1</span>
+<span class="c"># See LICENSE.txt for more information</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The message module contains all the data structures needed to create, encode,</span>
+<span class="sd">and decode valid MDHT messages.</span>
+
+<span class="sd">Outgoing messages are built from a few parameters. They are immutable and can</span>
+<span class="sd">oly be stamped once.</span>
+
+<span class="sd">Incoming messages are built from bencoded data. They are automatically</span>
+<span class="sd">sanitized.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">ptime</span> <span class="kn">as</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">bencode</span>
+<span class="kn">from</span> <span class="nn">identifier</span> <span class="kn">import</span> <span class="n">Id</span><span class="p">,</span> <span class="n">ID_SIZE_BYTES</span><span class="p">,</span> <span class="n">IdError</span>
+<span class="kn">from</span> <span class="nn">node</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">import</span> <span class="nn">message_tools</span> <span class="kn">as</span> <span class="nn">mt</span>
+
+<span class="n">private_dht_name</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dht&#39;</span><span class="p">)</span>
+
+
+<span class="n">NEXTSHARE_VERSION</span> <span class="o">=</span> <span class="s">&#39;NS</span><span class="se">\1\30</span><span class="s">&#39;</span>
+
+<span class="c"># High level keys</span>
+<span class="n">TYPE</span> <span class="o">=</span> <span class="s">&#39;y&#39;</span>     <span class="c"># Message&#39;s type</span>
+<span class="n">ARGS</span> <span class="o">=</span> <span class="s">&#39;a&#39;</span>     <span class="c"># Query&#39;s arguments in a dictionary</span>
+<span class="n">RESPONSE</span> <span class="o">=</span> <span class="s">&#39;r&#39;</span> <span class="c"># Reply dictionary</span>
+<span class="n">ERROR</span> <span class="o">=</span> <span class="s">&#39;e&#39;</span>    <span class="c"># Error message string</span>
+<span class="n">TID</span> <span class="o">=</span> <span class="s">&#39;t&#39;</span>      <span class="c"># Transaction ID</span>
+<span class="n">QUERY</span> <span class="o">=</span> <span class="s">&#39;q&#39;</span>    <span class="c"># Query command (only for queries)</span>
+<span class="n">VERSION</span> <span class="o">=</span> <span class="s">&#39;v&#39;</span>  <span class="c"># Client&#39;s version</span>
+
+<span class="c"># Valid values for key TYPE</span>
+<span class="n">QUERY</span> <span class="o">=</span> <span class="s">&#39;q&#39;</span>    <span class="c"># Query</span>
+<span class="n">RESPONSE</span> <span class="o">=</span> <span class="s">&#39;r&#39;</span> <span class="c"># Response</span>
+<span class="n">ERROR</span> <span class="o">=</span> <span class="s">&#39;e&#39;</span>    <span class="c"># Error</span>
+
+<span class="c"># Valid values for key QUERY</span>
+<span class="n">PING</span> <span class="o">=</span> <span class="s">&#39;ping&#39;</span>
+<span class="n">FIND_NODE</span> <span class="o">=</span> <span class="s">&#39;find_node&#39;</span>
+<span class="n">GET_PEERS</span> <span class="o">=</span> <span class="s">&#39;get_peers&#39;</span>
+<span class="n">ANNOUNCE_PEER</span> <span class="o">=</span> <span class="s">&#39;announce_peer&#39;</span>
+
+<span class="c"># Valid keys for ARGS</span>
+<span class="n">ID</span> <span class="o">=</span> <span class="s">&#39;id&#39;</span>         <span class="c"># Node&#39;s nodeID (all queries)</span>
+<span class="n">TARGET</span> <span class="o">=</span> <span class="s">&#39;target&#39;</span> <span class="c"># Target&#39;s nodeID (find_node)</span>
+<span class="n">INFO_HASH</span> <span class="o">=</span> <span class="s">&#39;info_hash&#39;</span> <span class="c"># Torrent&#39;s info_hash (get_peers and announce)</span>
+<span class="n">PORT</span> <span class="o">=</span> <span class="s">&#39;port&#39;</span>     <span class="c"># BitTorrent port (announce)</span>
+<span class="n">TOKEN</span> <span class="o">=</span> <span class="s">&#39;token&#39;</span>   <span class="c"># Token (announce)</span>
+
+<span class="c"># Valid keys for RESPONSE</span>
+<span class="n">ID</span> <span class="o">=</span> <span class="s">&#39;id&#39;</span>         <span class="c"># Node&#39;s nodeID (all replies)</span>
+<span class="n">NODES</span> <span class="o">=</span> <span class="s">&#39;nodes&#39;</span>   <span class="c"># String of nodes in compact format (find_nodes and get_peers)</span>
+<span class="n">NODES2</span> <span class="o">=</span> <span class="s">&#39;nodes2&#39;</span> <span class="c"># Same as previous (with IPv6 support)</span>
+<span class="n">TOKEN</span> <span class="o">=</span> <span class="s">&#39;token&#39;</span>   <span class="c"># Token (get_peers)</span>
+<span class="n">PEERS</span> <span class="o">=</span> <span class="n">VALUES</span> <span class="o">=</span> <span class="s">&#39;values&#39;</span> <span class="c"># List of peers in compact format (get_peers)</span>
+
+<span class="c"># Valid values for ERROR</span>
+<span class="n">GENERIC_E</span> <span class="o">=</span> <span class="p">[</span><span class="mi">201</span><span class="p">,</span> <span class="s">&#39;Generic Error&#39;</span><span class="p">]</span>
+<span class="n">SERVER_E</span> <span class="o">=</span> <span class="p">[</span><span class="mi">202</span><span class="p">,</span> <span class="s">&#39;Server Error&#39;</span><span class="p">]</span>
+<span class="n">PROTOCOL_E</span> <span class="o">=</span> <span class="p">[</span><span class="mi">203</span><span class="p">,</span> <span class="s">&#39;Protocol Error&#39;</span><span class="p">]</span>
+<span class="n">UNKNOWN_E</span> <span class="o">=</span> <span class="p">[</span><span class="mi">201</span><span class="p">,</span> <span class="s">&#39;Method Unknown&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="MsgError"><a class="viewcode-back" href="../core.html#message.MsgError">[docs]</a><span class="k">class</span> <span class="nc">MsgError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised anytime something goes wrong (specially when</span>
+<span class="sd">    decoding/sanitizing).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+</div>
+<div class="viewcode-block" id="OutgoingMsgBase"><a class="viewcode-back" href="../core.html#message.OutgoingMsgBase">[docs]</a><span class="k">class</span> <span class="nc">OutgoingMsgBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for outgoing messages. You shouldn&#39;t have instances of it.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dst_node</span> <span class="o">=</span> <span class="n">dst_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">VERSION</span><span class="p">:</span> <span class="n">NEXTSHARE_VERSION</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">private_dht_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">private_dht_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_already_encoded</span> <span class="o">=</span> <span class="bp">False</span>
+    
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OutgoingMsgBase.stamp"><a class="viewcode-back" href="../core.html#message.OutgoingMsgBase.stamp">[docs]</a>    <span class="k">def</span> <span class="nf">stamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a Datagram object ready to be sent over the network. The</span>
+<span class="sd">        message&#39;s state is changed internally to reflect that this message has</span>
+<span class="sd">        been stamped. This call will raise MsgError if the message has already</span>
+<span class="sd">        been stamped.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">TID</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Message has already been stamped&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">TID</span><span class="p">]</span> <span class="o">=</span> <span class="n">tid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sending_ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">bencode</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">)</span>
+      </div></div>
+<span class="k">class</span> <span class="nc">OutgoingQueryBase</span><span class="p">(</span><span class="n">OutgoingMsgBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">):</span>
+        <span class="n">OutgoingMsgBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="n">QUERY</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ARGS</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">ID</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">src_id</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup_obj</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">got_response</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">QUERY</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">TID</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">match_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response_msg</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Return a boolean indicating whether &#39;response\_msg&#39; matches this</span>
+<span class="sd">      outgoing query. If so, as a side effect, the round trip time is</span>
+<span class="sd">      calculated and stored in &#39;self.rtt&#39;. &#39;self.got\_response&#39; is set to</span>
+<span class="sd">      True.</span>
+<span class="sd">      </span>
+<span class="sd">      &quot;&quot;&quot;</span>
+      <span class="n">matched</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">TID</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">response_msg</span><span class="o">.</span><span class="n">tid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="k">if</span> <span class="n">matched</span><span class="p">:</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">rtt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">sending_ts</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">got_response</span> <span class="o">=</span> <span class="bp">True</span>            
+          <span class="k">if</span> <span class="n">response_msg</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">RESPONSE</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dst_node</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+              <span class="bp">self</span><span class="o">.</span><span class="n">dstnode</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">response_msg</span><span class="o">.</span><span class="n">src_id</span>
+      <span class="k">return</span> <span class="n">matched</span>
+
+        
+<span class="k">class</span> <span class="nc">OutgoingPingQuery</span><span class="p">(</span><span class="n">OutgoingQueryBase</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">):</span>
+        <span class="n">OutgoingQueryBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">QUERY</span><span class="p">]</span> <span class="o">=</span> <span class="n">PING</span>
+
+        
+<span class="k">class</span> <span class="nc">OutgoingFindNodeQuery</span><span class="p">(</span><span class="n">OutgoingQueryBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">lookup_obj</span><span class="p">):</span>
+        <span class="n">OutgoingQueryBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">QUERY</span><span class="p">]</span> <span class="o">=</span> <span class="n">FIND_NODE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ARGS</span><span class="p">][</span><span class="n">TARGET</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">OutgoingGetPeersQuery</span><span class="p">(</span><span class="n">OutgoingQueryBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">,</span> <span class="n">info_hash</span><span class="p">,</span> <span class="n">lookup_obj</span><span class="p">):</span>
+        <span class="n">OutgoingQueryBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">QUERY</span><span class="p">]</span> <span class="o">=</span> <span class="n">GET_PEERS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ARGS</span><span class="p">][</span><span class="n">INFO_HASH</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">info_hash</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookup_obj</span> <span class="o">=</span> <span class="n">lookup_obj</span>
+
+        
+<span class="k">class</span> <span class="nc">OutgoingAnnouncePeerQuery</span><span class="p">(</span><span class="n">OutgoingQueryBase</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">,</span> <span class="n">info_hash</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+        <span class="n">OutgoingQueryBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">QUERY</span><span class="p">]</span> <span class="o">=</span> <span class="n">ANNOUNCE_PEER</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ARGS</span><span class="p">][</span><span class="n">INFO_HASH</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">info_hash</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ARGS</span><span class="p">][</span><span class="n">PORT</span><span class="p">]</span> <span class="o">=</span> <span class="n">port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ARGS</span><span class="p">][</span><span class="n">TOKEN</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
+
+<span class="c">####################</span>
+
+<span class="k">class</span> <span class="nc">OutgoingResponseBase</span><span class="p">(</span><span class="n">OutgoingMsgBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">):</span>
+        <span class="n">OutgoingMsgBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="n">RESPONSE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">RESPONSE</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">ID</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">src_id</span><span class="p">)}</span>
+        
+        
+<span class="k">class</span> <span class="nc">OutgoingPingResponse</span><span class="p">(</span><span class="n">OutgoingResponseBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">):</span>
+        <span class="n">OutgoingResponseBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">OutgoingFindNodeResponse</span><span class="p">(</span><span class="n">OutgoingResponseBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+        <span class="n">OutgoingResponseBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">RESPONSE</span><span class="p">][</span><span class="n">NODES</span><span class="p">]</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="n">compact_nodes</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+
+                          
+<span class="k">class</span> <span class="nc">OutgoingGetPeersResponse</span><span class="p">(</span><span class="n">OutgoingResponseBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">peers</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">nodes</span> <span class="ow">or</span> <span class="n">peers</span>
+        <span class="n">OutgoingResponseBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">RESPONSE</span><span class="p">][</span><span class="n">TOKEN</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
+        <span class="k">if</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">RESPONSE</span><span class="p">][</span><span class="n">NODES</span><span class="p">]</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="n">compact_nodes</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">peers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">RESPONSE</span><span class="p">][</span><span class="n">VALUES</span><span class="p">]</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="n">compact_peers</span><span class="p">(</span><span class="n">peers</span><span class="p">)</span>
+
+            
+<span class="k">class</span> <span class="nc">OutgoingAnnouncePeerResponse</span><span class="p">(</span><span class="n">OutgoingResponseBase</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">):</span>
+        <span class="n">OutgoingResponseBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">src_id</span><span class="p">)</span>
+
+<span class="c">###################################</span>
+
+<span class="k">class</span> <span class="nc">OutgoingErrorMsg</span><span class="p">(</span><span class="n">OutgoingMsgBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
+        <span class="n">OutgoingMsgBase</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dst_node</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="n">ERROR</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dict</span><span class="p">[</span><span class="n">ERROR</span><span class="p">]</span> <span class="o">=</span> <span class="n">error</span>
+
+<span class="c">############################################</span>
+
+<div class="viewcode-block" id="IncomingMsg"><a class="viewcode-back" href="../core.html#message.IncomingMsg">[docs]</a><span class="k">class</span> <span class="nc">IncomingMsg</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create an object by decoding the given Datagram object. Raise &#39;MsgError&#39;</span>
+<span class="sd">    whenever the decoder fails to decode the datagram&#39;s data (e.g., invalid</span>
+<span class="sd">    bencode).</span>
+
+<span class="sd">    ?TODO: List attributes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datagram</span><span class="p">):</span>
+        <span class="n">bencoded_msg</span> <span class="o">=</span> <span class="n">datagram</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">src_addr</span> <span class="o">=</span> <span class="n">datagram</span><span class="o">.</span><span class="n">addr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span> <span class="o">=</span> <span class="n">src_addr</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># bencode.decode may raise bencode.DecodeError</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span> <span class="o">=</span> <span class="n">bencode</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">bencoded_msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_common</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">QUERY</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_query</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">RESPONSE</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_response</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ERROR</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sanitize_error</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Unknown TYPE value&#39;</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">MsgError</span><span class="p">):</span>
+            <span class="k">raise</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s">&#39;This bencoded message is broken:</span><span class="se">\n</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">repr</span><span class="p">(</span><span class="n">bencoded_msg</span><span class="p">))</span> 
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Invalid message&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">)</span>
+
+    <span class="c">#</span>
+    <span class="c"># Sanitize functions</span>
+    <span class="c">#</span>
+    
+    <span class="k">def</span> <span class="nf">_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">kk</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">optional</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Non-optional key (</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">) not found&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Probably k (</span><span class="si">%r</span><span class="s">) is not a dictionary&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span>
+    
+    <span class="k">def</span> <span class="nf">_get_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">optional</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Value (</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">,</span><span class="si">%s</span><span class="s">) must be a string&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span>
+
+    <span class="k">def</span> <span class="nf">_get_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">Id</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">IdError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Value (</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">,</span><span class="si">%s</span><span class="s">) must be a valid Id&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span>
+
+    <span class="k">def</span> <span class="nf">_get_int</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">v</span><span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Value (</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">,</span><span class="si">%s</span><span class="s">) must be an int&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">kk</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span>
+    
+    <span class="k">def</span> <span class="nf">_sanitize_common</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># Make sure the decoded data is a dict and has a TID key</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="n">TID</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;decoded data is not a dictionary&#39;</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span> 
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;key TID not found&#39;</span>
+        <span class="c"># Sanitize TID</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tid</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">tid</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;TID must be a non-empty binary string&#39;</span>
+
+        <span class="c"># Sanitize TYPE</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="n">TYPE</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;key TYPE not found&#39;</span>
+        <span class="c"># private dht name</span>
+        <span class="k">if</span> <span class="n">private_dht_name</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">private_dht_name</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;invalid private DHT name&#39;</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;invalid private DHT name&#39;</span>
+        <span class="c"># version (optional)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_str</span><span class="p">(</span><span class="n">VERSION</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ns_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> \
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">NEXTSHARE_VERSION</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">_sanitize_query</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># src_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_id</span><span class="p">(</span><span class="n">ARGS</span><span class="p">,</span> <span class="n">ID</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_id</span><span class="p">)</span>
+        <span class="c"># query</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_str</span><span class="p">(</span><span class="n">QUERY</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="ow">in</span> <span class="p">[</span><span class="n">GET_PEERS</span><span class="p">,</span> <span class="n">ANNOUNCE_PEER</span><span class="p">]:</span>
+            <span class="c"># info_hash</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">info_hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_id</span><span class="p">(</span><span class="n">ARGS</span><span class="p">,</span> <span class="n">INFO_HASH</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">==</span> <span class="n">ANNOUNCE_PEER</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bt_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_int</span><span class="p">(</span><span class="n">ARGS</span><span class="p">,</span> <span class="n">PORT</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_str</span><span class="p">(</span><span class="n">ARGS</span><span class="p">,</span> <span class="n">TOKEN</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">==</span> <span class="n">FIND_NODE</span><span class="p">:</span>
+            <span class="c"># target</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_id</span><span class="p">(</span><span class="n">ARGS</span><span class="p">,</span> <span class="n">TARGET</span><span class="p">)</span>
+        <span class="k">return</span>
+        
+    <span class="k">def</span> <span class="nf">_sanitize_response</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># src_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_id</span><span class="p">(</span><span class="n">RESPONSE</span><span class="p">,</span> <span class="n">ID</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_addr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_id</span><span class="p">)</span>
+        <span class="c"># all nodes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># nodes</span>
+        <span class="n">c_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_str</span><span class="p">(</span><span class="n">RESPONSE</span><span class="p">,</span> <span class="n">NODES</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c_nodes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="n">uncompact_nodes</span><span class="p">(</span><span class="n">c_nodes</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">all_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span>
+        <span class="c"># nodes2</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">c_nodes2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="n">RESPONSE</span><span class="p">][</span><span class="n">NODES2</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes2</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes2</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="n">uncompact_nodes2</span><span class="p">(</span><span class="n">c_nodes2</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_nodes</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">all_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="c"># token</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_str</span><span class="p">(</span><span class="n">RESPONSE</span><span class="p">,</span> <span class="n">TOKEN</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="c"># peers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peers</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">c_peers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">RESPONSE</span><span class="p">,</span> <span class="n">PEERS</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c_peers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peers</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="n">uncompact_peers</span><span class="p">(</span><span class="n">c_peers</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_sanitize_error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="n">ERROR</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                          <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_msg_dict</span><span class="p">[</span><span class="n">ERROR</span><span class="p">][</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MsgError</span><span class="p">,</span> <span class="s">&#39;Invalid error message&#39;</span>
+
+</div>
+<span class="k">class</span> <span class="nc">Datagram</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">addr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addr</span> <span class="o">=</span> <span class="n">addr</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">addr</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">addr</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Pymdht v1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Raul Jimenez.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

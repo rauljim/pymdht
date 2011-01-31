@@ -1,0 +1,212 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>routing_plugin_template &mdash; Pymdht v1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Pymdht v1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Pymdht v1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for routing_plugin_template</h1><div class="highlight"><pre>
+<span class="c"># Copyright (C) 2009-2010 Raul Jimenez</span>
+<span class="c"># Released under GNU LGPL 2.1</span>
+<span class="c"># See LICENSE.txt for more information</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module is responsible for the routing table management.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">ptime</span> <span class="kn">as</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">test_const</span> <span class="kn">as</span> <span class="nn">tc</span>
+<span class="kn">import</span> <span class="nn">routing_table</span>
+<span class="kn">import</span> <span class="nn">message</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dht&#39;</span><span class="p">)</span>
+
+<span class="n">MAINTENANCE_DELAY</span> <span class="o">=</span> <span class="mi">8</span>
+
+<div class="viewcode-block" id="RoutingManager"><a class="viewcode-back" href="../plugins.html#routing_plugin_template.RoutingManager">[docs]</a><span class="k">class</span> <span class="nc">RoutingManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a routing table (using routing\_table.RoutingTable) for</span>
+<span class="sd">    &#39;my\_node&#39;. Take &#39;bootstrap\_nodes&#39; as candidates to be added to the</span>
+<span class="sd">    routing table.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_node</span><span class="p">,</span> <span class="n">bootstrap_nodes</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">my_node</span> <span class="o">=</span> <span class="n">my_node</span>
+        <span class="c">#Copy the bootstrap list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap_nodes</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">bootstrap_nodes</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">routing_table</span><span class="o">.</span><span class="n">RoutingTable</span><span class="p">(</span><span class="n">my_node</span><span class="p">,</span> <span class="p">[</span><span class="mi">8</span><span class="p">,]</span><span class="o">*</span><span class="mi">160</span><span class="p">)</span>
+        <span class="c"># This is just for testing:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintenance_counter</span> <span class="o">=</span> <span class="mi">0</span>
+        
+<div class="viewcode-block" id="RoutingManager.do_maintenance"><a class="viewcode-back" href="../plugins.html#routing_plugin_template.RoutingManager.do_maintenance">[docs]</a>    <span class="k">def</span> <span class="nf">do_maintenance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a three-element tuple: (1) the time-stamp when</span>
+<span class="sd">        &#39;do\_maintenance&#39; should be called, (2) a list of</span>
+<span class="sd">        message.OutgoingQueryBase objects ready to be sent, and (3) an</span>
+<span class="sd">        identifier.Id object representing the target of a maintenance lookup</span>
+<span class="sd">        (see LookupManager.maintenance\_lookup below) to be made by the</span>
+<span class="sd">        caller. Element 3 will be None when no lookup needs to be done.</span>
+
+<span class="sd">        This method will be periodically called (according to the time-stamp</span>
+<span class="sd">        returned). The implementation should ??</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maintenance_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">maintenance_delay</span> <span class="o">=</span> <span class="n">MAINTENANCE_DELAY</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintenance_counter</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c"># bootstrap ping</span>
+            <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[</span><span class="n">message</span><span class="o">.</span><span class="n">OutgoingPingQuery</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">SERVER_NODE</span><span class="p">,</span>
+                                                         <span class="bp">self</span><span class="o">.</span><span class="n">my_node</span><span class="o">.</span><span class="n">id</span><span class="p">)]</span>
+            <span class="n">maintenance_lookup_target</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">maintenance_counter</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c"># maintenance lookup</span>
+            <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">maintenance_lookup_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_node</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># nothing to do</span>
+            <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">maintenance_lookup_target</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">maintenance_delay</span><span class="p">,</span> <span class="n">queries_to_send</span><span class="p">,</span>
+                <span class="n">maintenance_lookup_target</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="RoutingManager.on_query_received"><a class="viewcode-back" href="../plugins.html#routing_plugin_template.RoutingManager.on_query_received">[docs]</a>    <span class="k">def</span> <span class="nf">on_query_received</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Return a list of message.OutgoingQueryBase objects ready to be sent.</span>
+
+<span class="sd">        This method will be called for every query received.</span>
+<span class="sd">        </span>
+<span class="sd">        Return None when nothing to do</span>
+<span class="sd">        Return a list of queries when queries need to be sent (the queries</span>
+<span class="sd">        will be sent out by the caller)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">queries_to_send</span>
+            </div>
+<div class="viewcode-block" id="RoutingManager.on_response_received"><a class="viewcode-back" href="../plugins.html#routing_plugin_template.RoutingManager.on_response_received">[docs]</a>    <span class="k">def</span> <span class="nf">on_response_received</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_</span><span class="p">,</span> <span class="n">rtt</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of message.OutgoingQueryBase objects ready to be sent.</span>
+
+<span class="sd">        This method will be called for every response received.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_node</span><span class="o">.</span><span class="n">log_distance</span><span class="p">(</span><span class="n">node_</span><span class="p">)</span>
+        <span class="n">sbucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">get_sbucket</span><span class="p">(</span><span class="n">log_distance</span><span class="p">)</span>
+        <span class="n">rnode</span> <span class="o">=</span> <span class="n">node_</span><span class="o">.</span><span class="n">get_rnode</span><span class="p">(</span><span class="n">log_distance</span><span class="p">)</span>
+        <span class="n">rnode</span><span class="o">.</span><span class="n">rtt</span> <span class="o">=</span> <span class="n">rtt</span>
+        <span class="n">sbucket</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rnode</span><span class="p">)</span>
+        <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">queries_to_send</span>
+        </div>
+<div class="viewcode-block" id="RoutingManager.on_error_received"><a class="viewcode-back" href="../plugins.html#routing_plugin_template.RoutingManager.on_error_received">[docs]</a>    <span class="k">def</span> <span class="nf">on_error_received</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of message.OutgoingQueryBase objects ready to be sent.</span>
+
+<span class="sd">        This method will be called for every error received.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">queries_to_send</span>
+    </div>
+<div class="viewcode-block" id="RoutingManager.on_timeout"><a class="viewcode-back" href="../plugins.html#routing_plugin_template.RoutingManager.on_timeout">[docs]</a>    <span class="k">def</span> <span class="nf">on_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of message.OutgoingQueryBase objects ready to be sent.</span>
+
+<span class="sd">        This method will be called for every timeout triggered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_node</span><span class="o">.</span><span class="n">log_distance</span><span class="p">(</span><span class="n">node_</span><span class="p">)</span>
+        <span class="n">sbucket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">get_sbucket</span><span class="p">(</span><span class="n">log_distance</span><span class="p">)</span>
+        <span class="n">sbucket</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">node_</span><span class="p">)</span>
+        <span class="n">queries_to_send</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">queries_to_send</span>
+            </div>
+    <span class="k">def</span> <span class="nf">get_closest_rnodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_distance</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="n">exclude_myself</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">get_closest_rnodes</span><span class="p">(</span><span class="n">log_distance</span><span class="p">,</span>
+                                             <span class="n">num_nodes</span><span class="p">,</span> <span class="n">exclude_myself</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_main_rnodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">get_main_rnodes</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">print_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Pymdht v1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Raul Jimenez.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>identifier &mdash; Pymdht v1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Pymdht v1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Pymdht v1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for identifier</h1><div class="highlight"><pre>
+<span class="c"># Copyright (C) 2009-2010 Raul Jimenez</span>
+<span class="c"># Released under GNU LGPL 2.1</span>
+<span class="c"># See LICENSE.txt for more information</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides the Id object and necessary tools.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dht&#39;</span><span class="p">)</span>
+
+
+<span class="n">BITS_PER_BYTE</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">ID_SIZE_BYTES</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">ID_SIZE_BITS</span> <span class="o">=</span> <span class="n">ID_SIZE_BYTES</span> <span class="o">*</span> <span class="n">BITS_PER_BYTE</span>
+
+
+<span class="k">def</span> <span class="nf">_bin_to_hex</span><span class="p">(</span><span class="n">bin_str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a binary string to a hex string.&quot;&quot;&quot;</span>
+    <span class="n">hex_list</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;</span><span class="si">%02x</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">bin_str</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hex_list</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_hex_to_bin_byte</span><span class="p">(</span><span class="n">hex_byte</span><span class="p">):</span>
+    <span class="c">#TODO2: Absolutely sure there is a library function for this</span>
+    <span class="n">hex_down</span> <span class="o">=</span> <span class="s">&#39;0123456789abcdef&#39;</span>
+    <span class="n">hex_up</span> <span class="o">=</span>   <span class="s">&#39;0123456789ABCDEF&#39;</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">*=</span> <span class="mi">16</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">+=</span> <span class="n">hex_down</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">hex_byte</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">+=</span> <span class="n">hex_up</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">hex_byte</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+<span class="c">#                logger.info(&#39;hex_byte: %d&#39;, hex_byte)</span>
+                <span class="k">raise</span> <span class="n">IdError</span>
+    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    
+<span class="k">def</span> <span class="nf">_hex_to_bin</span><span class="p">(</span><span class="n">hex_str</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">_hex_to_bin_byte</span><span class="p">(</span><span class="n">hex_byte</span><span class="p">)</span> <span class="k">for</span> <span class="n">hex_byte</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">hex_str</span><span class="p">[::</span><span class="mi">2</span><span class="p">],</span> <span class="n">hex_str</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">])])</span>
+
+
+<span class="k">def</span> <span class="nf">_byte_xor</span><span class="p">(</span><span class="n">byte1</span><span class="p">,</span> <span class="n">byte2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Xor two characters as if they were bytes.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">byte1</span><span class="p">)</span> <span class="o">^</span> <span class="nb">ord</span><span class="p">(</span><span class="n">byte2</span><span class="p">))</span>
+               
+<span class="k">def</span> <span class="nf">_first_different_byte</span><span class="p">(</span><span class="n">str1</span><span class="p">,</span> <span class="n">str2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the position of the first different byte in the strings.</span>
+<span class="sd">    Raise IndexError when no difference was found (str1 == str2).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">str1</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">str1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">str2</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">i</span>
+    <span class="k">raise</span> <span class="ne">IndexError</span>
+
+<span class="k">def</span> <span class="nf">_first_different_bit</span><span class="p">(</span><span class="n">byte1</span><span class="p">,</span> <span class="n">byte2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the position of the first different bit in the bytes.</span>
+<span class="sd">    The bytes must not be equal.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">byte1</span> <span class="o">!=</span> <span class="n">byte2</span>
+    <span class="n">byte</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">byte1</span><span class="p">)</span> <span class="o">^</span> <span class="nb">ord</span><span class="p">(</span><span class="n">byte2</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">byte</span> <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="n">BITS_PER_BYTE</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">byte</span> <span class="o">&lt;&lt;=</span> <span class="mi">1</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">i</span>
+
+<span class="k">class</span> <span class="nc">IdError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<div class="viewcode-block" id="Id"><a class="viewcode-back" href="../core.html#identifier.Id">[docs]</a><span class="k">class</span> <span class="nc">Id</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="c"># &quot;&quot;&quot;Convert a string to an Id object.</span>
+    
+    <span class="c"># The bin_id string&#39;s lenght must be ID_SIZE bytes (characters).</span>
+
+    <span class="c"># You can use both binary and hexadecimal strings. Example</span>
+    <span class="c"># #&gt;&gt;&gt; Id(&#39;\x00&#39; * ID_SIZE_BYTES) == Id(&#39;0&#39; * ID_SIZE_BYTES * 2)</span>
+    <span class="c"># #True</span>
+    <span class="c"># #&gt;&gt;&gt; Id(&#39;\xff&#39; * ID_SIZE_BYTES) == Id(&#39;f&#39; * ID_SIZE_BYTES * 2)</span>
+    <span class="c"># #True</span>
+    <span class="c"># &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hex_or_bin_id</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hex_or_bin_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">IdError</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hex_or_bin_id</span><span class="p">)</span> <span class="o">==</span> <span class="n">ID_SIZE_BYTES</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bin_id</span> <span class="o">=</span> <span class="n">hex_or_bin_id</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">hex_or_bin_id</span><span class="p">)</span> <span class="o">==</span> <span class="n">ID_SIZE_BYTES</span><span class="o">*</span><span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_bin_id</span> <span class="o">=</span> <span class="n">_hex_to_bin</span><span class="p">(</span><span class="n">hex_or_bin_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">IdError</span><span class="p">,</span> <span class="s">&#39;input: </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">hex_or_bin_id</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="o">.</span><span class="n">__hash__</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Id.bin_id"><a class="viewcode-back" href="../core.html#identifier.Id.bin_id">[docs]</a>    <span class="k">def</span> <span class="nf">bin_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;bin_id is read-only.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bin_id</span>
+</div>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">bin_id</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">_bin_to_hex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Id.distance"><a class="viewcode-back" href="../core.html#identifier.Id.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Do XOR distance between two Id objects and return it as Id</span>
+<span class="sd">        object.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">byte_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">_byte_xor</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">,</span>
+                                                     <span class="n">other</span><span class="o">.</span><span class="n">bin_id</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">Id</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">byte_list</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Id.log_distance"><a class="viewcode-back" href="../core.html#identifier.Id.log_distance">[docs]</a>    <span class="k">def</span> <span class="nf">log_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c"># &quot;&quot;&quot;Return log (base 2) of the XOR distance between two Id</span>
+        <span class="c"># objects. Return -1 when the XOR distance is 0.</span>
+
+        <span class="c"># That is, this function returns &#39;n&#39; when the distance between</span>
+        <span class="c"># the two objects is [2^n, 2^(n+1)).</span>
+        <span class="c"># When the two identifiers are equal, the distance is 0. Therefore</span>
+        <span class="c"># log_distance is -infinity. In this case, -1 is returned.</span>
+        <span class="c"># Example:</span>
+        <span class="c"># &gt;&gt;&gt; z = Id(chr(0) * ID_SIZE_BYTES)</span>
+
+        <span class="c"># &gt;&gt;&gt; # distance = 0 [-inf, 1) -&gt; log(0) = -infinity</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(z) </span>
+        <span class="c"># -1</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 1 [1, 2) -&gt; log(1) = 0</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(1)))</span>
+        <span class="c"># 0</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 2 [2, 4) -&gt; log(2) = 1</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(2)))</span>
+        <span class="c"># 1</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 3 [2, 4) -&gt; log(3) = </span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(3)))</span>
+        <span class="c"># 1</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 4 [4, 8) -&gt; log(2^2) = 2</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(4)))</span>
+        <span class="c"># 2</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 5 [4, 8) -&gt; log(5) = 2</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(5)))</span>
+        <span class="c"># 2</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 6  [4, 8) -&gt; log(6) = 2</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(6)))</span>
+        <span class="c"># 2</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 7  [4, 8) -&gt; log(7) = 2</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(7)))</span>
+        <span class="c"># 2</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 128 = 2^(8*0+7)  [128, 256) -&gt; log(7^2) = 7</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(0)*(ID_SIZE_BYTES-1)+chr(128)))</span>
+        <span class="c"># 7</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 2^(8*18+8) = 2^148+8 -&gt; log(1) = 152</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(1)+chr(0)*(ID_SIZE_BYTES-1)))</span>
+        <span class="c"># 152</span>
+        <span class="c"># &gt;&gt;&gt; # distance = 2^(8*19+1) = 2^159 -&gt; log(1) = 159</span>
+        <span class="c"># &gt;&gt;&gt; z.log_distance(Id(chr(128)+chr(0)*(ID_SIZE_BYTES-1)))</span>
+        <span class="c"># 159</span>
+
+        <span class="c"># &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">byte_i</span> <span class="o">=</span> <span class="n">_first_different_byte</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">bin_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="c"># _first_different_byte did&#39;t find differences, thus the</span>
+            <span class="c"># distance is 0 and log_distance is -1 </span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">unmatching_bytes</span> <span class="o">=</span> <span class="n">ID_SIZE_BYTES</span> <span class="o">-</span> <span class="n">byte_i</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">byte1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">[</span><span class="n">byte_i</span><span class="p">]</span>
+        <span class="n">byte2</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">bin_id</span><span class="p">[</span><span class="n">byte_i</span><span class="p">]</span>
+        <span class="n">bit_i</span> <span class="o">=</span> <span class="n">_first_different_bit</span><span class="p">(</span><span class="n">byte1</span><span class="p">,</span> <span class="n">byte2</span><span class="p">)</span>
+        <span class="c"># unmatching_bits (in byte: from least significant bit)</span>
+        <span class="n">unmatching_bits</span> <span class="o">=</span> <span class="n">BITS_PER_BYTE</span> <span class="o">-</span> <span class="n">bit_i</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">unmatching_bytes</span> <span class="o">*</span> <span class="n">BITS_PER_BYTE</span> <span class="o">+</span> <span class="n">unmatching_bits</span>
+    
+            </div>
+<div class="viewcode-block" id="Id.order_closest"><a class="viewcode-back" href="../core.html#identifier.Id.order_closest">[docs]</a>    <span class="k">def</span> <span class="nf">order_closest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a list with the Id objects in &#39;id_list&#39; ordered</span>
+<span class="sd">        according to the distance to self. The closest id first.</span>
+<span class="sd">        </span>
+<span class="sd">        The original list is not modified.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">id_list_copy</span> <span class="o">=</span> <span class="n">id_list</span><span class="p">[:]</span>
+        <span class="n">max_distance</span> <span class="o">=</span> <span class="n">ID_SIZE_BITS</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">log_distance_list</span> <span class="o">=</span> <span class="p">[]</span> 
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">id_list</span><span class="p">:</span>
+            <span class="n">log_distance_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_distance</span><span class="p">(</span><span class="n">element</span><span class="p">))</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">id_list</span><span class="p">)):</span>
+            <span class="n">lowest_index</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">lowest_distance</span> <span class="o">=</span> <span class="n">max_distance</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">id_list_copy</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">log_distance_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">lowest_distance</span><span class="p">:</span>
+                    <span class="n">lowest_index</span> <span class="o">=</span> <span class="n">j</span>
+                    <span class="n">lowest_distance</span> <span class="o">=</span> <span class="n">log_distance_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">id_list_copy</span><span class="p">[</span><span class="n">lowest_index</span><span class="p">])</span>
+            <span class="k">del</span> <span class="n">log_distance_list</span><span class="p">[</span><span class="n">lowest_index</span><span class="p">]</span>
+            <span class="k">del</span> <span class="n">id_list_copy</span><span class="p">[</span><span class="n">lowest_index</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">result</span>
+    </div>
+    <span class="k">def</span> <span class="nf">generate_close_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_distance</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">log_distance</span> <span class="o">&lt;</span> <span class="n">ID_SIZE_BITS</span>
+        <span class="k">if</span> <span class="n">log_distance</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">byte_num</span><span class="p">,</span> <span class="n">bit_num</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">log_distance</span><span class="p">,</span> <span class="n">BITS_PER_BYTE</span><span class="p">)</span>
+        <span class="n">byte_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">)</span> <span class="o">-</span> <span class="n">byte_num</span> <span class="o">-</span> <span class="mi">1</span> <span class="c"># -1 correction</span>
+        <span class="n">int_byte</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">[</span><span class="n">byte_index</span><span class="p">])</span>
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="c"># Flip bit</span>
+        <span class="n">int_byte</span> <span class="o">=</span> <span class="n">int_byte</span> <span class="o">^</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">bit_num</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bit_num</span><span class="p">):</span>
+            <span class="c"># Put bit to 0</span>
+            <span class="n">int_byte</span> <span class="o">=</span> <span class="n">int_byte</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">255</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">))</span>
+            <span class="c"># Replace bit for random bit</span>
+            <span class="n">int_byte</span> <span class="o">=</span> <span class="n">int_byte</span> <span class="o">+</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">id_byte</span> <span class="o">=</span> <span class="nb">chr</span><span class="p">(</span><span class="n">int_byte</span><span class="p">)</span>
+        <span class="c"># Produce random ending bytes</span>
+        <span class="n">end_bytes</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">chr</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span> \
+                                      <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">byte_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ID_SIZE_BYTES</span><span class="p">)])</span>
+        <span class="n">bin_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_id</span><span class="p">[:</span><span class="n">byte_index</span><span class="p">]</span> <span class="o">+</span>\
+            <span class="n">id_byte</span> <span class="o">+</span> <span class="n">end_bytes</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">Id</span><span class="p">(</span><span class="n">bin_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span> 
+
+    </div>
+<div class="viewcode-block" id="RandomId"><a class="viewcode-back" href="../core.html#identifier.RandomId">[docs]</a><span class="k">class</span> <span class="nc">RandomId</span><span class="p">(</span><span class="n">Id</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Create a random Id object.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">random_str</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">chr</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span> \
+                                      <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">ID_SIZE_BYTES</span><span class="p">)])</span>
+        <span class="n">Id</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">random_str</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Pymdht v1.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Raul Jimenez.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
