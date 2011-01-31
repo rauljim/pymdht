@@ -6,10 +6,17 @@
 Welcome to Pymdht's documentation!
 ==================================
 
-Contents:
+?TODO: Introduction here
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
+   
+   introduction
+   pymdht
+   core
+   plugins
+
 
 Indices and tables
 ==================
@@ -17,4 +24,6 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
 

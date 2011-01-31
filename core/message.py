@@ -3,13 +3,14 @@
 # See LICENSE.txt for more information
 
 """
-This module provides message classes.
+The message module contains all the data structures needed to create, encode,
+and decode valid MDHT messages.
 
-Outgoing messages are built from a few parameters. They are immutable and can be
-reused (TID is not part of the message).
+Outgoing messages are built from a few parameters. They are immutable and can
+oly be stamped once.
 
-Incoming messages are built from bencoded data. They are immutable and must be
-sanitized before attempting to use message's attributes.
+Incoming messages are built from bencoded data. They are automatically
+sanitized.
 
 """
 
@@ -97,6 +98,14 @@ class OutgoingMsgBase(object):
         return str(self.__class__) + str(self)
 
     def stamp(self, tid):
+        """
+        Return a Datagram object ready to be sent over the network. The
+        message's state is changed internally to reflect that this message has
+        been stamped. This call will raise MsgError if the message has already
+        been stamped.
+        
+        """
+        
         if TID in self._dict:
             raise MsgError, 'Message has already been stamped'
         self._dict[TID] = tid
@@ -121,15 +130,20 @@ class OutgoingQueryBase(OutgoingMsgBase):
         return self._dict[TID]
 
     def match_response(self, response_msg):
-        '''It just matches the first byte because other nodes return weird
-        TIDs in their responses.'''
-        matched = self._dict[TID][0] == response_msg.tid[0]
-        if matched:
-            self.rtt = time.time() - self.sending_ts
-            self.got_response = True            
-            if response_msg.type == RESPONSE and not self.dst_node.id:
-                self.dstnode.id = response_msg.src_id
-        return matched
+      """
+      Return a boolean indicating whether 'response\_msg' matches this
+      outgoing query. If so, as a side effect, the round trip time is
+      calculated and stored in 'self.rtt'. 'self.got\_response' is set to
+      True.
+      
+      """
+      matched = self._dict[TID][0] == response_msg.tid[0]
+      if matched:
+          self.rtt = time.time() - self.sending_ts
+          self.got_response = True            
+          if response_msg.type == RESPONSE and not self.dst_node.id:
+              self.dstnode.id = response_msg.src_id
+      return matched
 
         
 class OutgoingPingQuery(OutgoingQueryBase):
@@ -218,7 +232,13 @@ class OutgoingErrorMsg(OutgoingMsgBase):
 ############################################
 
 class IncomingMsg(object):
+    """
+    Create an object by decoding the given Datagram object. Raise 'MsgError'
+    whenever the decoder fails to decode the datagram's data (e.g., invalid
+    bencode).
 
+    ?TODO: List attributes.
+    """
     def __init__(self, datagram):
         bencoded_msg = datagram.data
         src_addr = datagram.addr
