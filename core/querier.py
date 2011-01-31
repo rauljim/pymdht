@@ -2,6 +2,21 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+"""
+The 'querier' module contains the tools necessary to keep track of sent
+queries while waiting for responses.
+
+When a MDHT node receives a response, the response does not contain
+information regarding the query being responded. Instead, queries and
+responses carry a transaction id (tid) field to be able to match a response
+with its related query.
+
+In order to be able to recover related queries, queries need to be stored upon
+departure. Additionally, stale queries ---those which have not received a
+response for a given period of time (timeout)--- need to be detected and dealt
+with.
+
+"""
 import sys
 
 import logging
@@ -40,7 +55,11 @@ class _Query(object):
 
     
 class Querier(object):
+    """
+    A Querier object keeps a registry of sent queries while waiting for
+    responses.
 
+    """
     def __init__(self):#, my_id):
 #        self.my_id = my_id
         self._pending = {}
@@ -56,6 +75,11 @@ class Querier(object):
         return current_tid_str # raul: yield created trouble
 
     def register_queries(self, queries):
+        """
+        A Querier object keeps a registry of sent queries while waiting for
+        responses.
+
+        """
         assert len(queries)
         datagrams = []
         current_ts = time.time()
@@ -74,6 +98,11 @@ class Querier(object):
         return timeout_ts, datagrams
 
     def get_related_query(self, response_msg):
+        """
+        Return the message.OutgoingQueryBase object related to the
+        'response\_msg' provided. Return None if no related query is found.
+
+        """
         # message already sanitized by IncomingMsg
         if response_msg.type == message.RESPONSE:
             logger.debug('response received: %s' % repr(response_msg))
@@ -90,6 +119,11 @@ class Querier(object):
         return related_query
 
     def get_timeout_queries(self):
+        """
+        Return a list of message.OutgoingQueryBase objects of those queries
+        that have timed-out.
+        
+        """
         current_ts = time.time()
         timeout_queries = []
         while self._timeouts:

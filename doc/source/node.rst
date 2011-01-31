@@ -1,4 +1,4 @@
-node
+:mod:`node` --- Basic node objects
 ====
 
 .. automodule:: node

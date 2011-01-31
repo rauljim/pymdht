@@ -2,6 +2,9 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+"""
+This module is responsible for the routing table management.
+"""
 import ptime as time
 import logging
 import test_const as tc
@@ -13,7 +16,12 @@ logger = logging.getLogger('dht')
 MAINTENANCE_DELAY = 8
 
 class RoutingManager(object):
-    
+    """
+    Create a routing table (using routing\_table.RoutingTable) for
+    'my\_node'. Take 'bootstrap\_nodes' as candidates to be added to the
+    routing table.
+
+    """
     def __init__(self, my_node, bootstrap_nodes):
         self.my_node = my_node
         #Copy the bootstrap list
@@ -24,6 +32,18 @@ class RoutingManager(object):
         self.maintenance_counter = 0
         
     def do_maintenance(self):
+        """
+        Return a three-element tuple: (1) the time-stamp when
+        'do\_maintenance' should be called, (2) a list of
+        message.OutgoingQueryBase objects ready to be sent, and (3) an
+        identifier.Id object representing the target of a maintenance lookup
+        (see LookupManager.maintenance\_lookup below) to be made by the
+        caller. Element 3 will be None when no lookup needs to be done.
+
+        This method will be periodically called (according to the time-stamp
+        returned). The implementation should ??
+
+        """
         self.maintenance_counter += 1
         maintenance_delay = MAINTENANCE_DELAY
         if self.maintenance_counter == 1:
@@ -44,6 +64,10 @@ class RoutingManager(object):
         
     def on_query_received(self, node_):
         '''
+        Return a list of message.OutgoingQueryBase objects ready to be sent.
+
+        This method will be called for every query received.
+        
         Return None when nothing to do
         Return a list of queries when queries need to be sent (the queries
         will be sent out by the caller)
@@ -52,6 +76,11 @@ class RoutingManager(object):
         return queries_to_send
             
     def on_response_received(self, node_, rtt, nodes):
+        """
+        Return a list of message.OutgoingQueryBase objects ready to be sent.
+
+        This method will be called for every response received.
+        """
         log_distance = self.my_node.log_distance(node_)
         sbucket = self.table.get_sbucket(log_distance)
         rnode = node_.get_rnode(log_distance)
@@ -61,10 +90,20 @@ class RoutingManager(object):
         return queries_to_send
         
     def on_error_received(self, node_): 
+        """
+        Return a list of message.OutgoingQueryBase objects ready to be sent.
+
+        This method will be called for every error received.
+        """
         queries_to_send = []
         return queries_to_send
     
     def on_timeout(self, node_):
+        """
+        Return a list of message.OutgoingQueryBase objects ready to be sent.
+
+        This method will be called for every timeout triggered.
+        """
         log_distance = self.my_node.log_distance(node_)
         sbucket = self.table.get_sbucket(log_distance)
         sbucket.main.remove(node_)

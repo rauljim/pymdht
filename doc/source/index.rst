@@ -16,6 +16,8 @@ Welcome to Pymdht's documentation!
    pymdht
    core
    plugins
+   profiling
+   background
 
 
 Indices and tables

@@ -2,6 +2,16 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+"""
+The controller module is designed to be the central point where most modules
+are connected. This module delegates most of the implementation details to
+other modules. This delegation model creates separated responsibility areas
+where implementation can be changed in isolation.
+
+The extreme cases are the plug-ins which allow us to develop/run different
+implementations of routing and lookup managers in parallel.
+
+"""
 import ptime as time
 import os
 import cPickle
@@ -67,6 +77,16 @@ class Controller:
         '''
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+        """
+        Start a get\_peers lookup whose target is 'info\_hash'. The handler
+        'callback\_f' will be called with two arguments ('lookup\_id' and a
+        'peer list') whenever peers are discovered. Once the lookup is
+        completed, the handler will be called with 'lookup\_id' and None as
+        arguments.
+
+        This method is designed to be used as minitwisted's external handler.
+
+        """
         logger.critical('get_peers %d %r' % (bt_port, info_hash))
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
                                                               info_hash,
@@ -106,6 +126,19 @@ class Controller:
         self._routing_m.print_stats()
 
     def main_loop(self):
+        """
+        Perform maintenance operations. The main operation is routing table
+        maintenance where staled nodes are added/probed/replaced/removed as
+        needed. The routing management module specifies the implementation
+        details.  This includes keeping track of queries that have not been
+        responded for a long time (timeout) with the help of
+        querier.Querier. The routing manager and the lookup manager will be
+        informed of those timeouts.
+
+        This method is designed to be used as minitwisted's heartbeat handler.
+
+        """
+
         logger.debug('main_loop BEGIN')
         queries_to_send = []
         current_ts = time.time()
@@ -155,6 +188,18 @@ class Controller:
         self._lookup_m.maintenance_lookup(target)
 
     def on_datagram_received(self, datagram):
+        """
+        Perform the actions associated to the arrival of the given
+        datagram. The datagram will be ignored in cases such as invalid
+        format. Otherwise, the datagram will be decoded and different modules
+        will be informed to take action on it. For instance, if the datagram
+        contains a response to a lookup query, both routing and lookup manager
+        will be informed. Additionally, if that response contains peers, the
+        lookup's handler will be called (see get\_peers above).
+
+        This method is designed to be used as minitwisted's networking handler.
+
+        """
         data = datagram.data
         addr = datagram.addr
         datagrams_to_send = []
