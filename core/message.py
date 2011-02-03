@@ -3,21 +3,22 @@
 # See LICENSE.txt for more information
 
 """
-This module provides message classes.
+The message module contains all the data structures needed to create, encode,
+and decode valid MDHT messages.
 
-Outgoing messages are built from a few parameters. They are immutable and can be
-reused (TID is not part of the message).
+Outgoing messages are built from a few parameters. They are immutable and can
+oly be stamped once.
 
-Incoming messages are built from bencoded data. They are immutable and must be
-sanitized before attempting to use message's attributes.
+Incoming messages are built from bencoded data. They are automatically
+sanitized.
 
 """
 
 import sys
-import threading
 
 import logging
 
+import ptime as time
 import bencode
 from identifier import Id, ID_SIZE_BYTES, IdError
 from node import Node
@@ -70,11 +71,6 @@ SERVER_E = [202, 'Server Error']
 PROTOCOL_E = [203, 'Protocol Error']
 UNKNOWN_E = [201, 'Method Unknown']
 
-def matching_tid(query_tid, response_tid):
-    '''It just matches the first byte because other nodes return weird
-    TIDs in their responses.'''
-    return query_tid[0] == response_tid[0]
-
 
 class MsgError(Exception):
     """Raised anytime something goes wrong (specially when
@@ -88,12 +84,12 @@ class OutgoingMsgBase(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, dst_node):
+        self.dst_node = dst_node
         self._dict = {VERSION: NEXTSHARE_VERSION}
         if private_dht_name:
             self._dict['d'] = private_dht_name
-        self._lock = threading.RLock()
-
+        self._already_encoded = False
     
     def __str__(self):
         return str(self._dict)
@@ -101,59 +97,83 @@ class OutgoingMsgBase(object):
     def __repr__(self):
         return str(self.__class__) + str(self)
 
-    def encode(self, tid):
-        # We use the lock to prevent that two threads encode at the same
-        # time. For instance, when doing get_peers lookup the main thread
-        # sends many queries while the networking thread receives a response
-        # and encode a new msg for a new query.
-        # TODO: I think this comment is outdated. The threads do not interact
-        # that way anymore.
-        self._lock.acquire()
-        assert not TID in self._dict
+    def stamp(self, tid):
+        """
+        Return a Datagram object ready to be sent over the network. The
+        message's state is changed internally to reflect that this message has
+        been stamped. This call will raise MsgError if the message has already
+        been stamped.
+        
+        """
+        
+        if TID in self._dict:
+            raise MsgError, 'Message has already been stamped'
         self._dict[TID] = tid
-        result = bencode.encode(self._dict)
-        del self._dict[TID]
-        self._lock.release()
-        return result
+        self.sending_ts = time.time()
+        return bencode.encode(self._dict)
       
 class OutgoingQueryBase(OutgoingMsgBase):
 
-    def __init__(self, sender_id):
-        OutgoingMsgBase.__init__(self)
+    def __init__(self, dst_node, src_id):
+        OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = QUERY
-        self._dict[ARGS] = {ID: str(sender_id)}
+        self._dict[ARGS] = {ID: str(src_id)}
+        self.lookup_obj = None
+        self.got_response = False
 
     @property
     def query(self):
         return self._dict[QUERY]
-    
+
+    @property
+    def tid(self):
+        return self._dict[TID]
+
+    def match_response(self, response_msg):
+      """
+      Return a boolean indicating whether 'response\_msg' matches this
+      outgoing query. If so, as a side effect, the round trip time is
+      calculated and stored in 'self.rtt'. 'self.got\_response' is set to
+      True.
+      
+      """
+      matched = self._dict[TID][0] == response_msg.tid[0]
+      if matched:
+          self.rtt = time.time() - self.sending_ts
+          self.got_response = True            
+          if response_msg.type == RESPONSE and not self.dst_node.id:
+              self.dstnode.id = response_msg.src_id
+      return matched
+
+        
 class OutgoingPingQuery(OutgoingQueryBase):
     
-    def __init__(self, sender_id):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = PING
 
         
 class OutgoingFindNodeQuery(OutgoingQueryBase):
 
-    def __init__(self, sender_id, target):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id, target, lookup_obj):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
 
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
 
-    def __init__(self, sender_id, info_hash):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id, info_hash, lookup_obj):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
+        self.lookup_obj = lookup_obj
 
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
     
-    def __init__(self, sender_id, info_hash, port, token):
-        OutgoingQueryBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id, info_hash, port, token):
+        OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = ANNOUNCE_PEER
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self._dict[ARGS][PORT] = port
@@ -163,30 +183,30 @@ class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
 
 class OutgoingResponseBase(OutgoingMsgBase):
 
-    def __init__(self, sender_id):
-        OutgoingMsgBase.__init__(self)
+    def __init__(self, dst_node, src_id):
+        OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = RESPONSE
-        self._dict[RESPONSE] = {ID: str(sender_id)}
+        self._dict[RESPONSE] = {ID: str(src_id)}
         
         
 class OutgoingPingResponse(OutgoingResponseBase):
 
-    def __init__(self, sender_id):
-        OutgoingResponseBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id):
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
 
 
 class OutgoingFindNodeResponse(OutgoingResponseBase):
 
-    def __init__(self, sender_id, nodes):
-        OutgoingResponseBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id, nodes):
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
         self._dict[RESPONSE][NODES] = mt.compact_nodes(nodes)
 
                           
 class OutgoingGetPeersResponse(OutgoingResponseBase):
 
-    def __init__(self, sender_id, token=None, nodes=None, peers=None):
+    def __init__(self, dst_node, src_id, token=None, nodes=None, peers=None):
         assert nodes or peers
-        OutgoingResponseBase.__init__(self, sender_id)
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
         if token:
             self._dict[RESPONSE][TOKEN] = token
         if nodes:
@@ -197,26 +217,32 @@ class OutgoingGetPeersResponse(OutgoingResponseBase):
             
 class OutgoingAnnouncePeerResponse(OutgoingResponseBase):
     
-    def __init__(self, sender_id):
-        OutgoingResponseBase.__init__(self, sender_id)
+    def __init__(self, dst_node, src_id):
+        OutgoingResponseBase.__init__(self, dst_node, src_id)
 
 ###################################
 
 class OutgoingErrorMsg(OutgoingMsgBase):
 
-    def __init__(self, error):
-        OutgoingMsgBase.__init__(self)
+    def __init__(self, dst_node, error):
+        OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = ERROR
         self._dict[ERROR] = error
 
 ############################################
 
 class IncomingMsg(object):
+    """
+    Create an object by decoding the given Datagram object. Raise 'MsgError'
+    whenever the decoder fails to decode the datagram's data (e.g., invalid
+    bencode).
 
+    ?TODO: List attributes.
+    """
     def __init__(self, datagram):
         bencoded_msg = datagram.data
-        sender_addr = datagram.addr
-        self.sender_addr = sender_addr
+        src_addr = datagram.addr
+        self.src_addr = src_addr
         try:
             # bencode.decode may raise bencode.DecodeError
             self._msg_dict = bencode.decode(bencoded_msg)
@@ -311,9 +337,9 @@ class IncomingMsg(object):
             and self.version.startswith(NEXTSHARE_VERSION[:2])
     
     def _sanitize_query(self):
-        # sender_id
-        self.sender_id = self._get_id(ARGS, ID)
-        self.sender_node = Node(self.sender_addr, self.sender_id)
+        # src_id
+        self.src_id = self._get_id(ARGS, ID)
+        self.src_node = Node(self.src_addr, self.src_id)
         # query
         self.query = self._get_str(QUERY)
         if self.query in [GET_PEERS, ANNOUNCE_PEER]:
@@ -328,9 +354,9 @@ class IncomingMsg(object):
         return
         
     def _sanitize_response(self):
-        # sender_id
-        self.sender_id = self._get_id(RESPONSE, ID)
-        self.sender_node = Node(self.sender_addr, self.sender_id)
+        # src_id
+        self.src_id = self._get_id(RESPONSE, ID)
+        self.src_node = Node(self.src_addr, self.src_id)
         # all nodes
         self.all_nodes = []
         # nodes

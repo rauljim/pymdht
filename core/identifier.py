@@ -79,14 +79,15 @@ class IdError(Exception):
 class Id(object):
 
     """Convert a string to an Id object.
-    
     The bin_id string's lenght must be ID_SIZE bytes (characters).
 
-    You can use both binary and hexadecimal strings. Example
-    #>>> Id('\x00' * ID_SIZE_BYTES) == Id('0' * ID_SIZE_BYTES * 2)
-    #True
-    #>>> Id('\xff' * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
-    #True
+    You can use both binary and hexadecimal strings. Example:
+    
+    >>> Id('\x00' * ID_SIZE_BYTES) == Id('0' * ID_SIZE_BYTES * 2)
+    True
+    
+    >>> Id(ord(255) * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
+    True
     """
 
     def __init__(self, hex_or_bin_id):
@@ -138,6 +139,7 @@ class Id(object):
         When the two identifiers are equal, the distance is 0. Therefore
         log_distance is -infinity. In this case, -1 is returned.
         Example:
+
         >>> z = Id(chr(0) * ID_SIZE_BYTES)
 
         >>> # distance = 0 [-inf, 1) -> log(0) = -infinity

@@ -84,6 +84,8 @@ class ThreadedReactor(threading.Thread):
         except:
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
+            print 'MINITWISTED CRASHED'
+            #raise #Uncomment for debuggin only!
         self.running = False
         logger.debug('Reactor stopped')
 
@@ -125,7 +127,11 @@ class ThreadedReactor(threading.Thread):
             ip_is_blocked = self.floodbarrier_active and \
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
-                logger.warning('%r blocked' % addr)
+                import sys
+#                print >>sys.stderr, '>>>>>>>>>>>>>>>>>>', addr
+#                print >>sys.stderr, '>>>>>>>>>>>>>>>>>>', `addr`
+                logger.warning("blocked")
+#                print >>sys.stderr, '>>>>>>>>>>>>>>>>>> DONE'
                 return
             datagram_received = Datagram(data, addr)
             (self._next_main_loop_call_ts,
