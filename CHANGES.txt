@@ -1,0 +1,1 @@
+v1.0, 31 Jan 2011 -- Initial release with proper documentation
