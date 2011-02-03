@@ -130,6 +130,17 @@ class Id(object):
                                                      other.bin_id)]
         return Id(''.join(byte_list))
 
+
+    def lineal_distance(self, other, num_bytes=4):
+        result = 0
+        for i in xrange(num_bytes):
+            byte_dist_int = abs(ord(self._bin_id[i]) - ord(other._bin_id[i])) 
+            result = result * 256 + byte_dist_int
+        return result
+            
+
+                               
+    
     def log_distance(self, other):
         """Return log (base 2) of the XOR distance between two Id
         objects. Return -1 when the XOR distance is 0.

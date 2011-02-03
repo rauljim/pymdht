@@ -29,6 +29,7 @@ NUM_PEERS_PER_BURST = 10
 
 dht = None
 stop_server = False
+random_lookup_delay = 0
 
 class SanitizeError(Exception):
     pass
@@ -211,6 +212,13 @@ def main(options, args):
                         lookup_m_mod,
                         '', logs_level)
 
+    random_lookup_delay = options.random_lookup_delay
+    while random_lookup_delay > 0:
+        time.sleep(float(random_lookup_delay))
+        target = identifier.RandomId()
+        dht.get_peers(None, target, None, 0)
+
+    
     global geo_score
     if options.geoip_mode:
         try:
@@ -266,6 +274,9 @@ if __name__ == '__main__':
     parser.add_option("--geoip", dest="geoip_mode",
                       action='store_true', default=False,
                       help="do not use geoIP")
+    parser.add_option("--random-lookup", dest="random_lookup_delay",
+                      metavar='INT', default=0,
+                      help="Perform lookups (to random keys) every x seconds")
 
 
     (options, args) = parser.parse_args()
