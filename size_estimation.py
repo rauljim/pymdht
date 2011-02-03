@@ -1,15 +1,19 @@
 from core.identifier import Id
 
+sizes = []
 
 for line in open('size_estimation.dat'):
-    ids = [Id(hexid) for hexid in line.split()]
-    log_distances = [ids[0].log_distance(ids[1]),
-                     ids[0].log_distance(ids[2]),
-                     ids[1].log_distance(ids[2]),
-                     ]
+    try:
+        num_queries, num_responses = [int(x) for x in line.split()]
+    except:
+        break
+    size = pow(2, 19) * num_responses / 1000000.
+    print '%d queries, %d responses. Estimation: %.2f M' % (
+        num_queries,
+        num_responses,
+        size)
+    sizes.append(size)
 
-    avg = (sum(log_distances) - max(log_distances)) / 2.
-    size = pow(2, 160-avg) /1000000.
-    
-    print log_distances, avg, '%.2f M' % size
-    
+        
+avg = sum(sizes)/len(sizes)
+print 'Final estimation: %.2f M' % avg

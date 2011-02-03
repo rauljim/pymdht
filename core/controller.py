@@ -242,9 +242,10 @@ class Controller:
 
                 if lookup_done:
                     # Size estimation
-                    line = ' '.join(
-                        related_query.lookup_obj.get_closest_responded_hexids())
-                    self._size_estimation_file.write(line + '\n')
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
 
 
                     queries_to_send = self._announce(
@@ -281,9 +282,12 @@ class Controller:
 
                 if lookup_done:
                     # Size estimation
-                    line = ' '.join(
-                        related_query.lookup_obj.get_closest_responded_hexids())
-                    self._size_estimation_file.write(line + '\n')
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
+
+
 
 
                     
@@ -358,9 +362,10 @@ class Controller:
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done:
                 # Size estimation
-                line = ' '.join(
-                    related_query.lookup_obj.get_closest_responded_hexids())
-                self._size_estimation_file.write(line + '\n')
+                line = '%d %d\n' % (
+                    related_query.lookup_obj.get_number_nodes_within_region())
+                self._size_estimation_file.write(line)
+                self._size_estimation_file.flush()
 
 
                 if callback_f and callable(callback_f):
