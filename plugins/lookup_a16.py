@@ -44,6 +44,7 @@ class _LookupQueue(object):
         self.queried_ips = set()
         self.queued_qnodes = []
         self.responded_qnodes = []
+
         self.max_queued_qnodes = 16
         self.max_responded_qnodes = 16
 
@@ -260,6 +261,10 @@ class GetPeersLookup(object):
             queries_to_send.append(query)
         return queries_to_send, announce_to_myself
 
+    def get_closest_responded_hexids(self):
+        return ['%r' % qnode.node.id for
+                qnode in self._lookup_queue.get_closest_responded_qnodes()]
+    
             
 class MaintenanceLookup(GetPeersLookup):
 
