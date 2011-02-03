@@ -18,6 +18,10 @@ except ImportError:
 
 logger = logging.getLogger('dht')
 
+
+MAX_LOG_DISTANCE = 140
+
+
 MARK_INDEX = 2
 
 ANNOUNCE_REDUNDANCY = 3
@@ -45,11 +49,15 @@ class _LookupQueue(object):
         self.queued_qnodes = []
         self.responded_qnodes = []
 
-        self.max_queued_qnodes = 16
-        self.max_responded_qnodes = 16
+        self.max_queued_qnodes = 160
+        self.max_responded_qnodes = 160
 
         self.last_query_ts = time.time()
 
+        self.num_region_responses = 0
+        self.num_region_queries = 0
+
+        
     def bootstrap(self, rnodes, max_nodes):
         # Assume that the ips are not duplicated.
         qnodes = [_QueuedNode(n, n.id.log_distance(
@@ -60,8 +68,11 @@ class _LookupQueue(object):
 
     def on_response(self, src_node, nodes, token, max_nodes):
         ''' Nodes must not be duplicated'''
+        log_distance = src_node.id.log_distance(self.info_hash)
+        if log_distance <= MAX_LOG_DISTANCE:
+            self.num_region_responses += 1
         qnode = _QueuedNode(src_node,
-                            src_node.id.log_distance(self.info_hash),
+                            log_distance,
                             token)
         self._add_responded_qnode(qnode)
         qnodes = [_QueuedNode(n, n.id.log_distance(
@@ -97,7 +108,6 @@ class _LookupQueue(object):
 
     def _add_queued_qnodes(self, qnodes):
         for qnode in qnodes:
-#            print 'adding qnode', qnode
             if qnode.node.ip not in self.queued_ips \
                     and qnode.node.ip not in self.queried_ips:
                 self.queued_qnodes.append(qnode)
@@ -108,21 +118,24 @@ class _LookupQueue(object):
         del self.queued_qnodes[self.max_queued_qnodes:]
 
     def _pop_nodes_to_query(self, max_nodes):
-        if len(self.responded_qnodes) > MARK_INDEX:
-            mark = self.responded_qnodes[MARK_INDEX].log_distance
-        else:
-            mark = identifier.ID_SIZE_BITS
         nodes_to_query = [] 
         for _ in range(max_nodes):
             try:
                 qnode = self.queued_qnodes[0]
             except (IndexError):
                 break # no more queued nodes left
-            if qnode.log_distance < mark:
+            got_nodes = (self.responded_qnodes and
+                         self.responded_qnodes[0].log_distance <= MAX_LOG_DISTANCE + 1)
+            if not got_nodes or qnode.log_distance <= MAX_LOG_DISTANCE:
+                if qnode.log_distance <= MAX_LOG_DISTANCE:
+                    self.num_region_queries += 1
                 self.queried_ips.add(qnode.node.ip)
                 nodes_to_query.append(qnode.node)
                 del self.queued_qnodes[0]
                 self.queued_ips.remove(qnode.node.ip)
+                print len(self.queried_ips),
+                print 'Region queries:', self.num_region_queries,
+                print self.num_region_responses
         self.last_query_ts = time.time()
         return nodes_to_query
 
@@ -137,10 +150,10 @@ class GetPeersLookup(object):
     def __init__(self, my_id,
                  lookup_id, info_hash,
                  callback_f, bt_port=0):
-        self.bootstrap_alpha = 16
-        self.normal_alpha = 16
+        self.bootstrap_alpha = 4
+        self.normal_alpha = 4
         self.normal_m = 1
-        self.slowdown_alpha = 4
+        self.slowdown_alpha = 2
         self.slowdown_m = 1
         
         logger.debug('New lookup (info_hash: %r)' % info_hash)
@@ -163,6 +176,7 @@ class GetPeersLookup(object):
         self._running = False
         self._slow_down = False
         self._msg_factory = message.OutgoingGetPeersQuery
+
         
     def _get_max_nodes_to_query(self):
         if self._slow_down:
@@ -195,6 +209,7 @@ class GetPeersLookup(object):
                                                         token, max_nodes)
         queries_to_send = self._get_lookup_queries(nodes_to_query)
         lookup_done = not self._num_parallel_queries
+        print lookup_done
         return (queries_to_send, peers, self._num_parallel_queries,
                 lookup_done)
 
@@ -208,6 +223,7 @@ class GetPeersLookup(object):
         nodes_to_query = self._lookup_queue.on_timeout(max_nodes)
         queries_to_send = self._get_lookup_queries(nodes_to_query)
         lookup_done = not self._num_parallel_queries
+        print lookup_done
         return (queries_to_send, self._num_parallel_queries,
                 lookup_done)
     
@@ -220,6 +236,7 @@ class GetPeersLookup(object):
         nodes_to_query = self._lookup_queue.on_error(max_nodes)
         queries_to_send = self._get_lookup_queries(nodes_to_query)
         lookup_done = not self._num_parallel_queries
+        print lookup_done
         return (queries_to_send, self._num_parallel_queries,
                 lookup_done)
         
@@ -261,9 +278,9 @@ class GetPeersLookup(object):
             queries_to_send.append(query)
         return queries_to_send, announce_to_myself
 
-    def get_closest_responded_hexids(self):
-        return ['%r' % qnode.node.id for
-                qnode in self._lookup_queue.get_closest_responded_qnodes()]
+    def get_number_nodes_within_region(self):
+        return (self._lookup_queue.num_region_queries,
+                self._lookup_queue.num_region_responses)
     
             
 class MaintenanceLookup(GetPeersLookup):

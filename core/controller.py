@@ -47,6 +47,9 @@ class Controller:
                  private_dht_name):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
+
+        self._size_estimation_file = open('size_estimation.dat', 'w')
+
         
         self.state_filename = state_filename
         saved_id, saved_nodes = state.load(self.state_filename)
@@ -238,11 +241,18 @@ class Controller:
                 datagrams_to_send.extend(datagrams)
 
                 if lookup_done:
-                        queries_to_send = self._announce(
-                            related_query.lookup_obj)
-                        datagrams = self._register_queries(
-                            queries_to_send)
-                        datagrams_to_send.extend(datagrams)
+                    # Size estimation
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
+
+
+                    queries_to_send = self._announce(
+                        related_query.lookup_obj)
+                    datagrams = self._register_queries(
+                        queries_to_send)
+                    datagrams_to_send.extend(datagrams)
                 callback_f = related_query.lookup_obj.callback_f
                 if callback_f and callable(callback_f):
                     lookup_id = related_query.lookup_obj.lookup_id
@@ -271,6 +281,16 @@ class Controller:
                 datagrams_to_send.extend(datagrams)
 
                 if lookup_done:
+                    # Size estimation
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
+
+
+
+
+                    
                     datagrams = self._announce(related_query.lookup_obj)
                     datagrams_to_send.extend(datagrams)
                 callback_f = related_query.lookup_obj.callback_f
@@ -340,11 +360,19 @@ class Controller:
              ) = related_query.lookup_obj.on_timeout(related_query.dst_node)
             queries_to_send.extend(lookup_queries_to_send)
             callback_f = related_query.lookup_obj.callback_f
-            if lookup_done and callback_f and callable(callback_f):
-                queries_to_send.extend(self._announce(
-                        related_query.lookup_obj))
-                lookup_id = related_query.lookup_obj.lookup_id
-                related_query.lookup_obj.callback_f(lookup_id, None)
+            if lookup_done:
+                # Size estimation
+                line = '%d %d\n' % (
+                    related_query.lookup_obj.get_number_nodes_within_region())
+                self._size_estimation_file.write(line)
+                self._size_estimation_file.flush()
+
+
+                if callback_f and callable(callback_f):
+                    queries_to_send.extend(self._announce(
+                            related_query.lookup_obj))
+                    lookup_id = related_query.lookup_obj.lookup_id
+                    related_query.lookup_obj.callback_f(lookup_id, None)
         queries_to_send.extend(
             self._routing_m.on_timeout(related_query.dst_node))
         return queries_to_send
