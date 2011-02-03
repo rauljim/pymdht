@@ -160,7 +160,7 @@ class RoutingManager(object):
             # Bootstrap nodes don't have id
             return message.OutgoingFindNodeQuery(node_,
                                                  self.my_node.id,
-                                                 self.my_node.id)
+                                                 self.my_node.id, None)
         if random.choice((False, True)):
             # 50% chance to send find_node with my id as target
             return message.OutgoingFindNodeQuery(node_,

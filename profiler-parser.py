@@ -30,8 +30,8 @@ multiparser_mods = [
 #    __import__('profiler.parsers.traffic_multiparser'
 #               ).parsers.traffic_multiparser,
 #    __import__('profiler.parsers.same_ip').parsers.same_ip,
-#    __import__('profiler.parsers.announce').parsers.announce,
-    __import__('profiler.parsers.infohashes').parsers.infohashes,
+    __import__('profiler.parsers.announce').parsers.announce,
+#    __import__('profiler.parsers.infohashes').parsers.infohashes,
     ]
 
 parser_mods = [
@@ -188,7 +188,8 @@ def parse(filenames):
             if not data:
                 continue
             try:
-                msg = message.IncomingMsg(data, src_addr)
+                datagram = message.Datagram(data, src_addr)
+                msg = message.IncomingMsg(datagram)
             except(message.MsgError):
                 #print >>sys.stderr, '>>>ERROR decoding', `data`
                 continue
