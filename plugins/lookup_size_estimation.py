@@ -125,8 +125,8 @@ class _LookupQueue(object):
             except (IndexError):
                 break # no more queued nodes left
             got_nodes = (self.responded_qnodes and
-                         self.responded_qnodes[0].log_distance <= MAX_LOG_DISTANCE + 1)
-            if not got_nodes or qnode.log_distance <= MAX_LOG_DISTANCE:
+                         self.responded_qnodes[0].log_distance <= MAX_LOG_DISTANCE)
+            if not got_nodes or qnode.log_distance <= MAX_LOG_DISTANCE + 1:
                 if qnode.log_distance <= MAX_LOG_DISTANCE:
                     self.num_region_queries += 1
                 self.queried_ips.add(qnode.node.ip)
