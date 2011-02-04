@@ -11,17 +11,17 @@ output_filename = 'size_estimation2.eps'
 from core.identifier import Id
 
 
-MAX_LOG_DISTANCE = 139
-POINTS_PER_HOUR = .5
+MAX_LOG_DISTANCE = 140
+POINTS_PER_HOUR = 0.20
 SECONDS_PER_SAMPLE = 30
 
 time_between_points =  SECONDS_PER_SAMPLE/3600. #hours
-num_samples_per_point = 3600. / SECONDS_PER_SAMPLE / POINTS_PER_HOUR
+num_samples_per_point = 60 #3600. / SECONDS_PER_SAMPLE / POINTS_PER_HOUR
 
 print 'Time between points:', time_between_points
 print 'Samples per point:', num_samples_per_point
 
-multiplier = pow(2, 160 - MAX_LOG_DISTANCE - 1)
+multiplier = pow(2, 160 - 1 - MAX_LOG_DISTANCE)
 
 def print_estimation(num_responses_list):
     avg = float(sum(num_responses_list)) / len(num_responses_list)
@@ -38,7 +38,7 @@ partial_num_responses = []
 total_num_queries = []
 total_num_responses = []
 
-time = 16.5
+time = 0
 
 xs = []
 ys_q = []
@@ -72,8 +72,9 @@ print_estimation(partial_num_responses)
 print 'Final', 
 print_estimation(total_num_responses)
 
-pylab.plot(xs, ys_q)
+#pylab.plot(xs, ys_q)
 pylab.plot(xs, ys_r)
+pylab.plot([1], [0])
 
 pylab.savefig(output_filename)
 print 'Output saved to:', output_filename
