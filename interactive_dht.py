@@ -28,6 +28,7 @@ def _on_peers_found(start_ts, peers):
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
+    print my_addr
     logs_path = options.path
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
