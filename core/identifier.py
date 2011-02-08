@@ -79,14 +79,15 @@ class IdError(Exception):
 class Id(object):
 
     """Convert a string to an Id object.
-    
     The bin_id string's lenght must be ID_SIZE bytes (characters).
 
-    You can use both binary and hexadecimal strings. Example
-    #>>> Id('\x00' * ID_SIZE_BYTES) == Id('0' * ID_SIZE_BYTES * 2)
-    #True
-    #>>> Id('\xff' * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
-    #True
+    You can use both binary and hexadecimal strings. Example:
+    
+    >>> Id('\x00' * ID_SIZE_BYTES) == Id('0' * ID_SIZE_BYTES * 2)
+    True
+    
+    >>> Id(ord(255) * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
+    True
     """
 
     def __init__(self, hex_or_bin_id):
@@ -129,6 +130,17 @@ class Id(object):
                                                      other.bin_id)]
         return Id(''.join(byte_list))
 
+
+    def lineal_distance(self, other, num_bytes=4):
+        result = 0
+        for i in xrange(num_bytes):
+            byte_dist_int = abs(ord(self._bin_id[i]) - ord(other._bin_id[i])) 
+            result = result * 256 + byte_dist_int
+        return result
+            
+
+                               
+    
     def log_distance(self, other):
         """Return log (base 2) of the XOR distance between two Id
         objects. Return -1 when the XOR distance is 0.
@@ -138,6 +150,7 @@ class Id(object):
         When the two identifiers are equal, the distance is 0. Therefore
         log_distance is -infinity. In this case, -1 is returned.
         Example:
+
         >>> z = Id(chr(0) * ID_SIZE_BYTES)
 
         >>> # distance = 0 [-inf, 1) -> log(0) = -infinity
