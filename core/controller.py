@@ -44,7 +44,7 @@ class Controller:
 
     def __init__(self, dht_addr, state_filename,
                  routing_m_mod, lookup_m_mod,
-                 private_dht_name):
+                 private_dht_name, id_):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
 
@@ -54,12 +54,12 @@ class Controller:
         self.state_filename = state_filename
         saved_id, saved_nodes = state.load(self.state_filename)
         if saved_id:
-            self._my_id = saved_id
+            self._my_id = id_ or saved_id
             bootstrap_nodes = saved_nodes
             #TODO: include bootstrap nodes also because all saved nodes might
             #be down
         else:
-            self._my_id = identifier.RandomId()
+            self._my_id = id_ or identifier.RandomId()
             bootstrap_nodes = BOOTSTRAP_NODES
         self._my_node = Node(dht_addr, self._my_id)
         self._tracker = tracker.Tracker()

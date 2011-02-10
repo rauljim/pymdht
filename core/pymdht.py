@@ -36,13 +36,14 @@ class Pymdht:
     def __init__(self, dht_addr, conf_path,
                  routing_m_mod, lookup_m_mod,
                  private_dht_name,
-                 debug_level):
+                 debug_level, id_=None):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(dht_addr, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
-                                                private_dht_name)
+                                                private_dht_name,
+                                                id_)
         self.reactor = minitwisted.ThreadedReactor(
             self.controller.main_loop,
             dht_addr[1], self.controller.on_datagram_received)

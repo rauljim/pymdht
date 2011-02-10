@@ -47,15 +47,15 @@ import time
 import sys
 import string
 
-sys.path.append('./lib_kadtracker/')
 
-import identifier
-import kadtracker
+import core.identifier as identifier
+import core.pymdht as pymdht
 import logging
-import logging_conf
 
+import plugins.lookup_a16 as lookup_m_mod
+import plugins.routing_nice_rtt as routing_m_mod
 
-logs_path = './lib_kadtracker/interactive_logs/'
+logs_path = './interactive_logs/'
 
 #logs_level = logging.DEBUG  # This generates HUGE (and useful) logs
 #logs_level = logging.INFO  # This generates some (useful) logs
@@ -63,11 +63,10 @@ logs_level = logging.WARNING  # This generates warning and error logs
 
 
 if len(sys.argv) == 4:
-    logging_conf.setup(logs_path, logs_level)
     my_addr = ('127.0.0.1', int(sys.argv[1]))
-    logs_path = './lib_kadtracker/interactive_logs/'
     id_ = identifier.Id(sys.argv[2]).generate_close_id(int(sys.argv[3]))
-    dht = kadtracker.KadTracker(my_addr, logs_path, id_)
+    dht = pymdht.Pymdht(my_addr, logs_path, routing_m_mod, lookup_m_mod,
+                        None, logs_level, id_)
     while (True):
         time.sleep(5)
 else:
