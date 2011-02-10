@@ -16,7 +16,7 @@ POINTS_PER_HOUR = 0.20
 SECONDS_PER_SAMPLE = 30
 
 time_between_points =  SECONDS_PER_SAMPLE/3600. #hours
-num_samples_per_point = 60 #3600. / SECONDS_PER_SAMPLE / POINTS_PER_HOUR
+num_samples_per_point = 120 #3600. / SECONDS_PER_SAMPLE / POINTS_PER_HOUR
 
 print 'Time between points:', time_between_points
 print 'Samples per point:', num_samples_per_point

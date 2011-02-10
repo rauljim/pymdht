@@ -75,6 +75,7 @@ Available commands are:
                 info_hash = identifier.Id(input[1])
             except (identifier.IdError):
                 print 'Invalid info_hash (%s)' % input[1]
+                continue
             try:
                 bt_port = int(input[2])
             except:
