@@ -12,6 +12,9 @@ The extreme cases are the plug-ins which allow us to develop/run different
 implementations of routing and lookup managers in parallel.
 
 """
+
+size_estimation = False
+
 import ptime as time
 import os
 import cPickle
@@ -48,8 +51,9 @@ class Controller:
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
 
-        self._size_estimation_file = open('size_estimation.dat', 'w')
-
+        if size_estimation:
+            self._size_estimation_file = open('size_estimation.dat', 'w')
+        
         
         self.state_filename = state_filename
         saved_id, saved_nodes = state.load(self.state_filename)
@@ -242,10 +246,11 @@ class Controller:
 
                 if lookup_done:
                     # Size estimation
-                    line = '%d %d\n' % (
-                        related_query.lookup_obj.get_number_nodes_within_region())
-                    self._size_estimation_file.write(line)
-                    self._size_estimation_file.flush()
+                    if size_estimation:
+                        line = '%d %d\n' % (
+                            related_query.lookup_obj.get_number_nodes_within_region())
+                        self._size_estimation_file.write(line)
+                        self._size_estimation_file.flush()
 
 
                     queries_to_send = self._announce(
@@ -282,10 +287,11 @@ class Controller:
 
                 if lookup_done:
                     # Size estimation
-                    line = '%d %d\n' % (
-                        related_query.lookup_obj.get_number_nodes_within_region())
-                    self._size_estimation_file.write(line)
-                    self._size_estimation_file.flush()
+                    if size_estimation:
+                        line = '%d %d\n' % (
+                            related_query.lookup_obj.get_number_nodes_within_region())
+                        self._size_estimation_file.write(line)
+                        self._size_estimation_file.flush()
 
 
 
@@ -362,10 +368,11 @@ class Controller:
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done:
                 # Size estimation
-                line = '%d %d\n' % (
-                    related_query.lookup_obj.get_number_nodes_within_region())
-                self._size_estimation_file.write(line)
-                self._size_estimation_file.flush()
+                if size_estimation:
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
 
 
                 if callback_f and callable(callback_f):
