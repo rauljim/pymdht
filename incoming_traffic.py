@@ -55,7 +55,8 @@ import logging
 import plugins.lookup_a16 as lookup_m_mod
 import plugins.routing_nice_rtt as routing_m_mod
 
-logs_path = './interactive_logs/'
+#logs_path = './interactive_logs/'
+logs_path = '.'
 
 #logs_level = logging.DEBUG  # This generates HUGE (and useful) logs
 #logs_level = logging.INFO  # This generates some (useful) logs
