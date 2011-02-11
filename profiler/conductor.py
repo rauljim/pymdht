@@ -7,6 +7,8 @@
 
 
 import sys
+sys.path.append('..')
+
 import os
 import pdb
 import random
@@ -42,7 +44,15 @@ REMOVE_TORRENT_DELAY = 5
 print '********************* CHECK DHT node config ********************'
 
 CONFIG = (
-    (pymdht, ('192.16.125.245', 7008), 'ns8', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7000), 'ns0', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7001), 'ns1', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7002), 'ns2', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7003), 'ns3', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7004), 'ns4', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7005), 'ns5', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7006), 'ns6', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7007), 'ns7', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7008), 'ns8', r_nice_rtt, l_a16),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]
@@ -73,13 +83,18 @@ def main():
     results_path = timestamp_str + '_tag'
     os.mkdir(results_path)
 
-    shutil.copy('profiler-conductor.py', results_path)
     shutil.copy('infohashes.dat', results_path)
+    shutil.copy('conductor.py', results_path)
+    shutil.copy('parser.py', results_path)
+    shutil.copy('plotter.py', results_path)
+    shutil.copytree('parsers', os.path.join(results_path, 'parsers'))
+    shutil.copytree('plotters', os.path.join(results_path, 'plotters'))
 
-    captures_path = results_path + '/' + timestamp_str + '.pcap'
+
+    captures_path = os.path.join(results_path, timestamp_str + '.pcap')
     print 'Now, you need to start capturing netwok traffic'
-    print 'Windows: WinDump.exe -C 500 -s 0 -w %s udp' % (captures_path)
-    print 'Linux: sudo tcpdump -C 500 -s 0 -w %s udp' % (captures_path)
+    print 'Windows:\nWinDump.exe -C 500 -s 0 -w %s udp' % (captures_path)
+    print 'Linux:\nsudo tcpdump -C 500 -s 0 -w %s udp' % (captures_path)
     print '-' * 70
     print 'Press ENTER to continue'
     sys.stdin.readline()
@@ -90,7 +105,8 @@ def main():
         # Create infohash generator
         infohash_gen = _randompopper(INFOHASHES)
 
-        print 'Starting %s %r, %r %r...' % (node_name, addr, r_mod, l_mod),
+        print 'Starting %s %r, %r %r...' % (node_name, addr,
+                                            r_mod.__file__, l_mod.__file__),
         sys.stdout.flush ()
         node_path = os.path.join(results_path, node_name)
         os.mkdir(node_path)
@@ -122,6 +138,8 @@ def main():
         sys.stdout.flush()
         time.sleep(STOPPING_DELAY)
         print 'DONE'
+    print '-' * 70
+    print 'Now, stop the network capturing with Ctr-C'
     
 if __name__ == '__main__':
     main()
