@@ -75,14 +75,22 @@ def main():
 
     shutil.copy('profiler-conductor.py', results_path)
     shutil.copy('infohashes.dat', results_path)
-    
+
+    captures_path = results_path + '/' + timestamp_str + '.pcap'
+    print 'Now, you need to start capturing netwok traffic'
+    print 'Windows: WinDump.exe -C 500 -s 0 -w %s udp' % (captures_path)
+    print 'Linux: sudo tcpdump -C 500 -s 0 -w %s udp' % (captures_path)
+    print '-' * 70
+    print 'Press ENTER to continue'
+    sys.stdin.readline()
+
     
     nodes = []
     for mod, addr, node_name, r_mod, l_mod in _randompopper(CONFIG):
         # Create infohash generator
         infohash_gen = _randompopper(INFOHASHES)
 
-        print 'Starting', node_name, '...',
+        print 'Starting %s %r, %r %r...' % (node_name, addr, r_mod, l_mod),
         sys.stdout.flush ()
         node_path = os.path.join(results_path, node_name)
         os.mkdir(node_path)

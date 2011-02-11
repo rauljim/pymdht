@@ -142,7 +142,7 @@ class OutgoingQueryBase(OutgoingMsgBase):
           self.rtt = time.time() - self.sending_ts
           self.got_response = True            
           if response_msg.type == RESPONSE and not self.dst_node.id:
-              self.dstnode.id = response_msg.src_id
+              self.dst_node.id = response_msg.src_id
       return matched
 
         
