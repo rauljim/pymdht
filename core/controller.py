@@ -217,6 +217,7 @@ class Controller:
             return self._next_main_loop_call_ts, datagrams_to_send
 
         if msg.type == message.QUERY:
+            print 'Got query', msg.query
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
