@@ -4,7 +4,7 @@ pylab.title('Queries per lookup')
 pylab.xlabel('Queries')
 pylab.ylabel('CDF')
 
-output_filename = 'cdf_l_queries.eps'
+output_filename = 'plots/cdf_l_queries.eps'
 
 lines_to_plot = (
     ('0.l_queries.cdf', 'UT', 'k'),
@@ -24,7 +24,7 @@ def plot():
     for filename, label, style in lines_to_plot:
         x = []
         y = []
-        for line in open(filename):
+        for line in open('parser_results/' + filename):
             cum_str, value_str = line.split()
             y.append(float(cum_str))
             x.append(float(value_str))

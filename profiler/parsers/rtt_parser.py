@@ -7,6 +7,7 @@ Prints the lookup time in seconds (one lookup per line).
 The output is not chronologically sorted.
 
 """
+from parser_utils import openf
 import core.message as message
 
 
@@ -31,9 +32,9 @@ class Parser(object):
         self.num_l_wport = 0
         self.num_m_wport = 0
         
-        self.l_rtt_file = open(label + '.l_rtt', 'w')
-        self.m_rtt_file = open(label + '.m_rtt', 'w')
-        self.t_rtt_file = open(label + '.t_rtt', 'w')
+        self.l_rtt_file = openf(label + '.l_rtt', 'w')
+        self.m_rtt_file = openf(label + '.m_rtt', 'w')
+        self.t_rtt_file = openf(label + '.t_rtt', 'w')
 
         self.tids = {}
 
@@ -81,10 +82,10 @@ class Parser(object):
             self.t_rtt_file.write('%r\t%f\n' % (src_addr[0], ts - related_query.ts))
 
     def done(self):
-        self.l_q_r_wp_file = open(self.label + '.l_q_r_wp', 'w')
+        self.l_q_r_wp_file = openf(self.label + '.l_q_r_wp', 'w')
         self.l_q_r_wp_file.write('%d\t%d\t%d\n' % (
                 self.num_l_q, self.num_l_r, self.num_l_wport))
-        self.m_q_r_wp_file = open(self.label + '.m_q_r_wp', 'w') 
+        self.m_q_r_wp_file = openf(self.label + '.m_q_r_wp', 'w') 
         self.m_q_r_wp_file.write('%d\t%d\t%d\n' % (
                 self.num_m_q, self.num_m_r, self.num_m_wport))
     

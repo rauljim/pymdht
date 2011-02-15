@@ -131,8 +131,8 @@ class GetPeersLookup(object):
     """
 
     def __init__(self, my_id,
-                 info_hash, callback_f,
-                 bt_port=None):
+                 lookup_id, info_hash,
+                 callback_f, bt_port=0):
         self.bootstrap_alpha = 4
         self.normal_alpha = 4
         self.normal_m = 1

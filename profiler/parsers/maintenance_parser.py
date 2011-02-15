@@ -7,6 +7,7 @@ Prints the lookup time in seconds (one lookup per line).
 The output is not chronologically sorted.
 
 """
+from parser_utils import openf
 import core.message as message
 
 
@@ -16,14 +17,14 @@ class Parser(object):
         self.label = label
         self.my_addr = my_addr
 
-        self.cum_l_queries_file = open(label + '.cum_l_queries', 'w')
-        self.cum_m_queries_file = open(label + '.cum_m_queries', 'w')
+        self.cum_l_queries_file = openf(label + '.cum_l_queries', 'w')
+        self.cum_m_queries_file = openf(label + '.cum_m_queries', 'w')
         self.cum_l_queries = 0
         self.cum_m_queries = 0
         self.last_write_ts = 0
 
-        self.sec_l_queries_file = open(label + '.sec_l_queries', 'w')
-        self.sec_m_queries_file = open(label + '.sec_m_queries', 'w')
+        self.sec_l_queries_file = openf(label + '.sec_l_queries', 'w')
+        self.sec_m_queries_file = openf(label + '.sec_m_queries', 'w')
         self.sec_l_queries = 0
         self.sec_m_queries = 0
         self.current_sec = 0

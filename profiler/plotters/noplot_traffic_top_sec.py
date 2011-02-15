@@ -17,11 +17,11 @@ def get_top10(sec_file):
 
 if __name__ == '__main__':
     
-    sec_in_file = open('m.sec_in')
+    sec_in_file = open('parser_results/m.sec_in')
     top10 = get_top10(sec_in_file)
     print 'Packets sent (busiest seconds): %r' % (top10)
     sec_in_file.close()
-    sec_out_file = open('m.sec_out')
+    sec_out_file = open('parser_results/m.sec_out')
     top10 = get_top10(sec_out_file)
     print 'Packets received (busiest seconds): %r' % (top10)
     sec_out_file.close()

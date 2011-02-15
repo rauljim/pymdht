@@ -8,7 +8,7 @@ pylab.title('Lookup Queries')
 pylab.xlabel('Client')
 pylab.ylabel('Lookup queries')
 
-output_filename = 'box_l_queries.eps'
+output_filename = 'plots/box_l_queries.eps'
 
 boxes_to_plot = (
     ('0.l_queries', 'UT'),
@@ -28,7 +28,7 @@ def plot():
     xs = []
     labels = []
     for filename, label in boxes_to_plot:
-        xs.append([float(line) for line in open(filename)])
+        xs.append([float(line) for line in open('parser_results/' + filename)])
         labels.append(label)
     boxplot = pylab.boxplot(xs)
     pylab.setp(pylab.gca(), 'xticklabels', labels)

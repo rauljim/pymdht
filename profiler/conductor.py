@@ -24,6 +24,8 @@ import core.pymdht as pymdht
 
 import plugins.routing_nice_rtt as r_nice_rtt
 
+import plugins.lookup_m3 as l_m3
+import plugins.lookup_m3_a4 as l_m3_a4
 import plugins.lookup_a16 as l_a16
 
 logs_level = logging.DEBUG # This generates HUGE (and useful) logs
@@ -41,11 +43,10 @@ STOPPING_DELAY = 1
 REMOVE_TORRENT_DELAY = 5
 
 
-print '********************* CHECK DHT node config ********************'
 
 CONFIG = (
-    (pymdht, ('192.16.125.242', 7000), 'ns0', r_nice_rtt, l_a16),
-    (pymdht, ('192.16.125.242', 7001), 'ns1', r_nice_rtt, l_a16),
+    (pymdht, ('192.16.125.242', 7000), 'ns0', r_nice_rtt, l_m3),
+    (pymdht, ('192.16.125.242', 7001), 'ns1', r_nice_rtt, l_m3_a4),
     (pymdht, ('192.16.125.242', 7002), 'ns2', r_nice_rtt, l_a16),
     (pymdht, ('192.16.125.242', 7003), 'ns3', r_nice_rtt, l_a16),
     (pymdht, ('192.16.125.242', 7004), 'ns4', r_nice_rtt, l_a16),
@@ -91,7 +92,7 @@ def main():
     shutil.copytree('plotters', os.path.join(results_path, 'plotters'))
 
 
-    captures_path = os.path.join(results_path, timestamp_str + '.pcap')
+    captures_path = os.path.abspath(os.path.join(results_path, timestamp_str + '.pcap'))
     print 'Now, you need to start capturing netwok traffic'
     print 'Windows:\nWinDump.exe -C 500 -s 0 -w %s udp' % (captures_path)
     print 'Linux:\nsudo tcpdump -C 500 -s 0 -w %s udp' % (captures_path)
@@ -128,7 +129,8 @@ def main():
                 round_number, time.time(), node_name, infohash)
             node.get_peers(None, infohash, _on_peers_found, 0)
             time.sleep(REMOVE_TORRENT_DELAY)
-            node.remove_torrent(infohash)
+            if 'remove_torrent' in node.__dict__:
+                node.remove_torrent(infohash)
             time.sleep(LOOKUP_DELAY - REMOVE_TORRENT_DELAY)
         time.sleep(ROUND_DELAY)
         

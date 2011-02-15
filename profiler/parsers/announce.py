@@ -6,38 +6,38 @@
 
 """
 
+from parser_utils import openf
 import core.message as message
-
 
 class Parser(object):
 
     def __init__(self, my_ip):
         self.my_ip = my_ip
 
-        self.cum_in_file = open('m.cum_in', 'w')
-        self.cum_out_file = open('m.cum_out', 'w')
+        self.cum_in_file = openf('m.cum_in')
+        self.cum_out_file = openf('m.cum_out')
         self.cum_in = 0
         self.cum_out = 0
-        self.sec_in_file = open('m.sec_in', 'w')
-        self.sec_out_file = open('m.sec_out', 'w')
+        self.sec_in_file = openf('m.sec_in')
+        self.sec_out_file = openf('m.sec_out')
         self.sec_in = 0
         self.sec_out = 0
 
-        self.cum_q_in_file = open('m.cum_q_in', 'w')
-        self.cum_q_out_file = open('m.cum_q_out', 'w')
+        self.cum_q_in_file = openf('m.cum_q_in')
+        self.cum_q_out_file = openf('m.cum_q_out')
         self.cum_q_in = 0
         self.cum_q_out = 0
-        self.sec_q_in_file = open('m.sec_q_in', 'w')
-        self.sec_q_out_file = open('m.sec_q_out', 'w')
+        self.sec_q_in_file = openf('m.sec_q_in')
+        self.sec_q_out_file = openf('m.sec_q_out')
         self.sec_q_in = 0
         self.sec_q_out = 0
 
-        self.cum_r_in_file = open('m.cum_r_in', 'w')
-        self.cum_r_out_file = open('m.cum_r_out', 'w')
+        self.cum_r_in_file = openf('m.cum_r_in')
+        self.cum_r_out_file = openf('m.cum_r_out')
         self.cum_r_in = 0
         self.cum_r_out = 0
-        self.sec_r_in_file = open('m.sec_r_in', 'w')
-        self.sec_r_out_file = open('m.sec_r_out', 'w')
+        self.sec_r_in_file = openf('m.sec_r_in')
+        self.sec_r_out_file = openf('m.sec_r_out')
         self.sec_r_in = 0
         self.sec_r_out = 0
 
@@ -156,7 +156,7 @@ class Parser(object):
 
     def done(self):
         num_ips = float(len(self.ips))
-        v_file = open('m.versions', 'w')
+        v_file = openf('m.versions', 'w')
         v_file.write('%s\t%d\t%f\n' % ('ALL', num_ips, 1))
         for v, num_hits in self.versions.iteritems():
             v_file.write('%s\t%d\t%f\n' % (v, num_hits, num_hits/num_ips))
