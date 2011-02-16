@@ -16,6 +16,7 @@ implementations of routing and lookup managers in parallel.
 size_estimation = False
 
 import ptime as time
+import datetime
 import os
 import cPickle
 
@@ -212,12 +213,13 @@ class Controller:
         datagrams_to_send = []
         try:
             msg = message.IncomingMsg(datagram)
+            
         except(message.MsgError):
             # ignore message
             return self._next_main_loop_call_ts, datagrams_to_send
 
         if msg.type == message.QUERY:
-            print 'Got query', msg.query
+           
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
@@ -325,8 +327,14 @@ class Controller:
     
     def _get_response(self, msg):
         if msg.query == message.PING:
+            x = datetime.datetime.now()
+            print '%d:%d:%d' % (x.hour, x.minute, x.second),
+            print 'PING'
             return message.OutgoingPingResponse(msg.src_node, self._my_id)
         elif msg.query == message.FIND_NODE:
+            x = datetime.datetime.now()
+            print '%d:%d:%d' % (x.hour, x.minute, x.second),
+            print 'Find Node'
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
@@ -334,6 +342,9 @@ class Controller:
                                                     self._my_id,
                                                     rnodes)
         elif msg.query == message.GET_PEERS:
+            x = datetime.datetime.now()
+            print '%d:%d:%d' % (x.hour, x.minute, x.second),
+            print 'Get Peers'
             token = self._token_m.get()
             log_distance = msg.info_hash.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
@@ -347,6 +358,9 @@ class Controller:
                                                     nodes=rnodes,
                                                     peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
+            x = datetime.datetime.now()
+            print '%d:%d:%d' % (x.hour, x.minute, x.second),
+            print 'Announce Peer'
             peer_addr = (msg.src_addr[0], msg.bt_port)
             self._tracker.put(msg.info_hash, peer_addr)
             return message.OutgoingAnnouncePeerResponse(msg.src_node,
