@@ -29,30 +29,6 @@ logger = logging.getLogger('dht')
 
 TIMEOUT_DELAY = 2
 
-class _Query(object):
-
-    def __init__(self, msg, dstnode, lookup_obj=None):
-        self.tid = None
-        self.query_ts = None
-        self.msg = msg
-        self.dstnode = dstnode
-        self.lookup_obj = lookup_obj
-        self.got_response = False
-        self.got_error = False
-
-    def on_response_received(self, response_msg):
-        self.rtt = time.time() - self.query_ts
-        if not self.dstnode.id:
-            self.dstnode.id = response_msg.src_id
-        self.got_response = True
-
-    def on_error_received(self, error_msg):
-        self.rtt = time.time() - self.query_ts
-        self.got_error = True
-        
-    def matching_tid(self, response_tid):
-        return message.matching_tid(self.tid, response_tid)
-
     
 class Querier(object):
     """

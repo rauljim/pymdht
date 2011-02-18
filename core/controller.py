@@ -354,9 +354,6 @@ class Controller:
             logger.debug('Invalid QUERY: %r' % (msg.query))
             #TODO: maybe send an error back?
         
-    def _on_response_received(self, msg):
-        pass
-
     def _on_timeout(self, related_query):
         queries_to_send = []
         if related_query.lookup_obj:
