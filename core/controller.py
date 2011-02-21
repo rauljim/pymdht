@@ -327,14 +327,8 @@ class Controller:
     
     def _get_response(self, msg):
         if msg.query == message.PING:
-            x = datetime.datetime.now()
-            print '%d:%d:%d' % (x.hour, x.minute, x.second),
-            print 'PING'
             return message.OutgoingPingResponse(msg.src_node, self._my_id)
         elif msg.query == message.FIND_NODE:
-            x = datetime.datetime.now()
-            print '%d:%d:%d' % (x.hour, x.minute, x.second),
-            print 'Find Node'
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
@@ -342,9 +336,6 @@ class Controller:
                                                     self._my_id,
                                                     rnodes)
         elif msg.query == message.GET_PEERS:
-            x = datetime.datetime.now()
-            print '%d:%d:%d' % (x.hour, x.minute, x.second),
-            print 'Get Peers'
             token = self._token_m.get()
             log_distance = msg.info_hash.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
@@ -358,9 +349,6 @@ class Controller:
                                                     nodes=rnodes,
                                                     peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
-            x = datetime.datetime.now()
-            print '%d:%d:%d' % (x.hour, x.minute, x.second),
-            print 'Announce Peer'
             peer_addr = (msg.src_addr[0], msg.bt_port)
             self._tracker.put(msg.info_hash, peer_addr)
             return message.OutgoingAnnouncePeerResponse(msg.src_node,
