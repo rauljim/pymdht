@@ -94,7 +94,8 @@ class RoutingManager(object):
                 return (10, [], maintenance_lookup_target)
         else:
             maintenance_lookup_target = self._refresh_stale_bucket()
-        
+
+        print 'beb5', _MAINTENANCE_DELAY[self._maintenance_mode]
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
     
@@ -262,14 +263,14 @@ class RoutingManager(object):
 
         if not rnode:
             # This node is not in the table. Nothing to do here
-            return
+            return []
 
         # The node is in the table. Update it
         self._update_rnode_on_timeout(rnode)
         t_strikes, c_rnode = self._pinged_q_rnodes.get(node_, (None, None))
         if t_strikes is None:
             # The node is not being checked by a "questinable ping".
-            return
+            return []
         elif t_strikes == 0:
             # This is the first timeout
             self._pinged_q_rnodes[node_] = (1, c_rnode)
@@ -286,7 +287,8 @@ class RoutingManager(object):
                 # replace
                 m_bucket.remove(rnode)
                 m_bucket.add(c_rnode)
-                self.table.num_rnodes += 0                    
+                self.table.num_rnodes += 0
+        return []
         
     def get_closest_rnodes(self, log_distance, num_nodes, exclude_myself):
         if not num_nodes:

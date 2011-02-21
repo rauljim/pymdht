@@ -60,11 +60,12 @@ class Querier(object):
         datagrams = []
         current_ts = time.time()
         timeout_ts = current_ts + TIMEOUT_DELAY
-        for query in queries:
+        for i, query in enumerate(queries):
             msg = query
             tid = self._next_tid()
-            logger.debug('registering query to node: %r\n%r' % (query.dst_node,
-                                                                msg))
+            logger.debug('registering query %d to node: %r\n%r' % (i,
+                                                                   query.dst_node,
+                                                                   msg))
             self._timeouts.append((timeout_ts, msg))
             # if node is not in the dictionary, it will create an empty list
             self._pending.setdefault(query.dst_node.addr, []).append(msg)

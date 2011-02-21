@@ -49,14 +49,15 @@ REMOVE_TORRENT_DELAY = 5
 
 
 CONFIG = (
-    (pymdht, ('192.16.125.242', 7000), 'ns1', r_bep5, l_a4),
-    (pymdht, ('192.16.125.242', 7001), 'ns2', r_bep5, l_m3),
-    (pymdht, ('192.16.125.242', 7002), 'ns3', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7003), 'ns4', r_nice, l_m3),
-    (pymdht, ('192.16.125.242', 7004), 'ns5', r_nice_rtt, l_a4),
-    (pymdht, ('192.16.125.242', 7005), 'ns6', r_nice_rtt, l_m3),
-    (pymdht, ('192.16.125.242', 7006), 'ns7', r_nice_rtt64, l_a4),
-    (pymdht, ('192.16.125.242', 7007), 'ns8', r_nice_rtt64, l_m3),
+    (pymdht, ('192.16.125.242', 7000), 'ns0', r_nice, l_a4),
+    (pymdht, ('192.16.125.242', 7001), 'ns1', r_nice, l_a4),
+    (pymdht, ('192.16.125.242', 7002), 'ns2', r_nice, l_m3),
+    (pymdht, ('192.16.125.242', 7003), 'ns3', r_nice, l_a4),
+    (pymdht, ('192.16.125.242', 7004), 'ns4', r_nice, l_m3),
+    (pymdht, ('192.16.125.242', 7005), 'ns5', r_nice_rtt, l_a4),
+    (pymdht, ('192.16.125.242', 7006), 'ns6', r_nice_rtt, l_m3),
+    (pymdht, ('192.16.125.242', 7007), 'ns7', r_nice_rtt64, l_a4),
+    (pymdht, ('192.16.125.242', 7008), 'ns8', r_nice_rtt64, l_m3),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]

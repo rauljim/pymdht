@@ -107,6 +107,7 @@ class RoutingManager(object):
                     # This task did do some work. We are done here!
                     break
         
+        print 'nrtt', _MAINTENANCE_DELAY[self._maintenance_mode]
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
 
