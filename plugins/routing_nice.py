@@ -20,7 +20,6 @@ import logging
 
 import core.identifier as identifier
 import core.message as message
-from core.querier import Query
 import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable

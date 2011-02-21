@@ -13,14 +13,13 @@ This module intends to implement the routing policy specified in BEP5:
 
 
 import random
-import core.ptime as time
 import heapq
 
 import logging
 
+import core.ptime as time
 import core.identifier as identifier
 import core.message as message
-from core.querier import Query
 import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable
@@ -72,11 +71,6 @@ class RoutingManager(object):
         self.bootstrap_nodes = iter(bootstrap_nodes)
         
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
-        self.ping_msg = message.OutgoingPingQuery(my_node.id)
-        self.find_closest_msg = message.OutgoingFindNodeQuery(
-            my_node.id,
-            my_node.id)
-
         # maintenance variables
         self._maintenance_mode = BOOTSTRAP_MODE
         self._pinged_q_rnodes = {} # questionable nodes which have been
@@ -107,7 +101,7 @@ class RoutingManager(object):
     def _refresh_stale_bucket(self):
         maintenance_lookup_target = None
         current_time = time.time()
-        for i in xrange(self.table.lowest_index, NUM_BUCKETS):
+        for i in xrange(NUM_BUCKETS):
             sbucket = self.table.get_sbucket(i)
             m_bucket = sbucket.main
             if not m_bucket:
@@ -124,7 +118,7 @@ class RoutingManager(object):
         return None
 
     def _get_maintenance_query(self, node_):
-        return Query(self.ping_msg, node_)
+        return message.OutgoingPingQuery(node_, self.my_node.id)
          
     def on_query_received(self, node_):
         '''
@@ -152,7 +146,6 @@ class RoutingManager(object):
             # There is room in the bucket. Just add the new node.
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
-            self.table.update_lowest_index(log_distance)
             self.table.num_rnodes += 1
             self._update_rnode_on_query_received(rnode)
             return
@@ -164,7 +157,6 @@ class RoutingManager(object):
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
             self._update_rnode_on_query_received(rnode)
-            self.table.update_lowest_index(log_distance)
             self.table.num_rnodes += 0
             return
 
@@ -181,7 +173,7 @@ class RoutingManager(object):
             c_rnode = node_.get_rnode(log_distance)
             self._update_rnode_on_query_received(c_rnode)
             self._pinged_q_rnodes[q_rnode] = [0, c_rnode]
-            queries_to_send.append(Query(self.ping_msg, q_rnode))
+            queries_to_send.append(message.OutgoingPingQuery(node_, self.my_node.id))
         return queries_to_send
   
     def on_response_received(self, node_, rtt, nodes):
@@ -207,7 +199,6 @@ class RoutingManager(object):
         if m_bucket.there_is_room():
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
-            self.table.update_lowest_index(log_distance)
             self.table.num_rnodes += 1
             self._update_rnode_on_response_received(rnode, rtt)
             if self._maintenance_mode == NORMAL_MODE:
@@ -221,11 +212,11 @@ class RoutingManager(object):
         if bad_rnode:
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
+            # No need to update table
+            self.table.num_rnodes += 0
             self._update_rnode_on_response_received(rnode, rtt)
             if self._maintenance_mode == NORMAL_MODE:
                 m_bucket.last_changed_ts = time.time()
-            self.table.update_lowest_index(log_distance)
-            self.table.num_rnodes += 0
             return
 
         # There are no bad nodes. Ping questionable nodes (if any)
@@ -236,7 +227,7 @@ class RoutingManager(object):
             c_rnode = node_.get_rnode(log_distance)
             self._update_rnode_on_response_received(c_rnode, rtt)
             self._pinged_q_rnodes[q_rnode] = [0, c_rnode]
-            queries_to_send.append(Query(self.ping_msg, q_rnode))
+            queries_to_send.append(message.OutgoingPingQuery(node_, self.my_node.id))
         return queries_to_send
  
     def _pop_bad_rnode(self, mbucket):
@@ -255,17 +246,17 @@ class RoutingManager(object):
                 q_rnodes.append(rnode)
         return q_rnodes
         
-    def on_error_received(self, node_):
+    def on_error_received(self, node_addr):
         pass
     
     def on_timeout(self, node_):
         if not node_.id:
-            return # This is a bootstrap node (just addr, no id)
+            return [] # This is a bootstrap node (just addr, no id)
         log_distance = self.my_node.log_distance(node_)
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except (IndexError):
-            return # Got a timeout from myself, WTF? Just ignore.
+            return [] # Got a timeout from myself, WTF? Just ignore.
         m_bucket = sbucket.main
         rnode = m_bucket.get_rnode(node_)
 
@@ -283,7 +274,7 @@ class RoutingManager(object):
             # This is the first timeout
             self._pinged_q_rnodes[node_] = (1, c_rnode)
             # Let's give it another chance
-            return [Query(self.ping_msg, rnode)]
+            return [message.OutgoingPingQuery(node_, self.my_node.id)]
         elif t_strikes == 1:
             # Second timeout. You're a bad node, replace if possible
             # check if the candidate node is in the routing table
@@ -295,7 +286,6 @@ class RoutingManager(object):
                 # replace
                 m_bucket.remove(rnode)
                 m_bucket.add(c_rnode)
-                self.table.update_lowest_index(log_distance)
                 self.table.num_rnodes += 0                    
         
     def get_closest_rnodes(self, log_distance, num_nodes, exclude_myself):
@@ -333,8 +323,9 @@ class RoutingManager(object):
         current_time = time.time()
         #rnode._reset_refresh_task()
         if rnode.in_quarantine:
-            rnode.in_quarantine = rnode.last_action_ts < (
-                current_time - QUARANTINE_PERIOD)
+            rnode.in_quarantine = \
+                rnode.last_action_ts < current_time - QUARANTINE_PERIOD
+                
         rnode.last_action_ts = current_time
         rnode.num_responses += 1
         rnode.add_event(time.time(), node.RESPONSE)
