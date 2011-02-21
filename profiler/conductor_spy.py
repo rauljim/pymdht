@@ -49,16 +49,16 @@ REMOVE_TORRENT_DELAY = 5
 
 
 CONFIG = (
-    [pymdht, ('192.16.127.98', 7000), 'ns0', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7001), 'ns1', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7002), 'ns2', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7003), 'ns3', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7004), 'ns4', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7005), 'ns5', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7006), 'ns6', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7007), 'ns7', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7008), 'ns8', r_nice, l_a4],
-    [pymdht, ('192.16.127.98', 7009), 'ns9', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7010), 'ns0', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7011), 'ns1', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7012), 'ns2', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7013), 'ns3', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7014), 'ns4', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7015), 'ns5', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7016), 'ns6', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7017), 'ns7', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7018), 'ns8', r_nice, l_a4],
+    [pymdht, ('192.16.127.98', 7019), 'ns9', r_nice, l_a4],
 )
 
 # Add a column with the node_id (close to info_hash)
@@ -109,8 +109,9 @@ def main():
     print 'Linux:\nsudo tcpdump -C 500 -s 0 -w %s udp' % (captures_path)
     print '-' * 70
     print 'Press ENTER to continue'
-    sys.stdin.readline()
-
+    sys.stdout.flush()
+    #sys.stdin.readline()
+    time.sleep(60)
     
     nodes = []
     for mod, addr, node_name, r_mod, l_mod, node_id in _randompopper(CONFIG):
