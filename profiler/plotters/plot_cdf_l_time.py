@@ -4,7 +4,7 @@ pylab.title('Lookup time')
 pylab.xlabel('Time (s)')
 pylab.ylabel('CDF')
 
-output_filename = 'cdf_l_time.eps'
+output_filename = 'plots/cdf_l_time.eps'
 
 lines_to_plot = (
     ('0.l_time.cdf', 'UT', 'k'),
@@ -24,7 +24,7 @@ def plot():
     for filename, label, style in lines_to_plot:
         x = []
         y = []
-        for line in open(filename):
+        for line in open('parser_results/' + filename):
             splitted_line = line.split()
             if not splitted_line:
                 continue

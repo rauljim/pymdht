@@ -4,7 +4,7 @@ pylab.title('Maintenance Queries')
 pylab.xlabel('Time (s)')
 pylab.ylabel('Queries (cumulative)')
 
-output_filename = 'cum_m_queries.eps'
+output_filename = 'plots/cum_m_queries.eps'
 
 lines_to_plot = (
     ('0.cum_m_queries', 'UT', 'k-'),
@@ -26,7 +26,7 @@ def plot():
     for filename, label, style in lines_to_plot:
         x = []
         y = []
-        for line in open(filename):
+        for line in open('parser_results/' + filename):
             ts, num_queries = line.split()
             x.append(int(ts))
             y.append(int(num_queries))

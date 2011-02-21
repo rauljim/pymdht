@@ -17,6 +17,7 @@ logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
 def _test_matching_tid():
+    # TODO
     # It _only_ matches the first byte)
     ok_(m.matching_tid('aaa', 'aaa'))
     ok_(m.matching_tid('axa', 'a1a'))
@@ -106,6 +107,7 @@ class TestMsgExchanges:
         data = outgoing_response.stamp(incoming_query.tid)
         #client
         incoming_response = m.IncomingMsg(Datagram(data, tc.SERVER_ADDR))
+        ok_(outgoing_query.match_response(incoming_response))
         assert incoming_response.type is m.RESPONSE
 
 

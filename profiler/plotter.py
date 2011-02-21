@@ -1,3 +1,4 @@
+#! /usr/bin/python
 
 import os
 
@@ -15,5 +16,9 @@ plot_scripts = [
 
 
 if __name__ == '__main__':
+    try:
+        os.mkdir('plots')
+    except (OSError):
+        pass
     for plot_script in plot_scripts:
-        os.system('python profiler/plotters/' + plot_script)
+        os.system('python plotters/' + plot_script)

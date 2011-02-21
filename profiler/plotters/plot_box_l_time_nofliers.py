@@ -8,7 +8,7 @@ pylab.title('Lookup Time')
 pylab.xlabel('Client')
 pylab.ylabel('Lookup time (s)')
 
-output_filename = 'box_l_time_nofliers.eps'
+output_filename = 'plots/box_l_time_nofliers.eps'
 
 boxes_to_plot = (
     ('0.l_time', 'UT'),
@@ -28,7 +28,7 @@ plots = []
 xs = []
 for box_to_plot in boxes_to_plot:
     filename, label = box_to_plot
-    xs.append([float(line) for line in open(filename)])
+    xs.append([float(line) for line in open('parser_results/' + filename)])
 boxplot = pylab.boxplot(xs, sym='')
 labels = [v[1] for v in boxes_to_plot]
 pylab.setp(pylab.gca(), 'xticklabels', labels)

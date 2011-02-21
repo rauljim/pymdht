@@ -132,6 +132,7 @@ class TestMinitwisted:
                     "TESTING LOGS ** IGNORE EXPECTED WARNING **")
 
     def _test_network_and_delayed(self):
+        # TODO
         self.client_r.call_later(.2, self.callback_f, 0)
         self.client_r.call_asap(self.callback_f, 1)
         task2 = self.client_r.call_later(.2, self.callback_f, 2)
