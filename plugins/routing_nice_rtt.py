@@ -17,21 +17,13 @@ import heapq
 
 import logging
 
-try:
-    import core.ptime as time
-    import core.identifier as identifier
-    import core.message as message
-    import core.node as node
-    from core.node import Node, RoutingNode
-    from core.routing_table import RoutingTable
-except (ImportError):
-    import Tribler.Core.DecentralizedTracking.pymdht.core.ptime as time
-    import Tribler.Core.DecentralizedTracking.pymdht.core.identifier as identifier
-    import Tribler.Core.DecentralizedTracking.pymdht.core.message as message
-    from Tribler.Core.DecentralizedTracking.pymdht.core.querier import Query
-    import Tribler.Core.DecentralizedTracking.pymdht.core.node as node
-    from Tribler.Core.DecentralizedTracking.pymdht.core.node import Node, RoutingNode
-    from Tribler.Core.DecentralizedTracking.pymdht.core.routing_table import RoutingTable
+import core.ptime as time
+import core.identifier as identifier
+import core.message as message
+import core.node as node
+from core.node import Node, RoutingNode
+from core.routing_table import RoutingTable
+
 
 logger = logging.getLogger('dht')
 
