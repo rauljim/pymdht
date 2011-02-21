@@ -85,7 +85,7 @@ class ThreadedReactor(threading.Thread):
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
             print 'MINITWISTED CRASHED'
-            #raise #Uncomment for debuggin only!
+            raise #Uncomment for debuggin only! #TODO: why?
         self.running = False
         logger.debug('Reactor stopped')
 

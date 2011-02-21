@@ -7,6 +7,7 @@
 
 """
 
+from parser_utils import openf
 import core.message as message
 
 import cdf
@@ -64,7 +65,7 @@ class Parser(object):
             lookup.ts_peers.append((ts, peers))
             for peer in peers:
                 lookup.peer_set.add(peer)
-            log_distance =  lookup.info_hash.log_distance(msg.sender_id)
+            log_distance =  lookup.info_hash.log_distance(msg.src_id)
             if log_distance < lookup.closest_log_distance:
                 lookup.closest_log_distance = log_distance
                 lookup.ctime = ts - lookup.start_ts
@@ -73,14 +74,14 @@ class Parser(object):
 
     def done(self):
         num_lookups_without_peeers = 0
-        ctime_file = open(self.label + '.l_ctime', 'w')
-        c_ld_file = open(self.label + '.l_c_ld', 'w')
-        time_file = open(self.label + '.l_time', 'w')
-        queries_file = open(self.label + '.l_queries', 'w')
-        peers_time_file = open(self.label + '.l_peers_time', 'w')
-        num_peers_file = open(self.label + '.l_num_peers', 'w')
-        swarm_size_file = open(self.label + '.l_swarm_size', 'w')
-        queries_till_peers_file = open(
+        ctime_file = openf(self.label + '.l_ctime', 'w')
+        c_ld_file = openf(self.label + '.l_c_ld', 'w')
+        time_file = openf(self.label + '.l_time', 'w')
+        queries_file = openf(self.label + '.l_queries', 'w')
+        peers_time_file = openf(self.label + '.l_peers_time', 'w')
+        num_peers_file = openf(self.label + '.l_num_peers', 'w')
+        swarm_size_file = openf(self.label + '.l_swarm_size', 'w')
+        queries_till_peers_file = openf(
             self.label + '.l_queries_till_peers', 'w')
         lookup_times = []
         lookup_queries = []
@@ -105,8 +106,8 @@ class Parser(object):
             ctime_file.write('%.4f\n' % (lookup.ctime))
             c_ld_file.write('%d\n' % (lookup.closest_log_distance))
                               
-        time_cdf_file = open(self.label + '.l_time.cdf', 'w')
-        queries_cdf_file = open(self.label + '.l_queries.cdf', 'w')
+        time_cdf_file = openf(self.label + '.l_time.cdf', 'w')
+        queries_cdf_file = openf(self.label + '.l_queries.cdf', 'w')
         for cum, value in cdf.cdf(lookup_times):
             time_cdf_file.write('%.4f\t%.4f\n' % (cum, value))
         for cum, value in cdf.cdf(lookup_queries):

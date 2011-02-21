@@ -1,6 +1,12 @@
-import sys
-from socket import inet_ntoa
+#! /usr/bin/env python
 
+
+import sys
+#sys.path.append('.')
+sys.path.append('../..')
+
+from socket import inet_ntoa
+import os
 import time
 
 import pcap
@@ -13,7 +19,7 @@ lc.setup('.', CRITICAL)
 
 print '************** Check parser config *******************'
 
-ip = '192.16.125.245'
+ip = '130.229.144.68'
 conf = [
     ['0', (ip, 7000)],
     ['1', (ip, 7001)],
@@ -27,18 +33,18 @@ conf = [
     ]
 
 multiparser_mods = [
-#    __import__('profiler.parsers.traffic_multiparser'
-#               ).parsers.traffic_multiparser,
-#    __import__('profiler.parsers.same_ip').parsers.same_ip,
-    __import__('profiler.parsers.announce').parsers.announce,
-#    __import__('profiler.parsers.infohashes').parsers.infohashes,
+    __import__('parsers.traffic_multiparser'
+               ).traffic_multiparser,
+    __import__('parsers.same_ip').same_ip,
+    __import__('parsers.announce').announce,
+    __import__('parsers.infohashes').infohashes,
     ]
 
 parser_mods = [
-#    __import__('profiler.parsers.lookup_parser').parsers.lookup_parser,
-#    __import__('profiler.parsers.maintenance_parser'
-#               ).parsers.maintenance_parser,
-#    __import__('profiler.parsers.rtt_parser').parsers.rtt_parser,
+    __import__('parsers.lookup_parser').lookup_parser,
+    __import__('parsers.maintenance_parser'
+               ).maintenance_parser,
+    __import__('parsers.rtt_parser').rtt_parser,
     ]    
 
 class NodeParser(object):
@@ -203,18 +209,33 @@ def parse(filenames):
 
 
 if __name__ == '__main__':
-    filenames = sys.argv[1:]
+    
+    current_dir = os.getcwd()
+    try:
+        os.mkdir('parser_results')
+    except OSError:
+        print 'Existing data in parser_results will be overwriten'
+    
+    file_prefix = os.path.basename(current_dir)[:15] + '.pcap'
+    if not os.path.isfile(file_prefix):
+        raise Exception, 'Capture file (%s) does not exist' % (file_prefix)
+    filenames = [file_prefix]
+    i = 0
+    while 1:
+        i += 1
+        filename = '%s%d' % (file_prefix, i)
+        if os.path.isfile(filename):
+            filenames.append(filename)
+        else:
+            break
+    
     print 'Parsing', filenames, '...'
-    print '*** Double-check the capture files order ***'
-    print 'You should type something like:'
-    print 'command name.pcap name.pcap? name.pcap??'
-    time.sleep(10)
     parse(filenames)
 
 
     
-'''Template'''
-class Parser(object):
+class _Parser(object):
+    '''Template'''
 
     def __init__(self, label, my_addr):
         self.label = label

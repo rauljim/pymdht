@@ -29,30 +29,6 @@ logger = logging.getLogger('dht')
 
 TIMEOUT_DELAY = 2
 
-class _Query(object):
-
-    def __init__(self, msg, dstnode, lookup_obj=None):
-        self.tid = None
-        self.query_ts = None
-        self.msg = msg
-        self.dstnode = dstnode
-        self.lookup_obj = lookup_obj
-        self.got_response = False
-        self.got_error = False
-
-    def on_response_received(self, response_msg):
-        self.rtt = time.time() - self.query_ts
-        if not self.dstnode.id:
-            self.dstnode.id = response_msg.src_id
-        self.got_response = True
-
-    def on_error_received(self, error_msg):
-        self.rtt = time.time() - self.query_ts
-        self.got_error = True
-        
-    def matching_tid(self, response_tid):
-        return message.matching_tid(self.tid, response_tid)
-
     
 class Querier(object):
     """
@@ -84,11 +60,12 @@ class Querier(object):
         datagrams = []
         current_ts = time.time()
         timeout_ts = current_ts + TIMEOUT_DELAY
-        for query in queries:
+        for i, query in enumerate(queries):
             msg = query
             tid = self._next_tid()
-            logger.debug('registering query to node: %r\n%r' % (query.dst_node,
-                                                                msg))
+            logger.debug('registering query %d to node: %r\n%r' % (i,
+                                                                   query.dst_node,
+                                                                   msg))
             self._timeouts.append((timeout_ts, msg))
             # if node is not in the dictionary, it will create an empty list
             self._pending.setdefault(query.dst_node.addr, []).append(msg)

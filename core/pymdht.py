@@ -75,9 +75,6 @@ class Pymdht:
                                lookup_id, info_hash,
                                callback_f, bt_port)
 
-    def remove_torrent(self, info_hash):
-        return
-            
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()
 

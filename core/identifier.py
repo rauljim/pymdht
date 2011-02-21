@@ -83,10 +83,10 @@ class Id(object):
 
     You can use both binary and hexadecimal strings. Example:
     
-    >>> Id('\x00' * ID_SIZE_BYTES) == Id('0' * ID_SIZE_BYTES * 2)
+    >>> Id(chr(0) * ID_SIZE_BYTES) == Id('0' * ID_SIZE_BYTES * 2)
     True
     
-    >>> Id(ord(255) * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
+    >>> Id(chr(255) * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
     True
     """
 

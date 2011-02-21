@@ -1,5 +1,41 @@
 pymdht 1.0.1-M36-tribler
 
+ORGANIZATION
+
+The code is organized as follows:
+
+* Directories:
+  - core
+    Core modules of the Pymdht package. The 'pmdht.py' file contains the
+    package's API.
+  - doc
+    Documentation.
+  - geo
+    Modules related to geo-location services (not used by default).
+  - plugins
+    Modules providing lookup implementation (lookup_*.py files) and
+    routing table management (routing_*.py files).
+  - profiler
+    Toolkit capable to launch several MDHT nodes (conductor.py), parse
+    network captures (parser.py), and plot graphs from parsing results
+    (plotter.py). More information in profiler/README.txt
+
+* Files:
+  - CHANGES.txt, LGPL-2.1.txt, LICENSE.txt, README.txt
+    Standard (auto explicative) names.
+  - MANIFEST.in, setup.py
+    Standard Python distribution files
+  - MDHT_SPEC.txt
+    Mainline DHT specification
+  - interactive_dht.py
+    Simple  example of how the Pymdht can be used. Type 'help' in the
+    interactive console to get a list of available commands.
+  - pymdht_daemon.py
+    This application is designed to provide a socket API to the Pymdht
+    package.
+  - pymdht_daemon_api.txt
+    Specification of the socket API.
+
 INSTALLATION
 
 This package uses Python 2.5 standard library. No extra modules need to be
@@ -10,27 +46,14 @@ framework to work.
 
 API
 
-The API is located in pymdht.py. This is the only module necessary to use the
-package.
+The API is located in core/pymdht.py. This is the only module necessary
+to use the package.
 
-Users must ONLY use the methods provided in pymdht.py.
+Users should ONLY use the methods provided in core/pymdht.py.
 
-Users can use the Id and Node containers as they wish. These classes are
-located in identifier.py and node.py
+Users can additionally use the Id and Node classes as they wish. These classes are
+located in core/identifier.py and core/node.py
 
-EXAMPLES
-
-Two examples are provided in the distribution:
-
-- server_dht.py
-
-Do the routing maintainance tasks plus a get_peers lookup to a random
-identifier every 10 minutes.
-
-- interactive_dht.py
-
-Do the routing maintainance task plus get_peers lookups asked by the user
-during the interactive session.
 
 TESTS
 
@@ -40,7 +63,7 @@ python-coverage (optional but very recommended)
 
 PROFILING
 
-In order to do profiling you need tht following packages (ubuntu):
+In order to do profiling you need the following packages (ubuntu):
 
 python-profiler
 kcachegrind (profile viewer)
@@ -71,10 +94,10 @@ contains functions to calculate coordinate distances between two
 peers, find if peers are in the same country, and score peers
 according to a defined (in geo.py) metric.
  
-Geo scoring is enabled by default, when running pymdht daemon. It can
-be switched off this way:
+Geo scoring is not enabled by default, when running pymdht daemon. It can
+be switched on this way:
 
-- python pymdht_daemon.py --no-geoip
+- python pymdht_daemon.py --geoip
 
 For geo module to work (only if running geo scoring), you need to
 install the following libraries (Ubuntu):

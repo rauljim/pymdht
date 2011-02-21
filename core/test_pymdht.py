@@ -11,7 +11,7 @@ import pymdht
 import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
 
-class _TestPymdht:
+class TestPymdht:
 
     def _callback(self, *args, **kwargs):
         return
@@ -28,6 +28,4 @@ class _TestPymdht:
         self.dht.stop()
         self.dht.print_routing_table_stats()
 
-    def complete_coverage(self):
-        # This is only used for NSDI experiments
-        self.dht.remove_torrent(tc.INFO_HASH)
+
