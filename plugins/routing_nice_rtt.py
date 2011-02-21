@@ -11,7 +11,7 @@ This module intends to implement the routing policy specified in NICE RTT:
 
 """
 
-
+from operator import attrgetter
 import random
 import heapq
 
@@ -219,6 +219,7 @@ class RoutingManager(object):
             logger.debug('nodes found: %r', nodes)
         self._found_nodes_queue.add(nodes)
 
+        logger.debug('on response received %f', rtt)
         log_distance = self.my_node.log_distance(node_)
         try:
             sbucket = self.table.get_sbucket(log_distance)
@@ -257,15 +258,16 @@ class RoutingManager(object):
         # Let's see whether this node's latency is good
         current_time = time.time()
         rnode_to_be_replaced = None
-        for rnode in reversed(m_bucket.rnodes):
+        m_bucket.rnodes.sort(key=attrgetter('rtt'), reverse=True)
+        for rnode in m_bucket.rnodes:
             rnode_age = current_time - rnode.bucket_insertion_ts
             if rtt < rnode.rtt * (1 - (rnode_age / 7200)):
                 # A rnode can only be replaced when the candidate node's RTT
                 # is shorter by a factor. Over time, this factor
                 # decreases. For instance, when rnode has been in the bucket
                 # for 30 mins (1800 secs), a candidate's RTT must be at most
-                # 50% of the rnode's RTT (ie. two times faster). After two
-                # hours, a rnode cannot be replaced becouse of better RTT.
+                # 25% of the rnode's RTT (ie. two times faster). After two
+                # hours, a rnode cannot be replaced by this method.
 #                print 'RTT replacement: newRTT: %f, oldRTT: %f, age: %f' % (
 #                rtt, rnode.rtt, current_time - rnode.bucket_insertion_ts)
                 rnode_to_be_replaced = rnode
