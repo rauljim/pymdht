@@ -19,17 +19,17 @@ lc.setup('.', CRITICAL)
 
 print '************** Check parser config *******************'
 
-ip = '130.229.144.68'
+ip = '192.16.127.98'
 conf = [
-    ['0', (ip, 7000)],
-    ['1', (ip, 7001)],
-    ['2', (ip, 7002)],
-    ['3', (ip, 7003)],
-    ['4', (ip, 7004)],
-    ['5', (ip, 7005)],
-    ['6', (ip, 7006)],
-    ['7', (ip, 7007)],
-    ['8', (ip, 7008)],
+    ['0', (ip, 7010)],
+    ['1', (ip, 7011)],
+    ['2', (ip, 7012)],
+    ['3', (ip, 7013)],
+    ['4', (ip, 7014)],
+    ['5', (ip, 7015)],
+    ['6', (ip, 7016)],
+    ['7', (ip, 7017)],
+    ['8', (ip, 7018)],
     ]
 
 multiparser_mods = [
@@ -42,6 +42,7 @@ multiparser_mods = [
 
 parser_mods = [
     __import__('parsers.lookup_parser').lookup_parser,
+    __import__('parsers.get_peers').get_peers,
     __import__('parsers.maintenance_parser'
                ).maintenance_parser,
     __import__('parsers.rtt_parser').rtt_parser,
