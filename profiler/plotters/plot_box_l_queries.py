@@ -11,16 +11,11 @@ pylab.ylabel('Lookup queries')
 output_filename = 'plots/box_l_queries.eps'
 
 boxes_to_plot = (
-    ('0.l_queries', 'UT'),
     ('1.l_queries', 'NS1'),
     ('2.l_queries', 'NS2'),
     ('3.l_queries', 'NS3'),
     ('4.l_queries', 'NS4'),
     ('5.l_queries', 'NS5'),
-    ('6.l_queries', 'NS6'),
-    ('7.l_queries', 'NS7'),
-    ('8.l_queries', 'NS8'),
-#    ('9.l_queries', 'NS9'),
     )
 #    (filename, label)
 

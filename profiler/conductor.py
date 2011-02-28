@@ -33,10 +33,10 @@ import plugins.lookup_a16 as l_a16
 import plugins.lookup_m3 as l_m3
 import plugins.lookup_m3_a4 as l_m3_a4
 
-logs_level = logging.DEBUG # This generates HUGE (and useful) logs
+#logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 #logs_level = logging.INFO # This generates some (useful) logs
 #logs_level = logging.WARNING # This generates warning and error logs
-#logs_level = logging.CRITICAL
+logs_level = logging.CRITICAL
 
 
 STARTUP_DELAY = 20 # delay between two DHT node startups

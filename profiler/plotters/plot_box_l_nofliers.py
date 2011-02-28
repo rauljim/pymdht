@@ -11,13 +11,11 @@ pylab.ylabel('Lookup time (s)')
 output_filename = 'box_l_time_nofliers.eps'
 
 boxes_to_plot = (
-    ('0.l_time.cdf', 'UT'),
     ('1.l_time.cdf', 'NS1'),
     ('2.l_time.cdf', 'NS2'),
     ('3.l_time.cdf', 'NS3'),
     ('4.l_time.cdf', 'NS4'),
     ('5.l_time.cdf', 'NS5'),
-    ('6.l_time.cdf', 'NS6'),
     )
 #    (filename, label)
 
