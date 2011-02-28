@@ -111,9 +111,9 @@ class Controller:
             return queries_to_send
         log_distance = lookup_obj.info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                              8,
+                                                              0,
                                                               True)
-        #TODO: remove magic number
+        #TODO: get the full bucket
         if bootstrap_rnodes:
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
@@ -174,7 +174,7 @@ class Controller:
             log_distance = maintenance_lookup_target.log_distance(
                 self._my_id)
             bootstrap_rnodes = self._routing_m.get_closest_rnodes(
-                log_distance, 8, True) #TODO: remove magic number
+                log_distance, 0, True) # Get the full bucket
             lookup_obj = self._lookup_m.maintenance_lookup(
                 maintenance_lookup_target)
             queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
@@ -329,6 +329,8 @@ class Controller:
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
+            #TODO: return the closest rnodes to the target instead of the 8
+            #first in the bucket.
             return message.OutgoingFindNodeResponse(msg.src_node,
                                                     self._my_id,
                                                     rnodes)
@@ -337,6 +339,8 @@ class Controller:
             log_distance = msg.info_hash.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
+            #TODO: return the closest rnodes to the target instead of the 8
+            #first in the bucket.
             peers = self._tracker.get(msg.info_hash)
             if peers:
                 logger.debug('RESPONDING with PEERS:\n%r' % peers)
