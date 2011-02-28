@@ -95,7 +95,7 @@ class RoutingManager(object):
         else:
             maintenance_lookup_target = self._refresh_stale_bucket()
 
-        print 'beb5', _MAINTENANCE_DELAY[self._maintenance_mode]
+#        print 'beb5', _MAINTENANCE_DELAY[self._maintenance_mode]
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
     

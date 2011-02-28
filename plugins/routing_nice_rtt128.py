@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 """
-This module intends to implement the routing policy specified in NICE:
+This module intends to implement the routing policy specified in NICE RTT 128:
 
 -
 -
@@ -11,7 +11,7 @@ This module intends to implement the routing policy specified in NICE:
 
 """
 
-
+from operator import attrgetter
 import random
 import heapq
 
@@ -23,7 +23,6 @@ import core.message as message
 import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable
-
 
 logger = logging.getLogger('dht')
 
@@ -42,7 +41,7 @@ IMPORTANT: Notice there is NO bucket for -1
 """
 
 DEFAULT_NUM_NODES = 8
-NODES_PER_BUCKET = [] # 16, 32, 64, 128, 256]
+NODES_PER_BUCKET = [16, 32, 64, 128]
 NODES_PER_BUCKET[:0] = [DEFAULT_NUM_NODES] \
     * (NUM_BUCKETS - len(NODES_PER_BUCKET))
 
@@ -61,7 +60,7 @@ FIND_CLOSEST_MODE = 'find_closest_mode'
 NORMAL_MODE = 'normal_mode'
 _MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
                      FIND_CLOSEST_MODE: 3,
-                     NORMAL_MODE: 6}
+                     NORMAL_MODE: 3}
 
 
 class RoutingManager(object):
@@ -106,7 +105,8 @@ class RoutingManager(object):
                     queries_to_send = [self._get_maintenance_query(node_)]
                     # This task did do some work. We are done here!
                     break
-#        print 'nice', _MAINTENANCE_DELAY[self._maintenance_mode]
+        
+#        print 'nr64', _MAINTENANCE_DELAY[self._maintenance_mode]
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
 
@@ -247,7 +247,32 @@ class RoutingManager(object):
             self._update_rnode_on_response_received(rnode, rtt)
             return
         # The main bucket is full
-
+        # Let's see whether this node's latency is good
+        current_time = time.time()
+        rnode_to_be_replaced = None
+        m_bucket.rnodes.sort(key=attrgetter('rtt'), reverse=True)
+        for rnode in m_bucket.rnodes:
+            rnode_age = current_time - rnode.bucket_insertion_ts
+            if rtt < rnode.rtt * (1 - (rnode_age / 7200)):
+                # A rnode can only be replaced when the candidate node's RTT
+                # is shorter by a factor. Over time, this factor
+                # decreases. For instance, when rnode has been in the bucket
+                # for 30 mins (1800 secs), a candidate's RTT must be at most
+                # 25% of the rnode's RTT (ie. two times faster). After two
+                # hours, a rnode cannot be replaced by this method.
+#                print 'RTT replacement: newRTT: %f, oldRTT: %f, age: %f' % (
+#                rtt, rnode.rtt, current_time - rnode.bucket_insertion_ts)
+                rnode_to_be_replaced = rnode
+                break
+        if rnode_to_be_replaced:
+            m_bucket.remove(rnode_to_be_replaced)
+            rnode = node_.get_rnode(log_distance)
+            m_bucket.add(rnode)
+            # No need to update table
+            self.table.num_rnodes += 0
+            self._update_rnode_on_response_received(rnode, rtt)
+            return
+            
         # Get the worst node in replacement bucket and see whether
         # it's bad enough to be replaced by node_
         worst_rnode = self._worst_rnode(r_bucket.rnodes)
