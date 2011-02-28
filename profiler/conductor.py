@@ -26,6 +26,7 @@ import plugins.routing_bep5 as r_bep5
 import plugins.routing_nice as r_nice
 import plugins.routing_nice_rtt as r_nice_rtt
 import plugins.routing_nice_rtt64 as r_nice_rtt64
+import plugins.routing_nice_rtt128 as r_nice_rtt128
 
 import plugins.lookup_a4 as l_a4
 import plugins.lookup_a16 as l_a16
@@ -49,15 +50,11 @@ REMOVE_TORRENT_DELAY = 5
 
 
 CONFIG = (
-    (pymdht, ('192.16.125.242', 7000), 'ns0', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7001), 'ns1', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7002), 'ns2', r_nice, l_m3),
-    (pymdht, ('192.16.125.242', 7003), 'ns3', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7004), 'ns4', r_nice, l_m3),
-    (pymdht, ('192.16.125.242', 7005), 'ns5', r_nice_rtt, l_a4),
-    (pymdht, ('192.16.125.242', 7006), 'ns6', r_nice_rtt, l_m3),
-    (pymdht, ('192.16.125.242', 7007), 'ns7', r_nice_rtt64, l_a4),
-    (pymdht, ('192.16.125.242', 7008), 'ns8', r_nice_rtt64, l_m3),
+    (pymdht, ('192.16.125.242', 7001), 'bep5', r_bep5, l_a4),
+    (pymdht, ('192.16.125.242', 7002), 'nice', r_nice, l_a4),
+    (pymdht, ('192.16.125.242', 7003), 'nrtt', r_nice_rtt, l_a4),
+    (pymdht, ('192.16.125.242', 7004), 'nr64', r_nice_rtt64, l_a4),
+    (pymdht, ('192.16.125.242', 7005), 'nr128', r_nice_rtt128, l_a4),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]
