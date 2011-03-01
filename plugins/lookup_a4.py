@@ -30,7 +30,10 @@ class _QueuedNode(object):
         self.token = token
 
     def __cmp__(self, other):
-        return self.log_distance - other.log_distance
+        return (self.log_distance - other.log_distance
+                or (getattr(self.node, 'rtt', .5) -
+                    getattr(other.node, 'rtt', .5)))
+    
 
 class _LookupQueue(object):
 

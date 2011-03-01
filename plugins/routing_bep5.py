@@ -164,10 +164,6 @@ class RoutingManager(object):
         # No bad nodes. Check for questionable nodes
         q_rnodes = self._get_questionable_rnodes(m_bucket)
         queries_to_send = []
-#        if q_rnodes:
-#            print time.time(), '-----pinging questionable nodes in',
-#            print log_distance
-#            print q_rnodes
         for q_rnode in q_rnodes:
             # Ping questinable nodes to check whether they are still alive.
             # (0 timeouts so far, candidate node)
@@ -186,11 +182,14 @@ class RoutingManager(object):
         m_bucket = sbucket.main
         rnode = m_bucket.get_rnode(node_)
         if rnode:
+            logger.debug('node in main')
             # node in routing table: update
             self._update_rnode_on_response_received(rnode, rtt)
             if self._maintenance_mode == NORMAL_MODE:
                 m_bucket.last_changed_ts = time.time()
             if node_ in self._pinged_q_rnodes:
+                logger.debug('remove from questionable')
+                rnode.questionable = False
                 # This node is questionable. This response proves that it is
                 # alive. Remove it from the questionable dict.
                 del self._pinged_q_rnodes[node_]
@@ -198,6 +197,7 @@ class RoutingManager(object):
 
         # The node is not in main
         if m_bucket.there_is_room():
+            logger.debug('node not in main, there is room')
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
             self.table.num_rnodes += 1
@@ -209,8 +209,10 @@ class RoutingManager(object):
 
         # if there is a bad node inside the bucket,
         # replace it with the sending node_
+        logger.debug('node not in main, no room')
         bad_rnode = self._pop_bad_rnode(m_bucket)
         if bad_rnode:
+            logger.debug('there is a bad rnode')
             rnode = node_.get_rnode(log_distance)
             m_bucket.add(rnode)
             # No need to update table
@@ -221,6 +223,7 @@ class RoutingManager(object):
             return
 
         # There are no bad nodes. Ping questionable nodes (if any)
+        logger.debug('no bad nodes, ping questionable nodes')
         q_rnodes = self._get_questionable_rnodes(m_bucket)
         queries_to_send = []
         for q_rnode in q_rnodes:
@@ -228,7 +231,8 @@ class RoutingManager(object):
             c_rnode = node_.get_rnode(log_distance)
             self._update_rnode_on_response_received(c_rnode, rtt)
             self._pinged_q_rnodes[q_rnode] = [0, c_rnode]
-            queries_to_send.append(message.OutgoingPingQuery(node_, self.my_node.id))
+            queries_to_send.append(message.OutgoingPingQuery(node_,
+                                                             self.my_node.id))
         return queries_to_send
  
     def _pop_bad_rnode(self, mbucket):
@@ -241,10 +245,12 @@ class RoutingManager(object):
         q_rnodes = []
         for rnode in m_bucket.rnodes:
             inactivity_time = time.time() - rnode.last_seen
-            if inactivity_time > REFRESH_PERIOD:
-                q_rnodes.append(rnode)
-            if rnode.num_responses == 0:
-                q_rnodes.append(rnode)
+            if (inactivity_time > REFRESH_PERIOD
+                or rnode.num_responses == 0):
+                is_questionable = getattr(rnode, 'questionable', False)
+                if not is_questionable:
+                    rnode.questionable = True
+                    q_rnodes.append(rnode)
         return q_rnodes
         
     def on_error_received(self, node_addr):

@@ -11,8 +11,8 @@ pylab.ylabel('Lookup time (s)')
 output_filename = 'box_l_time_duel.eps'
 
 boxes_to_plot = (
-    ('0.l_time', 'UT'),
-    ('8.l_time', 'NS8'),
+    ('0.l_time', '0'),
+    ('8.l_time', '8'),
     )
 #    (filename, label)
 
