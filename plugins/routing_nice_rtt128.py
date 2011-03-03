@@ -57,11 +57,13 @@ NUM_NODES_PER_BOOTSTRAP_STEP = 1
 
 BOOTSTRAP_MODE = 'bootstrap_mode'
 FIND_CLOSEST_MODE = 'find_closest_mode'
+FILL_BUCKETS= 'fill_buckets'
 NORMAL_MODE = 'normal_mode'
 _MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
-                     FIND_CLOSEST_MODE: 3,
-                     NORMAL_MODE: 3}
-
+                      FIND_CLOSEST_MODE: 3,
+                      FILL_BUCKETS: 1
+                      NORMAL_MODE: 3}
+NUM_FILLING_LOOKUPS = 32
 
 class RoutingManager(object):
     
@@ -82,6 +84,7 @@ class RoutingManager(object):
                                    self._ping_a_found_node,
                                    self._ping_a_replacement_node,
                                    ]
+        self._num_pending_filling_lookups = NUM_FILLING_LOOKUPS
         
     def do_maintenance(self):
         queries_to_send = []
@@ -92,6 +95,12 @@ class RoutingManager(object):
                 queries_to_send = [self._get_maintenance_query(node_)]
             except (StopIteration):
                 maintenance_lookup_target = self.my_node.id
+                self._maintenance_mode = FILL_BUCKETS
+        elif self._maintenance_mode == FILL_BUCKETS:
+            if self._num_pending_filling_lookups:
+                self._num_pending_filling_lookups -= 1
+                maintenance_lookup_target = identifier.RandomId()
+            else:
                 self._maintenance_mode = NORMAL_MODE
         elif self._maintenance_mode == NORMAL_MODE:
             for _ in range(len(self._maintenance_tasks)):

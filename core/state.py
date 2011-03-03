@@ -20,6 +20,7 @@ EXAMPLE
 import sys
 import logging
 
+import ptime as time
 from identifier import Id
 from node import Node
 
@@ -30,10 +31,11 @@ def save(my_id, rnodes, filename):
     f = open(filename, 'w')
     f.write('%r\n' % my_id)
     for rnode in rnodes:
-        f.write('%d %r %s %d %f\n' % (
+        f.write('%d %r %15s %5d %4d %6d\n' % (
                 my_id.log_distance(rnode.id),
                 rnode.id, rnode.addr[0], rnode.addr[1],
-                rnode.rtt * 1000))
+                rnode.rtt * 1000,
+                time.time() -rnode.creation_ts ))
     f.close()
 
 def load(filename):
@@ -44,7 +46,7 @@ def load(filename):
         hex_id = f.readline().strip()
         my_id = Id(hex_id)
         for line in f:
-            _, hex_id, ip, port, _ = line.split()
+            _, hex_id, ip, port, _, _ = line.split()
             addr = (ip, int(port))
             node_ = Node(addr, Id(hex_id))
             nodes.append(node_)
