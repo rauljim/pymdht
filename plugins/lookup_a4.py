@@ -100,15 +100,11 @@ class _LookupQueue(object):
 
     def _add_queued_qnodes(self, qnodes):
         for qnode in qnodes:
-#            print 'adding qnode', qnode
             if qnode.node.ip not in self.queued_ips \
                     and qnode.node.ip not in self.queried_ips:
                 self.queued_qnodes.append(qnode)
                 self.queued_ips.add(qnode.node.ip)
         self.queued_qnodes.sort()
-#        for qnode  in self.queued_qnodes[self.max_queued_qnodes:]:
-#            self.queued_ips.remove(qnode.node.ip)
-#        del self.queued_qnodes[self.max_queued_qnodes:]
 
     def _pop_nodes_to_query(self, max_nodes):
         if len(self.responded_qnodes) > MARK_INDEX:
