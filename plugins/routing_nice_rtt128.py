@@ -259,17 +259,10 @@ class RoutingManager(object):
         current_time = time.time()
         rnode_to_be_replaced = None
         m_bucket.rnodes.sort(key=attrgetter('rtt'), reverse=True)
-        for rnode in m_bucket.rnodes:
-            rnode_age = current_time - rnode.bucket_insertion_ts
-            if rtt < rnode.rtt * (1 - (rnode_age / 7200)):
-                # A rnode can only be replaced when the candidate node's RTT
-                # is shorter by a factor. Over time, this factor
-                # decreases. For instance, when rnode has been in the bucket
-                # for 30 mins (1800 secs), a candidate's RTT must be at most
-                # 25% of the rnode's RTT (ie. two times faster). After two
-                # hours, a rnode cannot be replaced by this method.
-                rnode_to_be_replaced = rnode
-                break
+        if rtt < m_bucket.rnodes[0].rtt:
+            # Replace rnode (the node whose RTT is highest in the bucket) if
+            # the candidate's RTT is lower regardless of rhe rnode's age.
+            rnode_to_be_replaced = rnode
         if rnode_to_be_replaced:
             m_bucket.remove(rnode_to_be_replaced)
             rnode = node_.get_rnode(log_distance)
