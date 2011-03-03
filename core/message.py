@@ -159,6 +159,7 @@ class OutgoingFindNodeQuery(OutgoingQueryBase):
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
+        self.lookup_obj = lookup_obj
 
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
