@@ -59,11 +59,12 @@ CONFIG = (
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]
 
-def _on_peers_found(lookup_id, peers):
+def _on_peers_found((node_name, start_ts), peers):
     if peers:
-        print '[%.4f] %d peer(s)' % (time.time(), len(peers))
+        print '[%.4f] %s got %d peer(s)' % (time.time() - start_ts,
+                                     node_name, len(peers))
     else:
-        print '[%.4f] END OF LOOKUP' % (time.time())
+        print '[%.4f] %s END OF LOOKUP' % (time.time() - start_ts, node_name)
 
 def _randompopper(seq):
     """
@@ -126,9 +127,9 @@ def main():
         for node_name, node, infohash_gen in _randompopper(nodes):
             # Every DHT node performs a lookup
             infohash = identifier.Id(infohash_gen.next())
-            print  '%d [%.4f] %s getting peers for info_hash %r' % (
-                round_number, time.time(), node_name, infohash)
-            node.get_peers(None, infohash, _on_peers_found, 0)
+            print  '%d  %s getting peers for info_hash %r' % (
+                round_number, node_name, infohash)
+            node.get_peers((node_name, time.time()), infohash, _on_peers_found, 0)
             time.sleep(REMOVE_TORRENT_DELAY)
             if 'remove_torrent' in node.__dict__:
                 node.remove_torrent(infohash)
