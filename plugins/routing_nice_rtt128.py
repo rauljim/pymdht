@@ -268,8 +268,6 @@ class RoutingManager(object):
                 # for 30 mins (1800 secs), a candidate's RTT must be at most
                 # 25% of the rnode's RTT (ie. two times faster). After two
                 # hours, a rnode cannot be replaced by this method.
-#                print 'RTT replacement: newRTT: %f, oldRTT: %f, age: %f' % (
-#                rtt, rnode.rtt, current_time - rnode.bucket_insertion_ts)
                 rnode_to_be_replaced = rnode
                 break
         if rnode_to_be_replaced:
@@ -425,7 +423,6 @@ class _QueryReceivedQueue(object):
 
     def add(self, node_, log_distance):
         # The caller already checked that there is room in the bucket
-#        print 'received queue', len(self._queue)
         if node_ in self._queued_nodes_set:
             # This node is already queued
             return
@@ -466,7 +463,6 @@ class _FoundNodesQueue(object):
         self._nodes_queued_per_bucket = [0 for _ in range(160)]
 
     def add(self, nodes):
-#        print 'found queue', len(self._queue)
         for node_ in nodes:
             if node_ in self._queued_nodes_set:
                 # This node has already been queued
