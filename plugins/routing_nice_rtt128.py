@@ -259,7 +259,8 @@ class RoutingManager(object):
         current_time = time.time()
         rnode_to_be_replaced = None
         m_bucket.rnodes.sort(key=attrgetter('rtt'), reverse=True)
-        if rtt < m_bucket.rnodes[0].rtt:
+        rnode = m_bucket.rnodes[0]
+        if rtt < rnode.rtt:
             # Replace rnode (the node whose RTT is highest in the bucket) if
             # the candidate's RTT is lower regardless of rhe rnode's age.
             rnode_to_be_replaced = rnode
