@@ -50,11 +50,11 @@ REMOVE_TORRENT_DELAY = 5
 
 
 CONFIG = (
-    (pymdht, ('192.16.125.242', 7001), '1', r_bep5, l_a4),
-    (pymdht, ('192.16.125.242', 7002), '2', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7003), '3', r_nice_rtt, l_a4),
-    (pymdht, ('192.16.125.242', 7004), '4', r_nice_rtt64, l_a4),
-    (pymdht, ('192.16.125.242', 7005), '5', r_nice_rtt128, l_a4),
+    (pymdht, ('192.16.125.242', 7011), '1', r_bep5, l_a4),
+    (pymdht, ('192.16.125.242', 7012), '2', r_nice, l_a4),
+    (pymdht, ('192.16.125.242', 7013), '3', r_nice_rtt, l_a4),
+    (pymdht, ('192.16.125.242', 7014), '4', r_nice_rtt64, l_a4),
+    (pymdht, ('192.16.125.242', 7015), '5', r_nice_rtt128, l_a4),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]

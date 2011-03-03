@@ -327,7 +327,7 @@ class RoutingManager(object):
         You should call this method when receiving a response from this rnode.
 
         """
-        rnode.rtt = rtt
+        rnode._rtt = rtt
         current_time = time.time()
         #rnode._reset_refresh_task()
         if rnode.in_quarantine:
