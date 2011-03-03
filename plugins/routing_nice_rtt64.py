@@ -61,7 +61,7 @@ FILL_BUCKETS= 'fill_buckets'
 NORMAL_MODE = 'normal_mode'
 _MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
                       FIND_CLOSEST_MODE: 3,
-                      FILL_BUCKETS: 1
+                      FILL_BUCKETS: 1,
                       NORMAL_MODE: 4}
 NUM_FILLING_LOOKUPS = 16
 
