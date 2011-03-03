@@ -39,10 +39,10 @@ import plugins.lookup_m3_a4 as l_m3_a4
 logs_level = logging.CRITICAL
 
 
-STARTUP_DELAY = 20 # delay between two DHT node startups
-BOOTSTRAP_DELAY = 60  # delay between end of startup and lookups
+STARTUP_DELAY = 10 # delay between two DHT node startups
+BOOTSTRAP_DELAY = 30  # delay between end of startup and lookups
 LOOKUP_DELAY = 10 # delay between two lookups
-ROUND_DELAY = 20 # delay between rounds
+ROUND_DELAY = 10 # delay between rounds
 STOPPING_DELAY = 1
 
 REMOVE_TORRENT_DELAY = 5
