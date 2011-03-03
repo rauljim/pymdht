@@ -17,9 +17,9 @@ boxes_to_plot = (
     ('3.l_queries', '3'),
     ('4.l_queries', '4'),
     ('5.l_queries', '5'),
-    ('5.l_queries', '6'),
-    ('5.l_queries', '7'),
-    ('5.l_queries', '8'),
+    ('6.l_queries', '6'),
+    ('7.l_queries', '7'),
+    ('8.l_queries', '8'),
     )
 #    (filename, label)
 
