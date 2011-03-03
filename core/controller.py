@@ -75,7 +75,9 @@ class Controller:
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
-        self._next_main_loop_call_ts = 0
+        self._next_maintenance_ts = current_ts
+        self._next_timeout_ts = current_ts
+        self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
         '''        
     def finalize(self):
@@ -146,46 +148,53 @@ class Controller:
 
         """
 
-        logger.debug('main_loop BEGIN')
         queries_to_send = []
         current_ts = time.time()
-        # At most, 10 seconds between calls to main_loop after the first call
-        if current_ts > self._next_main_loop_call_ts:
-            self._next_main_loop_call_ts = current_ts + 10
+        #TODO: I think this if should be removed
+        # At most, 1 second between calls to main_loop after the first call
+        if current_ts >= self._next_main_loop_call_ts:
+            self._next_main_loop_call_ts = current_ts + 1
         else:
             # It's too early
             return self._next_main_loop_call_ts, []
         # Retry failed lookup (if any)
         queries_to_send.extend(self._try_do_lookup())
+        
         # Take care of timeouts
-        timeout_queries = self._querier.get_timeout_queries()
-        for query in timeout_queries:
-            queries_to_send.extend(self._on_timeout(query))
+        if current_ts >= self._next_timeout_ts:
+            (self._next_timeout_ts,
+             timeout_queries) = self._querier.get_timeout_queries()
+            for query in timeout_queries:
+                queries_to_send.extend(self._on_timeout(query))
 
         # Routing table maintenance
-        (maintenance_delay,
-         queries,
-         maintenance_lookup_target) = self._routing_m.do_maintenance()
-        self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
-                                           current_ts + maintenance_delay)
-        queries_to_send.extend(queries)
+        if time.time() >= self._next_maintenance_ts:
+            (maintenance_delay,
+             queries,
+             maintenance_lookup_target) = self._routing_m.do_maintenance()
+            self._next_maintenance_ts = current_ts + maintenance_delay
+            self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
+                                               self._next_maintenance_ts)
+            queries_to_send.extend(queries)
 
-        if maintenance_lookup_target:
-            log_distance = maintenance_lookup_target.log_distance(
-                self._my_id)
-            bootstrap_rnodes = self._routing_m.get_closest_rnodes(
-                log_distance, 0, True) # Get the full bucket
-            lookup_obj = self._lookup_m.maintenance_lookup(
-                maintenance_lookup_target)
-            queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
+            if maintenance_lookup_target:
+                log_distance = maintenance_lookup_target.log_distance(
+                    self._my_id)
+                bootstrap_rnodes = self._routing_m.get_closest_rnodes(
+                    log_distance, 0, True) # Get the full bucket
+                lookup_obj = self._lookup_m.maintenance_lookup(
+                    maintenance_lookup_target)
+                queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
             
         # Auto-save routing table
-        if current_ts > self._next_save_state_ts:
+        if current_ts >= self._next_save_state_ts:
             state.save(self._my_id,
                        self._routing_m.get_main_rnodes(),
                        self.state_filename)
             self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
+                                               self._next_maintenance_ts,
+                                               self._next_timeout_ts,
                                                self._next_save_state_ts)
         # Return control to reactor
         datagrams_to_send = self._register_queries(queries_to_send)

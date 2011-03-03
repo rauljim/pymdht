@@ -97,8 +97,9 @@ class Querier(object):
 
     def get_timeout_queries(self):
         """
-        Return a list of message.OutgoingQueryBase objects of those queries
-        that have timed-out.
+        Return a tupla with two items: (1) timestamp for next timeout, (2)
+        list of message.OutgoingQueryBase objects of those queries that have
+        timed-out.
         
         """
         current_ts = time.time()
@@ -106,6 +107,7 @@ class Querier(object):
         while self._timeouts:
             timeout_ts, query = self._timeouts[0]
             if current_ts < timeout_ts:
+                next_timeout_ts = timeout_ts
                 break
             self._timeouts = self._timeouts[1:]
             addr_query_list = self._pending[query.dst_node.addr]
@@ -115,7 +117,9 @@ class Querier(object):
                 del self._pending[query.dst_node.addr]
             if not query.got_response:
                 timeout_queries.append(query)
-        return timeout_queries
+        if not self._timeouts:
+            next_timeout_ts = current_ts + TIMEOUT_DELAY
+        return next_timeout_ts, timeout_queries
 
     def _find_related_query(self, msg):
         addr = msg.src_addr
