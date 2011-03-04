@@ -24,6 +24,7 @@ import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable
 
+
 logger = logging.getLogger('dht')
 
 NUM_BUCKETS = identifier.ID_SIZE_BITS
@@ -327,7 +328,7 @@ class RoutingManager(object):
         You should call this method when receiving a response from this rnode.
 
         """
-        rnode._rtt = rtt
+        rnode.real_rtt = rtt
         current_time = time.time()
         #rnode._reset_refresh_task()
         if rnode.in_quarantine:

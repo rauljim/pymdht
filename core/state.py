@@ -31,7 +31,10 @@ def save(my_id, rnodes, filename):
     f = open(filename, 'w')
     f.write('%r\n' % my_id)
     for rnode in rnodes:
-        rtt = getattr(rnode, 'rtt', None) or rnode._rtt
+        if rnode.rtt == 99:
+            rtt = rnode.real_rtt
+        else:
+            rtt = rnode.rtt
         f.write('%d %r %15s %5d %4d %6d\n' % (
                 my_id.log_distance(rnode.id),
                 rnode.id, rnode.addr[0], rnode.addr[1],

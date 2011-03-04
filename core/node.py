@@ -71,6 +71,7 @@ class RoutingNode(Node):
         Node.__init__(self, node_.addr, node_.id, node_.is_ns)
         self.log_distance_to_me = log_distance
         self.rtt = 99
+        self.real_rtt = 99
         self.rtt_avg = None
         self.num_queries = 0
         self.num_responses = 0
