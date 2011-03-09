@@ -19,7 +19,7 @@ lc.setup('.', CRITICAL)
 
 print '************** Check parser config *******************'
 
-ip = '192.16.125.242'
+ip = '192.16.125.245'
 port = 7000
 
 conf = [
@@ -39,16 +39,16 @@ conf = [
 multiparser_mods = [
     __import__('parsers.traffic_multiparser'
                ).traffic_multiparser,
-    __import__('parsers.same_ip').same_ip,
-    __import__('parsers.announce').announce,
-    __import__('parsers.infohashes').infohashes,
+#    __import__('parsers.same_ip').same_ip,
+#    __import__('parsers.announce').announce,
+#    __import__('parsers.infohashes').infohashes,
     ]
 
 parser_mods = [
     __import__('parsers.lookup_parser').lookup_parser,
     __import__('parsers.maintenance_parser'
                ).maintenance_parser,
-    __import__('parsers.rtt_parser').rtt_parser,
+#    __import__('parsers.rtt_parser').rtt_parser,
     ]    
 
 class NodeParser(object):
@@ -179,12 +179,16 @@ def parse(filenames):
     all_parsers =  node_parsers + [multinode_parser]
 
     num_frames = 0
+    i = 0
     for filename in filenames:
         print '>>>>', filename
         frames = pcap.pcap(filename)
-        for num_frames, (ts_absolute, frame) in enumerate(frames): 
-            if num_frames % 10000 == 0:
-                print '>>>>', num_frames
+        for (ts_absolute, frame) in frames: 
+            i += 1
+            num_frames += 1
+            if i == 50000:
+                i = 0
+                print '>>>>', num_frames/1000000.0, 'N frames'
 
             if not start_ts:
                 start_ts = ts_absolute
