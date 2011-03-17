@@ -12,6 +12,15 @@ import core.message as message
 
 import cdf
 
+NUM_AUTH_REPLICAS = 3
+
+class ValuesR(object):
+
+    def __init__(self, time, log_distance, peers):
+        self.time = time
+        self.log_distance = log_distance
+        self.peers = peers
+
 class LookupInfo(object):
 
     def __init__(self, info_hash, start_ts):
@@ -20,10 +29,10 @@ class LookupInfo(object):
 
         self.num_queries = 0
         self.num_queries_till_peers = 0
-        self.ts_peers = []
+        self.values_rs = []
         self.peer_set = set()
-        self.closest_log_distance = 160
-        self.ctime = 0
+        self.auth_responses = []
+        self.closest_log_distances = []
 
 class Parser(object):
 
@@ -45,7 +54,7 @@ class Parser(object):
                     self.lookups[msg.info_hash] = lookup
                 self.tids[msg.tid[0]] = (dst_addr, lookup)
                 lookup.num_queries += 1
-                if not lookup.ts_peers:
+                if not lookup.values_rs:
                     lookup.num_queries_till_peers += 1
 
     def incoming_msg(self, ts, src_addr, msg):
@@ -62,19 +71,20 @@ class Parser(object):
             return
         del self.tids[msg.tid[0]]
         if addr == src_addr:
-            lookup.ts_peers.append((ts, peers))
+            log_distance =  lookup.info_hash.log_distance(msg.src_id)
+            lookup.values_rs.append(
+                ValuesR(ts - lookup.start_ts, log_distance, peers))
             for peer in peers:
                 lookup.peer_set.add(peer)
-            log_distance =  lookup.info_hash.log_distance(msg.src_id)
-            if log_distance < lookup.closest_log_distance:
-                lookup.closest_log_distance = log_distance
-                lookup.ctime = ts - lookup.start_ts
-        
-
+            lookup.closest_log_distances.append(log_distance)
+            lookup.closest_log_distances.sort()
+            if len(lookup.closest_log_distances) > NUM_AUTH_REPLICAS:
+                del lookup.closest_log_distances[NUM_AUTH_REPLICAS]
 
     def done(self):
         num_lookups_without_peeers = 0
-        ctime_file = openf(self.label + '.l_ctime', 'w')
+        auth_time_file = openf(self.label + '.l_time_auth', 'w')
+        closest_time_file = openf(self.label + '.l_time_closest', 'w')
         c_ld_file = openf(self.label + '.l_c_ld', 'w')
         time_file = openf(self.label + '.l_time', 'w')
         queries_file = openf(self.label + '.l_queries', 'w')
@@ -86,33 +96,35 @@ class Parser(object):
         lookup_times = []
         lookup_queries = []
         for lookup in self.lookups.values():
-            for ts, peers in lookup.ts_peers:
-                num_peers_file.write('%d ' % len(peers))
-                peers_time_file.write('%f ' % (ts - lookup.start_ts))
-            if lookup.ts_peers:
-                lookup_time = lookup.ts_peers[0][0] - lookup.start_ts
-                lookup_times.append(lookup_time)
-                time_file.write('%f\n' % (lookup_time)) 
-                num_peers_file.write('\n')
-                peers_time_file.write('\n')
-                swarm_size_file.write('%d\n' % (len(lookup.peer_set)))
-            else:
-                num_lookups_without_peeers += 1
+            auth_time = None
+            closest_time = None
+            for values_r in lookup.values_rs:
+                num_peers_file.write('%d ' % len(values_r.peers))
+                peers_time_file.write('%f ' % (values_r.time))
+                if (not auth_time and
+                    values_r.log_distance <= lookup.closest_log_distances[-1]):
+                    auth_time = values_r.time
+                if (not closest_time and
+                    values_r.log_distance == lookup.closest_log_distances[0]):
+                    closest_time = values_r.time
                 
-            lookup_queries.append(lookup.num_queries)
+            if not lookup.values_rs: 
+                num_lookups_without_peeers += 1
+                continue
+            time_file.write('%f\n' % (lookup.values_rs[0].time))
+            num_peers_file.write('\n')
+            peers_time_file.write('\n')
+            swarm_size_file.write('%d\n' % (len(lookup.peer_set)))
+
             queries_file.write('%d\n' % (lookup.num_queries))
             queries_till_peers_file.write('%d\n' % (
                     lookup.num_queries_till_peers))
-            ctime_file.write('%.4f\n' % (lookup.ctime))
-            c_ld_file.write('%d\n' % (lookup.closest_log_distance))
-                              
-        time_cdf_file = openf(self.label + '.l_time.cdf', 'w')
-        queries_cdf_file = openf(self.label + '.l_queries.cdf', 'w')
-        for cum, value in cdf.cdf(lookup_times):
-            time_cdf_file.write('%.4f\t%.4f\n' % (cum, value))
-        for cum, value in cdf.cdf(lookup_queries):
-            queries_cdf_file.write('%.4f\t%d\n' % (cum, value))
 
+            auth_time_file.write('%.4f\n' % (auth_time))
+            closest_time_file.write('%.4f\n' % (closest_time))
+
+            c_ld_file.write('%d\n' % (lookup.closest_log_distances[0]))
+                              
         
         print '%s: No peers for %d lookups' % (self.label,
                                               num_lookups_without_peeers)

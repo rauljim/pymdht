@@ -15,16 +15,18 @@ def cdf(results):
         cum_values.append(((i+1) * step, v))
     return cum_values
 
+def cdf_file(filename):
+    output_filename = filename + '.cdf'
+    results = [float(line[:-1]) for line in open(filename)]
+    output_file = open(output_filename, 'w')
+    for cum, value in cdf(results):
+        output_file.write('%.4f\t%.4f\n' % (cum, value))
 
 if __name__ == "__main__":
     for filename in sys.argv[1:]:
-        output_filename = filename + '.cdf'
-        print 'Generating %s ...' % (output_filename)
+        print 'Processing %s ...' % (filename)
         sys.stdout.flush()
-        results = [float(line[:-1]) for line in open(filename)]
-        output_file = open(output_filename, 'w')
-        for cum, value in cdf(results):
-            output_file.write('%.4f\t%.4f\n' % (cum, value))
+        cdf_file(filename)
         print 'DONE'
 
 
