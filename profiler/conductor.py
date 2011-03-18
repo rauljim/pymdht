@@ -20,7 +20,7 @@ import core.ptime as time
 
 import core.identifier as identifier
 import core.pymdht as pymdht
-#import ut2mdht.ut2mdht as ut2mdht
+import ut2mdht.ut2mdht as ut2pymdht
 
 import plugins.routing_bep5 as r_bep5
 import plugins.routing_nice as r_nice
@@ -51,15 +51,16 @@ IP = '192.16.125.245'
 PORT = 7000
 
 CONFIG = (
+    (ut2pymdht, (IP, PORT), '0', None, None),
     (pymdht, (IP, PORT+1), '1', r_bep5, l_a4),
-    (pymdht, (IP, PORT+2), '2', r_nice, l_a4),
+#    (pymdht, (IP, PORT+2), '2', r_nice, l_a4),
     (pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
-    (pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
+#    (pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
     (pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
     (pymdht, (IP, PORT+6), '6', r_bep5, l_m3),
-    (pymdht, (IP, PORT+7), '7', r_nice, l_m3),
+#    (pymdht, (IP, PORT+7), '7', r_nice, l_m3),
     (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_m3),
-    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_m3),
+#    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_m3),
     (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_m3),
 )
 
