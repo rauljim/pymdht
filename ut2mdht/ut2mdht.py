@@ -21,7 +21,7 @@ from base64 import b64encode
 #import uTorrent as ut
 
 
-class NSmdht(object):
+class Pymdht(object):
     """NSmdht is the interface for the whole package.
 
     Setting up the DHT is as simple as creating this object.
@@ -32,8 +32,7 @@ class NSmdht(object):
     - lookup_m_mod: the module implementing lookup management.
 
     """
-    def __init__(self, webui_addr, _a,
-                 _b, _c):
+    def __init__(self, webui_addr, *args, **kwargs):
         self.host, self.port = webui_addr
         self.identity = b64encode('r:p2pnext')
              
