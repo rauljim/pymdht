@@ -1,10 +1,10 @@
 import pylab
 
-pylab.title('Lookup time (any node)')
+pylab.title('Lookup time (closest node)')
 pylab.xlabel('Time (s)')
 pylab.ylabel('CDF')
 
-output_filename = 'plots/cdf_l_time.eps'
+output_filename = 'plots/cdf_l_time_closest.eps'
 
 lines_to_plot = (
     ('0.l_time.cdf', '0', 'r'),
