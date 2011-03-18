@@ -40,7 +40,7 @@ class Pymdht(object):
         """Stop the DHT."""
         return
     
-    def get_peers(self, info_hash, _):
+    def get_peers(self, _, info_hash, *args, **kwargs):
         """ Start a get peers lookup. Return a Lookup object.
         
         The info_hash must be an identifier.Id object.
