@@ -79,4 +79,3 @@ class Pymdht(object):
             data = response.read()
         except:
             print >>sys.stderr, 'ERROR: remove_torrent: %r' % (info_hash)
-         
