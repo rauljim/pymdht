@@ -39,29 +39,29 @@ import plugins.lookup_m3_a4 as l_m3_a4
 logs_level = logging.CRITICAL
 
 
-STARTUP_DELAY = 1#10 # delay between two DHT node startups
-BOOTSTRAP_DELAY = 1#30  # delay between end of startup and lookups
+STARTUP_DELAY = 10 # delay between two DHT node startups
+BOOTSTRAP_DELAY = 30  # delay between end of startup and lookups
 LOOKUP_DELAY = 10 # delay between two lookups
 ROUND_DELAY = 10 # delay between rounds
 STOPPING_DELAY = 1
 
-REMOVE_TORRENT_DELAY = 5
+REMOVE_TORRENT_DELAY = 1
 
 IP = '192.16.125.245'
 PORT = 7000
 
 CONFIG = (
     (ut2pymdht, (IP, PORT), '0', r_bep5, l_a4),
-#    (pymdht, (IP, PORT+1), '1', r_bep5, l_a4),
+    (pymdht, (IP, PORT+1), '1', r_bep5, l_a4),
 #    (pymdht, (IP, PORT+2), '2', r_nice, l_a4),
-#    (pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
+    (pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
 #    (pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
-#    (pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
-#    (pymdht, (IP, PORT+6), '6', r_bep5, l_m3),
+    (pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
+    (pymdht, (IP, PORT+6), '6', r_bep5, l_m3),
 #    (pymdht, (IP, PORT+7), '7', r_nice, l_m3),
-#    (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_m3),
+    (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_m3),
 #    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_m3),
-#    (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_m3),
+    (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_m3),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]
