@@ -43,7 +43,11 @@ STARTUP_DELAY = 10 # delay between two DHT node startups
 BOOTSTRAP_DELAY = 30  # delay between end of startup and lookups
 LOOKUP_DELAY = 10 # delay between two lookups
 ROUND_DELAY = 10 # delay between rounds
+<<<<<<< HEAD
 STOPPING_DELAY = 10
+=======
+STOPPING_DELAY = 3
+>>>>>>> f9f09b52621563784948cdf2d4d09ce10b6323d4
 
 REMOVE_TORRENT_DELAY = 3
 
