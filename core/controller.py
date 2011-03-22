@@ -96,7 +96,7 @@ class Controller:
         This method is designed to be used as minitwisted's external handler.
 
         """
-        logger.critical('get_peers %d %r' % (bt_port, info_hash))
+        logger.debug('get_peers %d %r' % (bt_port, info_hash))
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
                                                               info_hash,
                                                               callback_f,
