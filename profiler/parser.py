@@ -22,7 +22,7 @@ import parsers.cdf as cdf
 print '************** Check parser config *******************'
 
 ip = '192.16.125.245'
-port = 7000
+port = 8000
 
 conf = [
     ['0', (ip, port)],
