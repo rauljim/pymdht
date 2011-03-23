@@ -26,7 +26,7 @@ class Parser(object):
             self.ip_rtt[src_addr[0]] = ts - related_query.ts
 
     def done(self):
-        self.t_rtt_file = openf(label + '.t_rtt', 'w')
+        self.t_rtt_file = openf('m.t_rtt', 'w')
         for rtt in self.ip_rtt.itervalues():
             self.t_rtt_file.write('%f\n' % (rtt))
 
