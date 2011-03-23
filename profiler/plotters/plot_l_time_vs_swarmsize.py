@@ -13,7 +13,7 @@ output_filename = 'plots/cdf_l_time_vs_swarmsize.eps'
 lines_to_plot = (
 #    ('0.l_time', '0.l_swarm_size', 'UT', '+'),
     ('10.l_time', '10.l_swarm_size', '10', 'k-'),
-    ('5.l_time', '5.l_swarm_size', '5', 'g:'),
+    ('0.l_time', '0.l_swarm_size', '0', 'g:'),
     )
 #    (filename, label, style)
 
