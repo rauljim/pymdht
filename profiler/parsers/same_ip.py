@@ -21,7 +21,7 @@ class Parser(object):
         if self.my_ip == dst_addr[0]:
             self.same_ip_file.write('%f to %r' % (ts, dst_addr))
 
-    def incoming_msg(self, ts, src_addr, msg):
+    def incoming_msg(self, ts, src_addr, msg, related_query):
         if self.my_ip == src_addr[0]:
             self.same_ip_file.write('%f from %r' % (ts, src_addr))
 

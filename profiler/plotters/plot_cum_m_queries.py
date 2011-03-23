@@ -7,16 +7,17 @@ pylab.ylabel('Queries (cumulative)')
 output_filename = 'plots/cum_m_queries.eps'
 
 lines_to_plot = (
-    ('0.cum_m_queries', 'UT', 'k-'),
-    ('1.cum_m_queries', 'NS1', 'r-'),
-    ('2.cum_m_queries', 'NS2', 'b:'),
-    ('3.cum_m_queries', 'NS3', 'g'),
-    ('4.cum_m_queries', 'NS4', 'y'),
-    ('5.cum_m_queries', 'NS5', 'm'),
-    ('6.cum_m_queries', 'NS6', 'c'),
-    ('7.cum_m_queries', 'NS7', 'r'),
-    ('8.cum_m_queries', 'NS8', 'b'),
-#    ('9.cum_m_queries', 'NS9', 'b'),
+    ('0.cum_m_queries', 'UT', 'r'),
+    ('1.cum_m_queries', '1', 'k'),
+    ('2.cum_m_queries', '2', 'b'),
+    ('3.cum_m_queries', '3', 'g'),
+    ('4.cum_m_queries', '4', 'y'),
+    ('5.cum_m_queries', '5', 'm'),
+    ('6.cum_m_queries', '6', 'k:'),
+    ('7.cum_m_queries', '7', 'b:'),
+    ('8.cum_m_queries', '8', 'g:'),
+    ('9.cum_m_queries', '9', 'y:'),
+    ('10.cum_m_queries', '10', 'm:'),
     )
 #    (filename, label, style)
 

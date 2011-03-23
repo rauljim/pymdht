@@ -39,10 +39,7 @@ class Parser(object):
     def __init__(self, label, my_addr):
         self.label = label
         self.my_addr = my_addr
-
-        self.tids = {} # Key is tid[0] and value is the (addr, lookup)
-                       # associated
-        self.lookups = {}
+        self.lookups = {} # LookupInfo dictionary
 
     def outgoing_msg(self, ts, dst_addr, msg):
         if msg.type == message.QUERY:
@@ -52,25 +49,19 @@ class Parser(object):
                 if not lookup:
                     lookup = LookupInfo(msg.info_hash, ts)
                     self.lookups[msg.info_hash] = lookup
-                self.tids[msg.tid[0]] = (dst_addr, lookup)
                 lookup.num_queries += 1
                 if not lookup.values_rs:
                     lookup.num_queries_till_peers += 1
 
-    def incoming_msg(self, ts, src_addr, msg):
-        if msg.type != message.RESPONSE:
+    def incoming_msg(self, ts, src_addr, msg, related_query):
+        if not related_query:
             return
         peers = getattr(msg, 'peers', None)
         if not peers:
             return
         # This is a response WITH peers
-        try:
-            addr, lookup = self.tids[msg.tid[0]]
-        except (KeyError):
-            print 'response with peers to unknown query'
-            return
-        del self.tids[msg.tid[0]]
-        if addr == src_addr:
+        lookup = self.lookups.get(related_query.msg.info_hash, None)
+        if lookup:
             log_distance =  lookup.info_hash.log_distance(msg.src_id)
             lookup.values_rs.append(
                 ValuesR(ts - lookup.start_ts, log_distance, peers))
