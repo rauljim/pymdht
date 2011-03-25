@@ -5,8 +5,8 @@ sys.path.append('..')
 import parsers.cdf as cdf
 
 pylab.title('Lookup Time VS Swarm Size')
-pylab.xlabel('Swarm size (unique peers)')
-pylab.ylabel('Lookup Time (s)')
+pylab.xlabel('Lookup Time T1 (s)')
+pylab.ylabel('CDF')
 
 output_filename = 'plots/cdf_l_time_vs_swarmsize.eps'
 
