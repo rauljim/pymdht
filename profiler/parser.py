@@ -57,6 +57,7 @@ parser_mods = [
 cdf_files = [
     'l_time',
     'l_queries',
+    'l_queries_till_peers',
     'l_time_closest',
     'l_time_auth',
     ]

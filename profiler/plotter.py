@@ -6,6 +6,7 @@ plot_scripts = [
     'plot_l_time_vs_swarmsize.py',
     'plot_cum_m_queries.py',
     'plot_cdf_l_queries.py',
+    'plot_cdf_l_queries_t1.py',
     'plot_cdf_l_time.py',
     'plot_cdf_l_time_auth.py',
     'plot_cdf_l_time_closest.py',
