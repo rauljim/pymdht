@@ -48,7 +48,7 @@ STOPPING_DELAY = 10
 REMOVE_TORRENT_DELAY = 3
 
 IP = '192.16.125.245'
-PORT = 7000
+PORT = 8000 
 
 CONFIG = (
     (ut2pymdht, (IP, PORT), '0', r_bep5, l_a4),
