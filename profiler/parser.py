@@ -60,6 +60,7 @@ cdf_files = [
     'l_queries_till_peers',
     'l_time_closest',
     'l_time_auth',
+    'l_num_nodes'
     ]
 
 multiparser_cdf_files = [

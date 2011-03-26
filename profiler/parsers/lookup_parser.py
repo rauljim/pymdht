@@ -29,7 +29,7 @@ class LookupInfo(object):
 
         self.num_queries = 0
         self.num_queries_till_peers = 0
-        self.values_rs = []
+        self.values_rs = [] # responses with values
         self.peer_set = set()
         self.auth_responses = []
         self.closest_log_distances = []
@@ -50,6 +50,7 @@ class Parser(object):
         self.queries_file = openf(self.label + '.l_queries', 'w')
         self.peers_time_file = openf(self.label + '.l_peers_time', 'w')
         self.num_peers_file = openf(self.label + '.l_num_peers', 'w')
+        self.num_nodes_file = openf(self.label + '.l_num_nodes', 'w')
         self.swarm_size_file = openf(self.label + '.l_swarm_size', 'w')
         self.queries_till_peers_file = openf(
             self.label + '.l_queries_till_peers', 'w')
@@ -114,6 +115,7 @@ class Parser(object):
         if not lookup.values_rs: 
             self.num_lookups_without_peeers += 1
             return
+        self.num_nodes_file.write('%d ' % len(values_r))
         self.time_file.write('%f\n' % (lookup.values_rs[0].time))
         self.num_peers_file.write('\n')
         self.peers_time_file.write('\n')
