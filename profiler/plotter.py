@@ -15,6 +15,7 @@ plot_scripts = [
 #    'plot_box_l_queries.py',
     'plot_time_vs_swarmsize.py',
     'plot_time_vs_nodes.py',
+    'plot_peers_vs_nodes.py',
 #    'plot_box_time_vs_swarmsize.py',
     'plot_cdf_rtt.py',
     'noplot_traffic_top_sec.py',
