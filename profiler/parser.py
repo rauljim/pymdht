@@ -30,22 +30,28 @@ conf = [
     ['6', (ip, 7016)],
     ['7', (ip, 7017)],
     ['8', (ip, 7018)],
+    ['9', (ip, 7019)],
     ]
 
 multiparser_mods = [
-    __import__('parsers.traffic_multiparser'
-               ).traffic_multiparser,
-    __import__('parsers.same_ip').same_ip,
+   # __import__('parsers.traffic_multiparser'
+   #            ).traffic_multiparser,
+   # __import__('parsers.same_ip').same_ip,
     __import__('parsers.announce').announce,
-    __import__('parsers.infohashes').infohashes,
+   # __import__('parsers.infohashes').infohashes,
     ]
 
 parser_mods = [
-    __import__('parsers.lookup_parser').lookup_parser,
+   # __import__('parsers.lookup_parser').lookup_parser,
     __import__('parsers.get_peers').get_peers,
-    __import__('parsers.maintenance_parser'
-               ).maintenance_parser,
-    __import__('parsers.rtt_parser').rtt_parser,
+    __import__('parsers.announce_peer').announce_peer,
+    __import__('parsers.find_node').find_node,
+    __import__('parsers.ping').ping,
+   # __import__('parsers.get_peers_announce_peer').get_peers_announce_peer,
+   # __import__('parsers.announce').announce,
+   # __import__('parsers.maintenance_parser'
+   #            ).maintenance_parser,
+   # __import__('parsers.rtt_parser').rtt_parser,
     ]    
 
 class NodeParser(object):
@@ -205,8 +211,8 @@ def parse(filenames):
                 raise
             for parser in all_parsers:
                 parser.new_msg(ts, src_addr, dst_addr, msg)
-    for parser in all_parsers:
-        parser.done()
+    for p in all_parsers:
+        p.done()
 
 
 if __name__ == '__main__':
@@ -215,8 +221,7 @@ if __name__ == '__main__':
     try:
         os.mkdir('parser_results')
     except OSError:
-        print 'Existing data in parser_results will be overwriten'
-    
+   	print "\033[1;31mExisting data in parser_results will be overwriten!!!\033[0m" 
     file_prefix = os.path.basename(current_dir)[:15] + '.pcap'
     if not os.path.isfile(file_prefix):
         raise Exception, 'Capture file (%s) does not exist' % (file_prefix)
