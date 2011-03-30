@@ -64,7 +64,7 @@ class Parser(object):
 	    for i in xrange(self.current_hour + 1, int(int_ts / 3600) ):
 		self.hour_announce_peer_file.write(
 		    '%d\t%d\n' % (i, 0))
-	    self.current_hour = int(self.current_hour / 3600)
+	    self.current_hour = int(self.current_sec / 3600)
             self.hour_announce_peer = 0
 
         if msg.type == message.QUERY:
