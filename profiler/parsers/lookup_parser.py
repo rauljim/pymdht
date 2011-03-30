@@ -115,7 +115,7 @@ class Parser(object):
         if not lookup.values_rs: 
             self.num_lookups_without_peeers += 1
             return
-        self.num_nodes_file.write('%d ' % len(values_r))
+        self.num_nodes_file.write('%d ' % len(lookup.values_r))
         self.time_file.write('%f\n' % (lookup.values_rs[0].time))
         self.num_peers_file.write('\n')
         self.peers_time_file.write('\n')
