@@ -3,20 +3,12 @@
 # See LICENSE.txt for more information
 
 """
-Prints the lookup time in seconds (one lookup per line).
-The output is not chronologically sorted.
+
 
 """
 from parser_utils import openf
 import core.message as message
 
-
-class QueryInfo(object):
-
-    def __init__(self, ts, dst_addr, is_lookup):
-        self.ts = ts
-        self.dst_addr = dst_addr
-        self.is_lookup = is_lookup
 
 class Parser(object):
 
@@ -44,35 +36,14 @@ class Parser(object):
             if msg.query == message.GET_PEERS:
                 # lookup query
                 self.num_l_q += 1
-                self.tids[msg.tid[0]] = query = QueryInfo(ts, dst_addr, True)
             else:
                 # non-lookoup query
                 self.num_m_q += 1
-                self.tids[msg.tid[0]] = QueryInfo(ts, dst_addr, False)
                 
-    def incoming_msg(self, ts, src_addr, msg):
-        if msg.type == message.RESPONSE:
-            try:
-                related_query = self.tids[msg.tid[0]]
-            except (KeyError):
-                print '%s: rtt_parser: no query for this response' % (
-                    self.label)
-                return
-            if src_addr != related_query.dst_addr:
-                if src_addr[0] != related_query.dst_addr[0]:
-                    print '%s: rtt_parser: different IP: %r != %r %f' % (
-                        self.label, related_query.dst_addr, src_addr,
-                        ts - related_query.ts
-                        )
-                else:
-                    del self.tids[msg.tid[0]]
-                    if related_query.is_lookup:
-                        self.num_l_wport += 1
-                    else:
-                        self.num_m_wport += 1
-                return
-            
-            # addr and tid matched
+    def incoming_msg(self, ts, src_addr, msg, related_query):
+        if related_query:
+#                        self.num_l_wport += 1
+#                        self.num_m_wport += 1
             if related_query.is_lookup:
                 self.num_l_r += 1
                 self.l_rtt_file.write('%f\n' % (ts - related_query.ts))

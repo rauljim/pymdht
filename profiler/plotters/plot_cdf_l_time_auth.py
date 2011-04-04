@@ -1,23 +1,23 @@
 import pylab
 
-pylab.title('Lookup time (any node)')
+pylab.title('Lookup time (authoritative nodes)')
 pylab.xlabel('Time (s)')
 pylab.ylabel('CDF')
 
-output_filename = 'plots/cdf_l_time.eps'
+output_filename = 'plots/cdf_l_time_auth.eps'
 
 lines_to_plot = (
-    ('0.l_time.cdf', '0', 'r'),
-    ('1.l_time.cdf', '1', 'g:+'),
-    ('2.l_time.cdf', '2', 'g:v'),
-    ('3.l_time.cdf', '3', 'g:x'),
+    ('0.l_time_auth.cdf', '0', 'r'),
+    ('1.l_time_auth.cdf', '1', 'g:+'),
+    ('2.l_time_auth.cdf', '2', 'g:v'),
+    ('3.l_time_auth.cdf', '3', 'g:x'),
 #    ('4.l_time.cdf', '4', 'y., 1'),
-    ('5.l_time.cdf', '5', 'g:^'),
-    ('6.l_time.cdf', '6', 'k-+'),
-    ('7.l_time.cdf', '7', 'k-v'),
-    ('8.l_time.cdf', '8', 'k-x'),
+    ('5.l_time_auth.cdf', '5', 'g:^'),
+    ('6.l_time_auth.cdf', '6', 'k-+'),
+    ('7.l_time_auth.cdf', '7', 'k-v'),
+    ('8.l_time_auth.cdf', '8', 'k-x'),
 #    ('9.l_time.cdf', '9', 'k.', 2),
-    ('10.l_time.cdf', '10', 'k-^'),
+    ('10.l_time_auth.cdf', '10', 'k-^'),
     )
 #    (filename, label, style)
 

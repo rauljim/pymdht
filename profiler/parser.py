@@ -17,29 +17,36 @@ from logging import DEBUG, CRITICAL
 import core.logging_conf as lc
 lc.setup('.', CRITICAL)
 
+import parsers.cdf as cdf
+
 print '************** Check parser config *******************'
 
-ip = '192.16.127.98'
+
+ip = '192.16.125.245'
+port = 7000
+
 conf = [
-    ['0', (ip, 7010)],
-    ['1', (ip, 7011)],
-    ['2', (ip, 7012)],
-    ['3', (ip, 7013)],
-    ['4', (ip, 7014)],
-    ['5', (ip, 7015)],
-    ['6', (ip, 7016)],
-    ['7', (ip, 7017)],
-    ['8', (ip, 7018)],
-    ['9', (ip, 7019)],
+    ['0', (ip, port)],
+    ['1', (ip, port+1)],
+    ['2', (ip, port+2)],
+    ['3', (ip, port+3)],
+    ['4', (ip, port+4)],
+    ['5', (ip, port+5)],
+    ['6', (ip, port+6)],
+    ['7', (ip, port+7)],
+    ['8', (ip, port+8)],
+    ['9', (ip, port+9)],
+    ['10', (ip, port+10)],
     ]
 
 multiparser_mods = [
-   # __import__('parsers.traffic_multiparser'
-   #            ).traffic_multiparser,
-   # __import__('parsers.same_ip').same_ip,
-    __import__('parsers.announce').announce,
-   # __import__('parsers.infohashes').infohashes,
-    ]
+    __import__('parsers.traffic_multiparser'
+               ).traffic_multiparser,
+    __import__('parsers.same_ip').same_ip,
+    __import__('parsers.multi_rtt').multi_rtt,
+    #__import__('parsers.announce').announce,
+    #__import__('parsers.infohashes').infohashes,
+	]
 
 parser_mods = [
    # __import__('parsers.lookup_parser').lookup_parser,
@@ -54,6 +61,31 @@ parser_mods = [
    # __import__('parsers.rtt_parser').rtt_parser,
     ]    
 
+cdf_files = [
+    'l_time',
+    'l_queries',
+    'l_queries_till_peers',
+    'l_time_closest',
+    'l_time_auth',
+    'l_num_nodes'
+    ]
+
+multiparser_cdf_files = [
+    't_rtt',
+    ]
+
+TIMEOUT_DELAY = 2
+
+class QueryInfo(object):
+
+    def __init__(self, ts, dst_addr, msg):
+        self.ts = ts
+        self.dst_addr = dst_addr
+        self.msg = msg
+        self.is_lookup = msg.query == message.GET_PEERS
+        
+
+
 class NodeParser(object):
 
     def __init__(self, label, my_addr):
@@ -61,15 +93,35 @@ class NodeParser(object):
         self.my_addr = my_addr
         self.parsers = [p_mod.Parser(label, my_addr)
                         for p_mod in parser_mods]
+        self.tids = {}
 
 
     def new_msg(self, ts, src_addr, dst_addr, msg):
+        related_query = None
         if self.my_addr == src_addr:
+            if msg.type == message.QUERY:
+                self.tids[msg.tid[0]] = QueryInfo(ts, dst_addr, msg)
             for parser in self.parsers:
                 parser.outgoing_msg(ts, dst_addr, msg)
         elif self.my_addr == dst_addr:
+            if msg.type == message.RESPONSE:
+                try:
+                    related_query = self.tids[msg.tid[0]]
+                except (KeyError):
+                    print '%s: rtt_parser: no query for this response' % (
+                        self.label)
+                if related_query and ts - related_query.ts > TIMEOUT_DELAY:
+                    related_query = None
+                if related_query and src_addr != related_query.dst_addr:
+                    if src_addr[0] != related_query.dst_addr[0]:
+                        print '%s: different IP: %r != %r %f' % (
+                            self.label, related_query.dst_addr, src_addr,
+                            ts - related_query.ts
+                            )
+                    related_query = None
             for parser in self.parsers:
-                parser.incoming_msg(ts, src_addr, msg)
+                parser.incoming_msg(ts, src_addr, msg, related_query)
+        return related_query
     
     def done(self):
         for parser in self.parsers:
@@ -83,19 +135,18 @@ class MultinodeParser(object):
                         for p_mod in multiparser_mods]
 
 
-    def new_msg(self, ts, src_addr, dst_addr, msg):
+    def new_msg(self, ts, src_addr, dst_addr, msg, related_query):
         if self.my_ip == src_addr[0]:
             for parser in self.parsers:
                 parser.outgoing_msg(ts, dst_addr, msg)
         if self.my_ip == dst_addr[0]:
             for parser in self.parsers:
-                parser.incoming_msg(ts, src_addr, msg)
+                parser.incoming_msg(ts, src_addr, msg, related_query)
     
     def done(self):
         for parser in self.parsers:
             parser.done()
 
-            
 class FragmentedPacket(object):
 
     def __init__(self):
@@ -209,10 +260,14 @@ def parse(filenames):
             except(TypeError):
                 print >>sys.stderr,'>>>ERROR:', data
                 raise
-            for parser in all_parsers:
-                parser.new_msg(ts, src_addr, dst_addr, msg)
-    for p in all_parsers:
-        p.done()
+            related_query = None
+            for parser in node_parsers:
+                related_query =  parser.new_msg(
+                    ts, src_addr, dst_addr, msg) or related_query
+            multinode_parser.new_msg(ts, src_addr, dst_addr, msg,
+                                     related_query)
+    for parser in all_parsers:
+        parser.done()
 
 
 if __name__ == '__main__':
@@ -221,7 +276,7 @@ if __name__ == '__main__':
     try:
         os.mkdir('parser_results')
     except OSError:
-   	print "\033[1;31mExisting data in parser_results will be overwriten!!!\033[0m" 
+   	print "Existing data in parser_results will be overwriten!!!" 
     file_prefix = os.path.basename(current_dir)[:15] + '.pcap'
     if not os.path.isfile(file_prefix):
         raise Exception, 'Capture file (%s) does not exist' % (file_prefix)
@@ -238,6 +293,11 @@ if __name__ == '__main__':
     print 'Parsing', filenames, '...'
     parse(filenames)
 
+    for filename in cdf_files:
+        for label, _ in conf:
+            cdf.cdf_file('parser_results/' + label + '.' + filename)
+    for filename in multiparser_cdf_files:
+        cdf.cdf_file('parser_results/m.' + filename)
 
     
 class _Parser(object):

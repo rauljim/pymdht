@@ -76,7 +76,9 @@ class Controller:
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
-        self._next_main_loop_call_ts = 0
+        self._next_maintenance_ts = current_ts
+        self._next_timeout_ts = current_ts
+        self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
         '''        
     def finalize(self):
@@ -95,7 +97,7 @@ class Controller:
         This method is designed to be used as minitwisted's external handler.
 
         """
-        logger.critical('get_peers %d %r' % (bt_port, info_hash))
+        logger.debug('get_peers %d %r' % (bt_port, info_hash))
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
                                                               info_hash,
                                                               callback_f,
@@ -112,9 +114,9 @@ class Controller:
             return queries_to_send
         log_distance = lookup_obj.info_hash.log_distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                              8,
+                                                              0,
                                                               True)
-        #TODO: remove magic number
+        #TODO: get the full bucket
         if bootstrap_rnodes:
             del self._pending_lookups[0]
             # look if I'm tracking this info_hash
@@ -147,46 +149,53 @@ class Controller:
 
         """
 
-        logger.debug('main_loop BEGIN')
         queries_to_send = []
         current_ts = time.time()
-        # At most, 10 seconds between calls to main_loop after the first call
-        if current_ts > self._next_main_loop_call_ts:
-            self._next_main_loop_call_ts = current_ts + 10
+        #TODO: I think this if should be removed
+        # At most, 1 second between calls to main_loop after the first call
+        if current_ts >= self._next_main_loop_call_ts:
+            self._next_main_loop_call_ts = current_ts + 1
         else:
             # It's too early
             return self._next_main_loop_call_ts, []
         # Retry failed lookup (if any)
         queries_to_send.extend(self._try_do_lookup())
+        
         # Take care of timeouts
-        timeout_queries = self._querier.get_timeout_queries()
-        for query in timeout_queries:
-            queries_to_send.extend(self._on_timeout(query))
+        if current_ts >= self._next_timeout_ts:
+            (self._next_timeout_ts,
+             timeout_queries) = self._querier.get_timeout_queries()
+            for query in timeout_queries:
+                queries_to_send.extend(self._on_timeout(query))
 
         # Routing table maintenance
-        (maintenance_delay,
-         queries,
-         maintenance_lookup_target) = self._routing_m.do_maintenance()
-        self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
-                                           current_ts + maintenance_delay)
-        queries_to_send.extend(queries)
+        if time.time() >= self._next_maintenance_ts:
+            (maintenance_delay,
+             queries,
+             maintenance_lookup_target) = self._routing_m.do_maintenance()
+            self._next_maintenance_ts = current_ts + maintenance_delay
+            self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
+                                               self._next_maintenance_ts)
+            queries_to_send.extend(queries)
 
-        if maintenance_lookup_target:
-            log_distance = maintenance_lookup_target.log_distance(
-                self._my_id)
-            bootstrap_rnodes = self._routing_m.get_closest_rnodes(
-                log_distance, 8, True) #TODO: remove magic number
-            lookup_obj = self._lookup_m.maintenance_lookup(
-                maintenance_lookup_target)
-            queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
+            if maintenance_lookup_target:
+                log_distance = maintenance_lookup_target.log_distance(
+                    self._my_id)
+                bootstrap_rnodes = self._routing_m.get_closest_rnodes(
+                    log_distance, 0, True) # Get the full bucket
+                lookup_obj = self._lookup_m.maintenance_lookup(
+                    maintenance_lookup_target)
+                queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
             
         # Auto-save routing table
-        if current_ts > self._next_save_state_ts:
+        if current_ts >= self._next_save_state_ts:
             state.save(self._my_id,
                        self._routing_m.get_main_rnodes(),
                        self.state_filename)
             self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
+                                               self._next_maintenance_ts,
+                                               self._next_timeout_ts,
                                                self._next_save_state_ts)
         # Return control to reactor
         datagrams_to_send = self._register_queries(queries_to_send)
@@ -332,6 +341,8 @@ class Controller:
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
+            #TODO: return the closest rnodes to the target instead of the 8
+            #first in the bucket.
             return message.OutgoingFindNodeResponse(msg.src_node,
                                                     self._my_id,
                                                     rnodes)
@@ -340,6 +351,8 @@ class Controller:
             log_distance = msg.info_hash.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                        NUM_NODES, False)
+            #TODO: return the closest rnodes to the target instead of the 8
+            #first in the bucket.
             peers = self._tracker.get(msg.info_hash)
             if peers:
                 logger.debug('RESPONDING with PEERS:\n%r' % peers)
@@ -405,5 +418,5 @@ class Controller:
         
 BOOTSTRAP_NODES = (
     Node(('67.215.242.138', 6881)), #router.bittorrent.com
-    Node(('192.16.127.98', 7000)), #KTH node
+#    Node(('192.16.127.98', 7000)), #KTH node
     )

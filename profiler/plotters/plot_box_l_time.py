@@ -11,15 +11,14 @@ pylab.ylabel('Lookup time (s)')
 output_filename = 'plots/box_l_time.eps'
 
 boxes_to_plot = (
-    ('0.l_time', 'UT'),
-    ('1.l_time', 'NS1'),
-    ('2.l_time', 'NS2'),
-    ('3.l_time', 'NS3'),
-    ('4.l_time', 'NS4'),
-    ('5.l_time', 'NS5'),
-    ('6.l_time', 'NS6'),
-    ('7.l_time', 'NS7'),
-    ('8.l_time', 'NS8'),
+    ('1.l_time', '1'),
+    ('2.l_time', '2'),
+    ('3.l_time', '3'),
+    ('4.l_time', '4'),
+    ('5.l_time', '5'),
+    ('6.l_time', '6'),
+    ('7.l_time', '7'),
+    ('8.l_time', '8'),
     )
 #    (filename, label)
 

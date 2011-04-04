@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 """
-This module intends to implement the routing policy specified in NICE:
+This module intends to implement the routing policy specified in NICE RTT 128:
 
 -
 -
@@ -11,7 +11,7 @@ This module intends to implement the routing policy specified in NICE:
 
 """
 
-
+from operator import attrgetter
 import random
 import heapq
 
@@ -23,7 +23,6 @@ import core.message as message
 import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable
-
 
 logger = logging.getLogger('dht')
 
@@ -42,7 +41,7 @@ IMPORTANT: Notice there is NO bucket for -1
 """
 
 DEFAULT_NUM_NODES = 8
-NODES_PER_BUCKET = [] # 16, 32, 64, 128, 256]
+NODES_PER_BUCKET = [16, 32, 64, 128]
 NODES_PER_BUCKET[:0] = [DEFAULT_NUM_NODES] \
     * (NUM_BUCKETS - len(NODES_PER_BUCKET))
 
@@ -58,11 +57,13 @@ NUM_NODES_PER_BOOTSTRAP_STEP = 1
 
 BOOTSTRAP_MODE = 'bootstrap_mode'
 FIND_CLOSEST_MODE = 'find_closest_mode'
+FILL_BUCKETS= 'fill_buckets'
 NORMAL_MODE = 'normal_mode'
 _MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
-                     FIND_CLOSEST_MODE: 3,
-                     NORMAL_MODE: 6}
-
+                      FIND_CLOSEST_MODE: 3,
+                      FILL_BUCKETS: 1,
+                      NORMAL_MODE: 3}
+NUM_FILLING_LOOKUPS = 32
 
 class RoutingManager(object):
     
@@ -83,6 +84,7 @@ class RoutingManager(object):
                                    self._ping_a_found_node,
                                    self._ping_a_replacement_node,
                                    ]
+        self._num_pending_filling_lookups = NUM_FILLING_LOOKUPS
         
     def do_maintenance(self):
         queries_to_send = []
@@ -93,6 +95,12 @@ class RoutingManager(object):
                 queries_to_send = [self._get_maintenance_query(node_)]
             except (StopIteration):
                 maintenance_lookup_target = self.my_node.id
+                self._maintenance_mode = FILL_BUCKETS
+        elif self._maintenance_mode == FILL_BUCKETS:
+            if self._num_pending_filling_lookups:
+                self._num_pending_filling_lookups -= 1
+                maintenance_lookup_target = identifier.RandomId()
+            else:
                 self._maintenance_mode = NORMAL_MODE
         elif self._maintenance_mode == NORMAL_MODE:
             for _ in range(len(self._maintenance_tasks)):
@@ -106,10 +114,7 @@ class RoutingManager(object):
                     queries_to_send = [self._get_maintenance_query(node_)]
                     # This task did do some work. We are done here!
                     break
-<<<<<<< HEAD
-=======
-#        print 'nice', _MAINTENANCE_DELAY[self._maintenance_mode]
->>>>>>> d7bed531d0bbfa54c481422b96243221bf18e2ff
+        
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
 
@@ -250,7 +255,24 @@ class RoutingManager(object):
             self._update_rnode_on_response_received(rnode, rtt)
             return
         # The main bucket is full
-
+        # Let's see whether this node's latency is good
+        current_time = time.time()
+        rnode_to_be_replaced = None
+        m_bucket.rnodes.sort(key=attrgetter('rtt'), reverse=True)
+        rnode = m_bucket.rnodes[0]
+        if rtt < rnode.rtt:
+            # Replace rnode (the node whose RTT is highest in the bucket) if
+            # the candidate's RTT is lower regardless of rhe rnode's age.
+            rnode_to_be_replaced = rnode
+        if rnode_to_be_replaced:
+            m_bucket.remove(rnode_to_be_replaced)
+            rnode = node_.get_rnode(log_distance)
+            m_bucket.add(rnode)
+            # No need to update table
+            self.table.num_rnodes += 0
+            self._update_rnode_on_response_received(rnode, rtt)
+            return
+            
         # Get the worst node in replacement bucket and see whether
         # it's bad enough to be replaced by node_
         worst_rnode = self._worst_rnode(r_bucket.rnodes)
@@ -283,7 +305,7 @@ class RoutingManager(object):
             m_bucket.remove(rnode)
             self.table.num_rnodes -= 1
 
-            for r_rnode in r_bucket.rnodes:#sorted_by_rtt():
+            for r_rnode in r_bucket.sorted_by_rtt():
                 self._replacement_queue.add(r_rnode)
             if r_bucket.there_is_room():
                 r_bucket.add(rnode)
@@ -331,7 +353,7 @@ class RoutingManager(object):
         You should call this method when receiving a response from this rnode.
 
         """
-        rnode.real_rtt = rtt
+        rnode.rtt = rtt
         current_time = time.time()
         #rnode._reset_refresh_task()
         if rnode.in_quarantine:
@@ -395,7 +417,6 @@ class _QueryReceivedQueue(object):
 
     def add(self, node_, log_distance):
         # The caller already checked that there is room in the bucket
-#        print 'received queue', len(self._queue)
         if node_ in self._queued_nodes_set:
             # This node is already queued
             return
@@ -436,7 +457,6 @@ class _FoundNodesQueue(object):
         self._nodes_queued_per_bucket = [0 for _ in range(160)]
 
     def add(self, nodes):
-#        print 'found queue', len(self._queue)
         for node_ in nodes:
             if node_ in self._queued_nodes_set:
                 # This node has already been queued

@@ -8,12 +8,12 @@ import os
 FORMAT = '%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(funcName)s()\n\
 %(message)s\n'
 
-devnullstream = open(os.devnull,"w")
+# devnullstream = open(os.devnull,"w")
 
-logging.basicConfig(level=logging.CRITICAL,
-                   format='%(asctime)s %(levelname)-8s %(message)s',
-                   datefmt='%a, %d %b %Y %H:%M:%S',
-                   stream=devnullstream)
+# logging.basicConfig(level=logging.CRITICAL,
+#                    format='%(asctime)s %(levelname)-8s %(message)s',
+#                    datefmt='%a, %d %b %Y %H:%M:%S',
+#                    stream=devnullstream)
 
 
 def testing_setup(module_name):

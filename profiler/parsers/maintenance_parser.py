@@ -64,7 +64,7 @@ class Parser(object):
                 self.cum_m_queries += 1
                 self.sec_m_queries += 1
                 
-    def incoming_msg(self, ts, src_addr, msg):
+    def incoming_msg(self, ts, src_addr, msg, related_query):
         pass
 
     def done(self):

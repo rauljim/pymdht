@@ -20,53 +20,58 @@ import core.ptime as time
 
 import core.identifier as identifier
 import core.pymdht as pymdht
-#import ut2mdht.ut2mdht as ut2mdht
+import ut2mdht.ut2mdht as ut2pymdht
 
 import plugins.routing_bep5 as r_bep5
 import plugins.routing_nice as r_nice
 import plugins.routing_nice_rtt as r_nice_rtt
 import plugins.routing_nice_rtt64 as r_nice_rtt64
+import plugins.routing_nice_rtt128 as r_nice_rtt128
 
 import plugins.lookup_a4 as l_a4
 import plugins.lookup_a16 as l_a16
 import plugins.lookup_m3 as l_m3
 import plugins.lookup_m3_a4 as l_m3_a4
 
-logs_level = logging.DEBUG # This generates HUGE (and useful) logs
+#logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 #logs_level = logging.INFO # This generates some (useful) logs
 #logs_level = logging.WARNING # This generates warning and error logs
-#logs_level = logging.CRITICAL
+logs_level = logging.CRITICAL
 
 
-STARTUP_DELAY = 20 # delay between two DHT node startups
-BOOTSTRAP_DELAY = 60  # delay between end of startup and lookups
+STARTUP_DELAY = 10 # delay between two DHT node startups
+BOOTSTRAP_DELAY = 30  # delay between end of startup and lookups
 LOOKUP_DELAY = 10 # delay between two lookups
-ROUND_DELAY = 20 # delay between rounds
-STOPPING_DELAY = 1
+ROUND_DELAY = 10 # delay between rounds
+STOPPING_DELAY = 10
 
-REMOVE_TORRENT_DELAY = 5
+REMOVE_TORRENT_DELAY = 3
 
-
+IP = '192.16.125.245'
+PORT = 8000 
 
 CONFIG = (
-    (pymdht, ('192.16.125.242', 7000), 'ns0', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7001), 'ns1', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7002), 'ns2', r_nice, l_m3),
-    (pymdht, ('192.16.125.242', 7003), 'ns3', r_nice, l_a4),
-    (pymdht, ('192.16.125.242', 7004), 'ns4', r_nice, l_m3),
-    (pymdht, ('192.16.125.242', 7005), 'ns5', r_nice_rtt, l_a4),
-    (pymdht, ('192.16.125.242', 7006), 'ns6', r_nice_rtt, l_m3),
-    (pymdht, ('192.16.125.242', 7007), 'ns7', r_nice_rtt64, l_a4),
-    (pymdht, ('192.16.125.242', 7008), 'ns8', r_nice_rtt64, l_m3),
+    (ut2pymdht, (IP, PORT), '0', r_bep5, l_a4),
+    (pymdht, (IP, PORT+1), '1', r_bep5, l_a4),
+    (pymdht, (IP, PORT+2), '2', r_nice, l_a4),
+    (pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
+#    (pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
+    (pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
+    (pymdht, (IP, PORT+6), '6', r_bep5, l_m3),
+    (pymdht, (IP, PORT+7), '7', r_nice, l_m3),
+    (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_m3),
+#    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_m3),
+    (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_m3),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]
 
-def _on_peers_found(lookup_id, peers):
+def _on_peers_found((node_name, start_ts), peers):
     if peers:
-        print '[%.4f] %d peer(s)' % (time.time(), len(peers))
+        print '[%.4f] %s got %d peer(s)' % (time.time() - start_ts,
+                                     node_name, len(peers))
     else:
-        print '[%.4f] END OF LOOKUP' % (time.time())
+        print '[%.4f] %s END OF LOOKUP' % (time.time() - start_ts, node_name)
 
 def _randompopper(seq):
     """
@@ -129,12 +134,17 @@ def main():
         for node_name, node, infohash_gen in _randompopper(nodes):
             # Every DHT node performs a lookup
             infohash = identifier.Id(infohash_gen.next())
-            print  '%d [%.4f] %s getting peers for info_hash %r' % (
-                round_number, time.time(), node_name, infohash)
-            node.get_peers(None, infohash, _on_peers_found, 0)
+            print  '%d  %s getting peers for info_hash %r' % (
+                round_number, node_name, infohash)
+            node.get_peers((node_name, time.time()),
+                           infohash, _on_peers_found, 0)
             time.sleep(REMOVE_TORRENT_DELAY)
-            if 'remove_torrent' in node.__dict__:
-                node.remove_torrent(infohash)
+            try:
+                remove_torrent_f = node.remove_torrent
+            except:
+                pass
+            else:
+                remove_torrent_f(infohash)
             time.sleep(LOOKUP_DELAY - REMOVE_TORRENT_DELAY)
         time.sleep(ROUND_DELAY)
         

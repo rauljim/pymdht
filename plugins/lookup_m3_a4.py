@@ -45,7 +45,7 @@ class _LookupQueue(object):
         self.queued_qnodes = []
         self.responded_qnodes = []
 
-        self.max_queued_qnodes = 16
+#        self.max_queued_qnodes = 16
         self.max_responded_qnodes = 16
 
         self.last_query_ts = time.time()
@@ -103,9 +103,9 @@ class _LookupQueue(object):
                 self.queued_qnodes.append(qnode)
                 self.queued_ips.add(qnode.node.ip)
         self.queued_qnodes.sort()
-        for qnode  in self.queued_qnodes[self.max_queued_qnodes:]:
-            self.queued_ips.remove(qnode.node.ip)
-        del self.queued_qnodes[self.max_queued_qnodes:]
+#        for qnode  in self.queued_qnodes[self.max_queued_qnodes:]:
+#            self.queued_ips.remove(qnode.node.ip)
+#        del self.queued_qnodes[self.max_queued_qnodes:]
 
     def _pop_nodes_to_query(self, max_nodes):
         if len(self.responded_qnodes) > MARK_INDEX:
@@ -137,7 +137,7 @@ class GetPeersLookup(object):
     def __init__(self, my_id,
                  lookup_id, info_hash,
                  callback_f, bt_port=0):
-        self.bootstrap_alpha = 16
+        self.bootstrap_alpha = 4
         self.normal_alpha = 999
         self.normal_m = 3
         self.slowdown_alpha = 4

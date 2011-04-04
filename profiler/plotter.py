@@ -3,14 +3,21 @@
 import os
 
 plot_scripts = [
+    'plot_l_time_vs_swarmsize.py',
     'plot_cum_m_queries.py',
     'plot_cdf_l_queries.py',
+    'plot_cdf_l_queries_t1.py',
     'plot_cdf_l_time.py',
-    'plot_box_l_time.py',
-    'plot_box_l_time_nofliers.py',
-    'plot_box_l_queries.py',
+    'plot_cdf_l_time_auth.py',
+    'plot_cdf_l_time_closest.py',
+#    'plot_box_l_time.py',
+#    'plot_box_l_time_nofliers.py',
+#    'plot_box_l_queries.py',
     'plot_time_vs_swarmsize.py',
-    'plot_box_time_vs_swarmsize.py',
+    'plot_time_vs_nodes.py',
+    'plot_peers_vs_nodes.py',
+#    'plot_box_time_vs_swarmsize.py',
+    'plot_cdf_rtt.py',
     'noplot_traffic_top_sec.py',
     ]
 

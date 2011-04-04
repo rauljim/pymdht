@@ -113,7 +113,7 @@ class Parser(object):
             self.sec_r_out += 1
 
 
-    def incoming_msg(self, ts, src_addr, msg):
+    def incoming_msg(self, ts, src_addr, msg, related_query):
         self._parse_version(src_addr, msg)
         self._write(ts)
         self.cum_in += 1
