@@ -29,7 +29,7 @@ import plugins.routing_nice_rtt64 as r_nice_rtt64
 import plugins.routing_nice_rtt128 as r_nice_rtt128
 
 import plugins.lookup_a4 as l_a4
-import plugins.lookup_a16 as l_a16
+import plugins.lookup_a8_m2 as l_a8_m2
 import plugins.lookup_m3 as l_m3
 import plugins.lookup_m3_a4 as l_m3_a4
 
@@ -57,11 +57,11 @@ CONFIG = (
     (pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
 #    (pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
     (pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
-    (pymdht, (IP, PORT+6), '6', r_bep5, l_m3),
-    (pymdht, (IP, PORT+7), '7', r_nice, l_m3),
-    (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_m3),
-#    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_m3),
-    (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_m3),
+    (pymdht, (IP, PORT+6), '6', r_bep5, l_a8_m2),
+    (pymdht, (IP, PORT+7), '7', r_nice, l_a8_m2),
+    (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_a8_m2),
+#    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_a8_m2),
+    (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_a8_m2),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]
