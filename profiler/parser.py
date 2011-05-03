@@ -40,25 +40,14 @@ conf = [
     ]
 
 multiparser_mods = [
-    #__import__('parsers.traffic_multiparser'
-    #           ).traffic_multiparser,
-    #__import__('parsers.same_ip').same_ip,
-    #__import__('parsers.multi_rtt').multi_rtt,
-    #__import__('parsers.announce').announce,
-    #__import__('parsers.infohashes').infohashes,
 	]
 
 parser_mods = [
-   # __import__('parsers.lookup_parser').lookup_parser,
-    #__import__('parsers.get_peers').get_peers,
-    #__import__('parsers.announce_peer').announce_peer,
-    #__import__('parsers.find_node').find_node,
-    #__import__('parsers.ping').ping,
-   # __import__('parsers.get_peers_announce_peer').get_peers_announce_peer,
-   # __import__('parsers.announce').announce,
-   # __import__('parsers.maintenance_parser'
-   #            ).maintenance_parser,
-   # __import__('parsers.rtt_parser').rtt_parser,
+    __import__('parsers.get_peers').get_peers,
+    __import__('parsers.announce_peer').announce_peer,
+    __import__('parsers.find_node').find_node,
+    __import__('parsers.ping').ping,
+    __import__('parsers.get_peers_announce_peer').get_peers_announce_peer,
     __import__('parsers.ip_geo_locator').ip_geo_locator, 
     ]    
 
