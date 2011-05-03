@@ -32,7 +32,7 @@ class Parser(object):
     def outgoing_msg(self, ts, dst_addr, msg):
         pass
 
-    def incoming_msg(self, ts, src_addr, msg):
+    def incoming_msg(self, ts, src_addr, msg, related_query):
         int_ts = int(ts)
         if int_ts > self.current_sec:
             self.cum_announce_peer_file.write(
