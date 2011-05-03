@@ -22,7 +22,7 @@ import parsers.cdf as cdf
 print '************** Check parser config *******************'
 
 
-ip = '192.16.125.245'
+ip = '192.16.127.98'
 port = 7000
 
 conf = [
@@ -36,29 +36,30 @@ conf = [
     ['7', (ip, port+7)],
     ['8', (ip, port+8)],
     ['9', (ip, port+9)],
-    ['10', (ip, port+10)],
+    #['10', (ip, port+10)],
     ]
 
 multiparser_mods = [
-    __import__('parsers.traffic_multiparser'
-               ).traffic_multiparser,
-    __import__('parsers.same_ip').same_ip,
-    __import__('parsers.multi_rtt').multi_rtt,
+    #__import__('parsers.traffic_multiparser'
+    #           ).traffic_multiparser,
+    #__import__('parsers.same_ip').same_ip,
+    #__import__('parsers.multi_rtt').multi_rtt,
     #__import__('parsers.announce').announce,
     #__import__('parsers.infohashes').infohashes,
 	]
 
 parser_mods = [
    # __import__('parsers.lookup_parser').lookup_parser,
-    __import__('parsers.get_peers').get_peers,
-    __import__('parsers.announce_peer').announce_peer,
-    __import__('parsers.find_node').find_node,
-    __import__('parsers.ping').ping,
+    #__import__('parsers.get_peers').get_peers,
+    #__import__('parsers.announce_peer').announce_peer,
+    #__import__('parsers.find_node').find_node,
+    #__import__('parsers.ping').ping,
    # __import__('parsers.get_peers_announce_peer').get_peers_announce_peer,
    # __import__('parsers.announce').announce,
    # __import__('parsers.maintenance_parser'
    #            ).maintenance_parser,
    # __import__('parsers.rtt_parser').rtt_parser,
+    __import__('parsers.ip_geo_locator').ip_geo_locator, 
     ]    
 
 cdf_files = [
@@ -233,7 +234,8 @@ def parse(filenames):
     all_parsers =  node_parsers + [multinode_parser]
 
     num_frames = 0
-    for filename in filenames:
+    try:
+     for filename in filenames:
         print '>>>>', filename
         frames = pcap.pcap(filename)
         for num_frames, (ts_absolute, frame) in enumerate(frames): 
@@ -266,6 +268,8 @@ def parse(filenames):
                     ts, src_addr, dst_addr, msg) or related_query
             multinode_parser.new_msg(ts, src_addr, dst_addr, msg,
                                      related_query)
+    except (KeyboardInterrupt):
+        print 'WARNING: parsing incomplete'
     for parser in all_parsers:
         parser.done()
 
