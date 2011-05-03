@@ -22,7 +22,7 @@ class Parser(object):
     def outgoing_msg(self, ts, dst_addr, msg):
         pass
 
-    def incoming_msg(self, ts, src_addr, msg):
+    def incoming_msg(self, ts, src_addr, msg, related_query):
 	gi = GeoIP.new(GeoIP.GEOIP_MEMORY_CACHE)
 	geo_info = gi.country_code_by_addr(src_addr[0])
 	#countryData.append(geo_info)
