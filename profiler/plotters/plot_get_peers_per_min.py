@@ -27,16 +27,16 @@ def plot():
     for filename, label, style in lines_to_plot:
         x = []
         y = []
+	i = 0
         f = open('parser_results/' + filename)
         for line in f:
-            data = line.split()
-            time = data[0]
-            num_gp = data[1]
-            #x.append(time_min)
-            #y.append(num_gp)
+            #data = line.split()
+            time = i
+            num_gp = line
             x.append(int(time))
             y.append(int(num_gp))
-        pylab.axis(x, y, style, label=label)
+	    i = i + 1
+        pylab.plot(x, y, style, label=label)
         
         #pylab.axis([0, 1500, 0, 10])
 

@@ -27,15 +27,13 @@ def plot():
     for filename, label, style in lines_to_plot:
         x = []
         y = []
-	i = 0
         f = open('parser_results/' + filename)
-        for line in f:
+        for time, line in ennumerate(f):
             #data = line.split()
-            time = i
             num_announce = line
-            x.append(int(time))
+            x.append(time)
             y.append(int(num_announce))
-        pylab.axis(x, y, style, label=label)
+        pylab.plot(x, y, style, label=label)
 
     pylab.legend(loc='upper left')
     pylab.savefig(output_filename)

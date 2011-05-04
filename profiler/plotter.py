@@ -20,4 +20,4 @@ if __name__ == '__main__':
     except (OSError):
         pass
     for plot_script in plot_scripts:
-        os.system('E:\installed_softwares\python2.7\python plotters/' + plot_script)
+        os.system('python plotters/' + plot_script)

@@ -35,7 +35,7 @@ def plot():
             x.append(int(time))
             y.append(int(num_announce))
 	    i = i + 1
-        pylab.axis(x, y, style, label=label)
+        pylab.plot(x, y, style, label=label)
 
     pylab.legend(loc='upper left')
     pylab.savefig(output_filename)
