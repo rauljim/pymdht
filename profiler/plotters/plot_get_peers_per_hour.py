@@ -35,7 +35,7 @@ def plot():
             #y.append(num_gp)
             x.append(int(time))
             y.append(int(num_gp))
-        pylab.semilogy(x, y, style, label=label)
+        pylab.axis(x, y, style, label=label)
         
         #pylab.axis([0, 1500, 0, 10])
 

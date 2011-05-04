@@ -23,23 +23,19 @@ lines_to_plot = (
 
 def plot():
     plots = []
-    xs = []
     for filename, label, style in lines_to_plot:
         x = []
         y = []
+	i = 0
         f = open('parser_results/' + filename)
         for line in f:
-            data = line.split()
-            time = data[0]
-            num_announce = data[1]
-            #x.append(time)
-            #y.append(num_gp)
+            #data = line.split()
+            time = i
+            num_announce = line
             x.append(int(time))
             y.append(int(num_announce))
-        pylab.semilogy(x, y, style, label=label)
-        
-        #pylab.axis([0, 1500, 0, 10])
-
+	    i = i + 1
+        pylab.axis(x, y, style, label=label)
 
     pylab.legend(loc='upper left')
     pylab.savefig(output_filename)

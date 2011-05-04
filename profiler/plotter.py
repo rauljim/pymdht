@@ -3,15 +3,15 @@
 import os
 
 plot_scripts = [
-    'plot_get_peers_per_min.py',
-    'plot_get_peers_per_hour.py',
-    'plot_find_node_per_min.py',
-    'plot_find_node_per_hour.py',
+    #'plot_get_peers_per_min.py',
+    #'plot_get_peers_per_hour.py',
+    #'plot_find_node_per_min.py',
+    #'plot_find_node_per_hour.py',
     'plot_announce_per_min.py',
-    'plot_announce_per_hour.py',
-    'plot_ping_per_min.py',
-    'plot_ping_per_hour.py',
-    'plot_node2_get_peers_announce_per_min.py',
+    #'plot_announce_per_hour.py',
+    #'plot_ping_per_min.py',
+    #'plot_ping_per_hour.py',
+    #'plot_node2_get_peers_announce_per_min.py',
     ]
 
 if __name__ == '__main__':

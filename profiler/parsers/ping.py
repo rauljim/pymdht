@@ -36,34 +36,30 @@ class Parser(object):
         int_ts = int(ts)
         if int_ts > self.current_sec:
             self.cum_ping_file.write(
-                '%d\t%d\n' % (self.current_sec,
-                              self.cum_ping))
+                '%d\n' % (self.cum_ping))
             self.sec_ping_file.write(
-                '%d\t%d\n' % (self.current_sec,
-                              self.sec_ping))
+                '%d\n' % (self.sec_ping))
             for i in xrange(self.current_sec + 1, int_ts):
                 self.sec_ping_file.write(
-                    '%d\t%d\n' % (i, 0))
+                    '%d\n' % (0))
             self.current_sec = int_ts
             self.sec_ping = 0
 
 	if int(int_ts / 60) > self.current_min:
             self.min_ping_file.write(
-                '%d\t%d\n' % (self.current_min,
-                              self.min_ping))
+                '%d\n' % (self.min_ping))
 	    for i in xrange(self.current_min + 1, int(int_ts / 60) ):
 		self.min_ping_file.write(
-		    '%d\t%d\n' % (i, 0))
+		    '%d\n' % (0))
 	    self.current_min = int(self.current_sec / 60)
             self.min_ping = 0
 
 	if int(int_ts / 3600) > self.current_hour:
             self.hour_ping_file.write(
-                '%d\t%d\n' % (self.current_hour,
-                              self.hour_ping))
+                '%d\n' % (self.hour_ping))
 	    for i in xrange(self.current_hour + 1, int(int_ts / 3600) ):
 		self.hour_ping_file.write(
-		    '%d\t%d\n' % (i, 0))
+		    '%d\n' % (0))
 	    self.current_hour = int(self.current_hour / 3600)
             self.hour_ping = 0
 

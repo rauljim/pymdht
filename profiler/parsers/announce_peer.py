@@ -36,34 +36,30 @@ class Parser(object):
         int_ts = int(ts)
         if int_ts > self.current_sec:
             self.cum_announce_peer_file.write(
-                '%d\t%d\n' % (self.current_sec,
-                              self.cum_announce_peer))
+                '%d\n' % (self.cum_announce_peer))
             self.sec_announce_peer_file.write(
-                '%d\t%d\n' % (self.current_sec,
-                              self.sec_announce_peer))
+                '%d\n' % (self.sec_announce_peer))
             for i in xrange(self.current_sec + 1, int_ts):
                 self.sec_announce_peer_file.write(
-                    '%d\t%d\n' % (i, 0))
+                    '%d\n' % (0))
             self.current_sec = int_ts
             self.sec_announce_peer = 0
 
 	if int(int_ts / 60) > self.current_min:
             self.min_announce_peer_file.write(
-                '%d\t%d\n' % (self.current_min,
-                              self.min_announce_peer))
+                '%d\n' % (self.min_announce_peer))
 	    for i in xrange(self.current_min + 1, int(int_ts / 60) ):
 		self.min_announce_peer_file.write(
-		    '%d\t%d\n' % (i, 0))
+		    '%d\n' % (0))
 	    self.current_min = int(self.current_sec / 60)
             self.min_announce_peer = 0
 
 	if int(int_ts / 3600) > self.current_hour:
             self.hour_announce_peer_file.write(
-                '%d\t%d\n' % (self.current_hour,
-                              self.hour_announce_peer))
+                '%d\n' % (self.hour_announce_peer))
 	    for i in xrange(self.current_hour + 1, int(int_ts / 3600) ):
 		self.hour_announce_peer_file.write(
-		    '%d\t%d\n' % (i, 0))
+		    '%d\n' % (0))
 	    self.current_hour = int(self.current_sec / 3600)
             self.hour_announce_peer = 0
 

@@ -36,34 +36,30 @@ class Parser(object):
         int_ts = int(ts)
         if int_ts > self.current_sec:
             self.cum_gp_file.write(
-                '%d\t%d\n' % (self.current_sec,
-                              self.cum_gp))
+                '%d\n' % (self.cum_gp))
             self.sec_gp_file.write(
-                '%d\t%d\n' % (self.current_sec,
-                              self.sec_gp))
+                '%d\n' % (self.sec_gp))
             for i in xrange(self.current_sec + 1, int_ts):
                 self.sec_gp_file.write(
-                    '%d\t%d\n' % (i, 0))
+                    '%d\n' % (0))
             self.current_sec = int_ts
             self.sec_gp = 0
 
 	if int(int_ts / 60) > self.current_min:
             self.min_gp_file.write(
-                '%d\t%d\n' % (self.current_min,
-                              self.min_gp))
+                '%d\n' % (self.min_gp))
 	    for i in xrange(self.current_min + 1, int(int_ts / 60) ):
 		self.min_gp_file.write(
-		    '%d\t%d\n' % (i, 0))
+		    '%d\n' % (0))
 	    self.current_min = int(self.current_sec / 60)
             self.min_gp = 0
 
 	if int(int_ts / 3600) > self.current_hour:
             self.hour_gp_file.write(
-                '%d\t%d\n' % (self.current_hour,
-                              self.hour_gp))
+                '%d\n' % (self.hour_gp))
 	    for i in xrange(self.current_hour + 1, int(int_ts / 3600) ):
 		self.hour_gp_file.write(
-		    '%d\t%d\n' % (i, 0))
+		    '%d\n' % (0))
 	    self.current_hour = int(self.current_sec / 3600)
             self.hour_gp = 0
 
