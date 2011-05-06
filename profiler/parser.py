@@ -26,17 +26,16 @@ ip = '192.16.127.98'
 port = 7000
 
 conf = [
-    ['0', (ip, port)],
-    ['1', (ip, port+1)],
-    ['2', (ip, port+2)],
-    ['3', (ip, port+3)],
-    ['4', (ip, port+4)],
-    ['5', (ip, port+5)],
-    ['6', (ip, port+6)],
-    ['7', (ip, port+7)],
-    ['8', (ip, port+8)],
-    ['9', (ip, port+9)],
-    #['10', (ip, port+10)],
+    ['0', (ip, port+10)],
+    ['1', (ip, port+11)],
+    ['2', (ip, port+12)],
+    ['3', (ip, port+13)],
+    ['4', (ip, port+14)],
+    ['5', (ip, port+15)],
+    ['6', (ip, port+16)],
+    ['7', (ip, port+17)],
+    ['8', (ip, port+18)],
+    ['9', (ip, port+19)],
     ]
 
 multiparser_mods = [
