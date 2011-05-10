@@ -22,7 +22,7 @@ import core.pymdht as pymdht
 def _on_peers_found(start_ts, peers):
     if peers:
         print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
-        print peers
+        #print peers
     else:
         print '[%.4f] END OF LOOKUP' % (time.time() - start_ts)
 
