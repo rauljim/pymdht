@@ -60,7 +60,7 @@ class Parser(object):
 	    for i in xrange(self.current_hour + 1, int(int_ts / 3600) ):
 		self.hour_ping_file.write(
 		    '%d\n' % (0))
-	    self.current_hour = int(self.current_hour / 3600)
+	    self.current_hour = int(self.current_sec / 3600)
             self.hour_ping = 0
 
         if msg.type == message.QUERY:

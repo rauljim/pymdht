@@ -17,7 +17,7 @@ from logging import DEBUG, CRITICAL
 import core.logging_conf as lc
 lc.setup('.', CRITICAL)
 
-import parsers.cdf as cdf
+#import parsers.cdf as cdf
 
 print '************** Check parser config *******************'
 
@@ -47,8 +47,9 @@ parser_mods = [
     __import__('parsers.find_node').find_node,
     __import__('parsers.ping').ping,
     __import__('parsers.ip_geo_locator').ip_geo_locator, 
+    __import__('parsers.unique_ip_geo_locator').unique_ip_geo_locator, 
     ]    
-
+'''
 cdf_files = [
     'per_sec_gp',
     'per_min_gp',
@@ -72,9 +73,9 @@ cdf_files = [
     ]
 
 multiparser_cdf_files = [
-    #'t_rtt',
-    ]
-
+     't_rtt',
+     ]
+'''
 TIMEOUT_DELAY = 2
 
 class QueryInfo(object):
@@ -109,7 +110,7 @@ class NodeParser(object):
                 try:
                     related_query = self.tids[msg.tid[0]]
                 except (KeyError):
-                    print '%s: rtt_parser: no query for this response' % (
+                    print '%s: parser: no query for this response' % (
                         self.label)
                 if related_query and ts - related_query.ts > TIMEOUT_DELAY:
                     related_query = None
@@ -296,13 +297,13 @@ if __name__ == '__main__':
     
     print 'Parsing', filenames, '...'
     parse(filenames)
-
+    '''	
     for filename in cdf_files:
         for label, _ in conf:
             cdf.cdf_file('parser_results/' + label + '.' + filename)
     for filename in multiparser_cdf_files:
         cdf.cdf_file('parser_results/m.' + filename)
-
+    '''
     
 class _Parser(object):
     '''Template'''
