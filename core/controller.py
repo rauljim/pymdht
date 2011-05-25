@@ -33,6 +33,9 @@ from node import Node
 
 #from profilestats import profile
 
+##zinat: impoart plugins.experimentail_m
+
+
 logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
@@ -73,6 +76,8 @@ class Controller:
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
+        
+        #zinat: self._experimental_m...
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_maintenance_ts = current_ts
@@ -229,6 +234,7 @@ class Controller:
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
+            #zinat: inform experimental_module
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
@@ -242,6 +248,10 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
+            ## zinat: fi related_query.experimental_obj:
+            ## .......
+            # datagrams = related_query.experimental_obj.on_response_received(msg.....)
+            # datagrams_to_send.extend(datagrams)
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -284,6 +294,10 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
+            ##zinat: same as response
+            
+            
+            
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
@@ -319,6 +333,8 @@ class Controller:
 
         else: # unknown type
             return self._next_main_loop_call_ts, datagrams_to_send
+        # we are done with the plugins
+        # now we have maintenance_queries_to_send, let's send them!
         datagrams = self._register_queries(maintenance_queries_to_send)
         datagrams_to_send.extend(datagrams)
         return self._next_main_loop_call_ts, datagrams_to_send
@@ -369,6 +385,8 @@ class Controller:
         
     def _on_timeout(self, related_query):
         queries_to_send = []
+        ##zinat: if related_query.experimental_obj
+        #......
         if related_query.lookup_obj:
             (lookup_queries_to_send,
              num_parallel_queries,
