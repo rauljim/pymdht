@@ -19,12 +19,15 @@ import core.identifier as identifier
 import core.pymdht as pymdht
 
 
+
+
 def _on_peers_found(start_ts, peers):
     if peers:
-        print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
-        print peers
+        print '\t[%.4f]\t\t%d\t\t%s' % (time.time() - start_ts,len(peers),peers)
+        
     else:
-        print '[%.4f] END OF LOOKUP' % (time.time() - start_ts)
+        print '\t[%.4f] ' % (time.time() - start_ts)
+        print'END OF LOOKUP'
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
@@ -80,6 +83,7 @@ Available commands are:
             except:
                 print 'Invalid bt_port (%r)' % input[2]
                 continue
+            print "\tRTT\t\tNumber of peers\t\tPeer List returned"
             dht.get_peers(time.time(), info_hash,
                           _on_peers_found, bt_port)
         
