@@ -250,10 +250,7 @@ class Controller:
                  lookup_done
                  ) = related_query.lookup_obj.on_response_received(
                     msg, msg.src_node)
-                
-		if peers:
-			print msg.src_node
-		datagrams = self._register_queries(lookup_queries_to_send)
+                datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
                 if lookup_done:
