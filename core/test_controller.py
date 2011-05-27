@@ -195,7 +195,7 @@ class TestController:
     def teardown(self):
         time.normal_mode()
 
-class TestStateErrors:
+class _TestStateErrors:
 
     def test(self): 
         '''self.controller = controller.Controller(tc.CLIENT_ADDR,

@@ -24,6 +24,7 @@ logger = logging.getLogger('dht')
 
 BUFFER_SIZE = 3000
 
+DEBUG = False
                             
 class ThreadedReactor(threading.Thread):
 
@@ -85,7 +86,8 @@ class ThreadedReactor(threading.Thread):
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
             print 'MINITWISTED CRASHED'
-            raise #Uncomment for debuggin only! #TODO: why?
+            if DEBUG:
+                raise
         self.running = False
         logger.debug('Reactor stopped')
 
