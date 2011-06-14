@@ -69,8 +69,13 @@ class RoutingManager(object):
     
     def __init__(self, my_node, bootstrap_nodes):
         self.my_node = my_node
-        #Copy the bootstrap list
-        self.bootstrap_nodes = iter(bootstrap_nodes)
+        #TODO: randomize order bootstrap lists
+        self.saved_bootstrap_nodes = bootstrap_nodes[0]
+        self.main_bootstrap_nodes = bootstrap_nodes[1]
+        self.backup_bootstrap_nodes = bootstrap_nodes[2]
+        self.bootstrap_ips = set() #ips of nodes we used to bootstrap.
+        # They shouldn't be added to routing table to avoid overload
+        # (if possible)
         
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
         # maintenance variables
@@ -85,17 +90,58 @@ class RoutingManager(object):
                                    self._ping_a_replacement_node,
                                    ]
         self._num_pending_filling_lookups = NUM_FILLING_LOOKUPS
+
+    def _get_maintenance_lookup(self, target=None, nodes=[]):
+        if not lookup_target:
+            lookup_target = identifier.RandomId()
+        if not nodes:
+            log_distance = lookup_target.log_distance(self.my_node.id)
+            nodes = self.get_closest_rnodes(log_distance, 0, True)
+        return lookup_target, nodes
         
+    def _do_bootstrap(self):
+        '''
+        If there are saved nodes, all of them are pinged so we recover our
+        saved routing table as best as we can.
+        If there are no saved nodes (or not enough of them replied) we start
+        performing maintenance lookup with main bootstrap nodes (and backup)
+        until we have got enough nodes in the routing table.
+        '''
+        
+        queries_to_send = []
+        maintenance_lookup = None
+        bootstrap_done = False
+        if self.saved_bootstrap_nodes:
+            node_ = self.saved_bootstrap_nodes.pop(0)
+            queries_to_send = [self._get_maintenance_query(node_)]
+            if 3 < len(self.saved_bootstrap_nodes) < 8:
+                # perform some maintenance lookup at the end to fill up
+                # buckets
+                maintenance_lookup = self._get_maintenance_lookup()
+            return queries_to_send, maintenance_lookup, bootstrap_done
+        if self.table.num_rnodes > MIN_RNODES_BOOTSTRAP:
+            bootstrap_done = True
+            return queries_to_send, maintenance_lookup, bootstrap_done
+        if self.main_bootstrap_nodes:
+            node_ = node.Node(self.main_bootstrap_nodes.pop(0))
+            self.bootstrap_ips.add(node_.ip)
+            maintenance_lookup = identifier.RandomId(), node_
+        elif self.backup_bootstrap_nodes:
+            node_ = node.Node(self.backup_bootstrap_nodes.pop(0))
+            self.bootstrap_ips.add(node_.ip)
+            maintenance_lookup = identifier.RandomId(), node_
+        return queries_to_send, maintenance_lookup, bootstrap_done
+                
     def do_maintenance(self):
         queries_to_send = []
         maintenance_lookup_target = None
-        if self._maintenance_mode == BOOTSTRAP_MODE:
-            try:
-                node_ = self.bootstrap_nodes.next()
-                queries_to_send = [self._get_maintenance_query(node_)]
-            except (StopIteration):
-                maintenance_lookup_target = self.my_node.id
-                self._maintenance_mode = FILL_BUCKETS
+        if self._maintenance_mode == BOOTSTRAP_MODE: 
+                (queries_to_send,
+                 maintenance_lookup,
+                 bootstrap_done) = self._do_bootstrap()
+                if bootstrap_done:
+                    maintenance_lookup_target = self.my_node.id
+                    self._maintenance_mode = FILL_BUCKETS
         elif self._maintenance_mode == FILL_BUCKETS:
             if self._num_pending_filling_lookups:
                 self._num_pending_filling_lookups -= 1
