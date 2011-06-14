@@ -38,8 +38,8 @@ logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
 STATE_FILENAME = 'pymdht.state'
-BOOTSTRAP_MAIN_FILENAME = 'pymdht.bootstrap.main'
-BOOTSTRAP_BACKUP_FILENAME = 'pymdht.bootstrap.backup'
+BOOTSTRAP_MAIN_FILENAME = 'core/pymdht.bootstrap.main' #FIXME!!!!!!!1
+BOOTSTRAP_BACKUP_FILENAME = 'core/pymdht.bootstrap.backup'
 
 #TIMEOUT_DELAY = 2
 
@@ -172,20 +172,16 @@ class Controller:
         if time.time() >= self._next_maintenance_ts:
             (maintenance_delay,
              queries,
-             maintenance_lookup_target) = self._routing_m.do_maintenance()
+             maintenance_lookup) = self._routing_m.do_maintenance()
             self._next_maintenance_ts = current_ts + maintenance_delay
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                self._next_maintenance_ts)
             queries_to_send.extend(queries)
-
-            if maintenance_lookup_target:
-                log_distance = maintenance_lookup_target.log_distance(
-                    self._my_id)
-                bootstrap_rnodes = self._routing_m.get_closest_rnodes(
-                    log_distance, 0, True) # Get the full bucket
-                lookup_obj = self._lookup_m.maintenance_lookup(
-                    maintenance_lookup_target)
-                queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
+            if maintenance_lookup:
+                target, rnodes = maintenance_lookup
+                lookup_obj = self._lookup_m.maintenance_lookup(target)
+                print target, rnodes
+                queries_to_send.extend(lookup_obj.start(rnodes))
             
         # Auto-save routing table
         if current_ts >= self._next_save_state_ts:

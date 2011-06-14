@@ -91,7 +91,7 @@ class RoutingManager(object):
                                    ]
         self._num_pending_filling_lookups = NUM_FILLING_LOOKUPS
 
-    def _get_maintenance_lookup(self, target=None, nodes=[]):
+    def _get_maintenance_lookup(self, lookup_target=None, nodes=[]):
         if not lookup_target:
             lookup_target = identifier.RandomId()
         if not nodes:
@@ -123,29 +123,29 @@ class RoutingManager(object):
             bootstrap_done = True
             return queries_to_send, maintenance_lookup, bootstrap_done
         if self.main_bootstrap_nodes:
-            node_ = node.Node(self.main_bootstrap_nodes.pop(0))
+            node_ = self.main_bootstrap_nodes.pop(0)
             self.bootstrap_ips.add(node_.ip)
-            maintenance_lookup = identifier.RandomId(), node_
+            maintenance_lookup = self._get_maintenance_lookup(identifier.RandomId(), [node_])
         elif self.backup_bootstrap_nodes:
-            node_ = node.Node(self.backup_bootstrap_nodes.pop(0))
+            node_ = self.backup_bootstrap_nodes.pop(0)
             self.bootstrap_ips.add(node_.ip)
-            maintenance_lookup = identifier.RandomId(), node_
+            maintenance_lookup = self._get_maintenance_lookup(identifier.RandomId(), [node_])
         return queries_to_send, maintenance_lookup, bootstrap_done
                 
     def do_maintenance(self):
         queries_to_send = []
-        maintenance_lookup_target = None
+        maintenance_lookup = None
         if self._maintenance_mode == BOOTSTRAP_MODE: 
                 (queries_to_send,
                  maintenance_lookup,
                  bootstrap_done) = self._do_bootstrap()
                 if bootstrap_done:
-                    maintenance_lookup_target = self.my_node.id
+                    maintenance_lookup = self._get_maintenance_lookup(self.my_node.id)
                     self._maintenance_mode = FILL_BUCKETS
         elif self._maintenance_mode == FILL_BUCKETS:
             if self._num_pending_filling_lookups:
                 self._num_pending_filling_lookups -= 1
-                maintenance_lookup_target = identifier.RandomId()
+                maintenance_lookup = self._get_maintenance_lookup()
             else:
                 self._maintenance_mode = NORMAL_MODE
         elif self._maintenance_mode == NORMAL_MODE:
@@ -162,7 +162,7 @@ class RoutingManager(object):
                     break
         
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
-                queries_to_send, maintenance_lookup_target)
+                queries_to_send, maintenance_lookup)
 
     def _ping_a_staled_rnode(self):
         starting_index = self._next_stale_maintenance_index

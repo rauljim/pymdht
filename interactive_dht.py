@@ -98,7 +98,7 @@ if __name__ == '__main__':
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
-                      metavar='FILE', default='plugins/lookup_a16.py',
+                      metavar='FILE', default='plugins/lookup_a4.py',
                       help="file containing the lookup_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT',

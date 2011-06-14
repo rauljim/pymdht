@@ -55,9 +55,14 @@ class _LookupQueue(object):
 
     def bootstrap(self, rnodes, max_nodes):
         # Assume that the ips are not duplicated.
-        qnodes = [_QueuedNode(n, n.id.log_distance(
-                    self.info_hash), None)
-                  for n in rnodes]
+        qnodes = []
+        for n in rnodes:
+            if n.id:
+                log_distance = n.id.log_distance(self.info_hash)
+            else:
+                log_distance = None
+            qnode = _QueuedNode(n, log_distance, None)
+            qnodes.append(qnode)
         self._add_queued_qnodes(qnodes)
         return self._pop_nodes_to_query(max_nodes)
 
