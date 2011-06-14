@@ -30,7 +30,7 @@ class Pymdht:
     - routing_m_mod: the module implementing routing management.
     - lookup_m_mod: the module implementing lookup management.
     - private_dht_name: name of the private DHT (use global DHT when None)
-    - debug_level: level of logs saved into dht.log (standard logging module).
+    - debug_level: level of logs saved into pymdht.log (standard logging module).
 
     """
     def __init__(self, dht_addr, conf_path,

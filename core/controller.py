@@ -36,8 +36,8 @@ from node import Node
 logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
-STATE_FILENAME = 'state.dat'
-
+STATE_FILENAME = 'pymdht.state'
+BOOTSTRAP_FILENAME = 'pymdht.bootstrap'
 
 #TIMEOUT_DELAY = 2
 
