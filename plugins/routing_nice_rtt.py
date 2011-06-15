@@ -63,7 +63,7 @@ _MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
                       FIND_CLOSEST_MODE: 3,
                       FILL_BUCKETS: 1,
                       NORMAL_MODE: 6}
-NUM_FILLING_LOOKUPS = 8
+NUM_FILLING_LOOKUPS = 0 #FIXME: it was 8
 
 class RoutingManager(object):
     

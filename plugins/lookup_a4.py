@@ -30,6 +30,11 @@ class _QueuedNode(object):
         self.token = token
 
     def __cmp__(self, other):
+        # nodes without log_distance (bootstrap) go first
+        if self.log_distance is None:
+            return -1 
+        elif self.log_distance is None:
+            return 1
         return (self.log_distance - other.log_distance
                 or (getattr(self.node, 'rtt', .5) -
                     getattr(other.node, 'rtt', .5)))
@@ -230,7 +235,7 @@ class GetPeersLookup(object):
     def _get_lookup_queries(self, nodes):
         queries = []
         for node_ in nodes:
-            if node_.id == self._my_id:
+            if node_.id and node_.id == self._my_id:
                 # Don't send to myself
                 continue
             self._num_parallel_queries += 1

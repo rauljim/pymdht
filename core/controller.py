@@ -180,7 +180,7 @@ class Controller:
             if maintenance_lookup:
                 target, rnodes = maintenance_lookup
                 lookup_obj = self._lookup_m.maintenance_lookup(target)
-                print target, rnodes
+                print '>>>> maintenance lookup: %r to %r' % (target, rnodes)
                 queries_to_send.extend(lookup_obj.start(rnodes))
             
         # Auto-save routing table
@@ -250,26 +250,26 @@ class Controller:
                 datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
+                lookup_id = related_query.lookup_obj.lookup_id
+                callback_f = related_query.lookup_obj.callback_f
+                if peers and callable(callback_f):
+                    callback_f(lookup_id, peers)
                 if lookup_done:
-                    # Size estimation
-                    if size_estimation:
-                        line = '%d %d\n' % (
-                            related_query.lookup_obj.get_number_nodes_within_region())
-                        self._size_estimation_file.write(line)
-                        self._size_estimation_file.flush()
-
-                        queries_to_send = self._announce(
-                            related_query.lookup_obj)
-                        datagrams = self._register_queries(
-                            queries_to_send)
-                        datagrams_to_send.extend(datagrams)
-                        callback_f = related_query.lookup_obj.callback_f
-                        if callback_f and callable(callback_f):
-                            lookup_id = related_query.lookup_obj.lookup_id
-                            if peers:
-                                callback_f(lookup_id, peers)
-                                if lookup_done:
-                                    callback_f(lookup_id, None)
+                    if callable(callback_f):
+                        callback_f(lookup_id, None)
+                    queries_to_send = self._announce(
+                        related_query.lookup_obj)
+                    datagrams = self._register_queries(
+                        queries_to_send)
+                    datagrams_to_send.extend(datagrams)
+                        
+                # Size estimation
+                if size_estimation and lookup_done:
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
+                    
             # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_response_received(
