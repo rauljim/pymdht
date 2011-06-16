@@ -31,6 +31,7 @@ import tracker
 from querier import Querier
 from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
 from node import Node
+import pkgutil
 
 #from profilestats import profile
 
@@ -38,8 +39,8 @@ logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
 STATE_FILENAME = 'pymdht.state'
-BOOTSTRAP_MAIN_FILENAME = 'core/pymdht.bootstrap.main' #FIXME!!!!!!!1
-BOOTSTRAP_BACKUP_FILENAME = 'core/pymdht.bootstrap.backup'
+BOOTSTRAP_MAIN_FILENAME = 'pymdht.bootstrap.main' #FIXME!!!!!!!1
+BOOTSTRAP_BACKUP_FILENAME = 'pymdht.bootstrap.backup'
 
 #TIMEOUT_DELAY = 2
 
@@ -408,11 +409,12 @@ class Controller:
                                            timeout_call_ts)
         return datagrams_to_send
     
-    
+'''    
 BOOTSTRAP_NODES = (
     Node(('67.215.242.138', 6881)), #router.bittorrent.com
     #    Node(('192.16.127.98', 7000)), #KTH node
     )
+'''
 
 def _sanitize_bootstrap_node(line):
     # no need to catch exceptions, get_bootstrap_nodes takes care of them
@@ -420,15 +422,22 @@ def _sanitize_bootstrap_node(line):
     addr = ip, int(port_str)
     return Node(addr)
 
-def get_bootstrap_nodes(): 
+def get_bootstrap_nodes():
+    data_path = os.path.dirname(message.__file__)
     try:
-        main = [_sanitize_bootstrap_node(n) for n in open(BOOTSTRAP_MAIN_FILENAME)]
+        f = open(os.path.join(data_path, BOOTSTRAP_MAIN_FILENAME))
+        main = [_sanitize_bootstrap_node(n) for n in f]
     except (Exception):
         logger.exception('main bootstrap file corrupted!')
         main = []
+        raise
+    print 'main: %d nodes' % len(main)
     try:
-        backup = [_sanitize_bootstrap_node(n) for n in open(BOOTSTRAP_BACKUP_FILENAME)]
+        f = open(os.path.join(data_path, BOOTSTRAP_BACKUP_FILENAME))
+        backup = [_sanitize_bootstrap_node(n) for n in f]
     except (Exception):
         logger.exception('backup bootstrap file corrupted!')
         backup = []
+        raise
+    print 'backup: %d nodes' % len(backup)
     return main, backup
