@@ -35,7 +35,7 @@ from node import Node
 
 ##zinat: import plugins.experimentail_m
 
-import experimental_m_ping
+import plugins.experimental_m_ping
 
 
 logger = logging.getLogger('dht')
