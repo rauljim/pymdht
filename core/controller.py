@@ -75,7 +75,7 @@ class Controller:
                                                        bootstrap_nodes)#z from routing_nice.py
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
        
-        self._experimental_m = experimental_m_mod.PingManager(self._my_id) 
+        self._experimental_m = experimental_m_mod.ExperimentalManager() 
                   
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
@@ -233,9 +233,9 @@ class Controller:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
             #zinat: inform experimental_module
-            
+            self._experimental_m.on_query_received(msg)
             #experimental_obj = pingManager()
-            #response_msg = self.experimental_obj._get_response_ping(msg)
+            #response_msg = 
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
