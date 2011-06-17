@@ -29,6 +29,7 @@ def _on_peers_found(start_ts, peers):
         print '\t[%.4f] ' % (time.time() - start_ts)
         print'END OF LOOKUP'
 
+
 def main(options, args):
     my_addr = (options.ip, int(options.port))
     logs_path = options.path
@@ -40,12 +41,23 @@ def main(options, args):
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
+   
+    #ping_m_name = '.'.join(os.path.split(options.ping_m_file))[:-3]
+    #ping_m_mod = __import__(ping_m_name, fromlist=[''])
+    
 
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
                         options.private_dht_name,
                         logs_level)
+    
+    #dht = pymdht.Pymdht(my_addr, logs_path,
+    #                    routing_m_mod,
+    #                    lookup_m_mod,
+    #                    options.private_dht_name,
+    #                    logs_level,
+    #                    ping_m_mod)
     
     print '\nType "exit" to stop the DHT and exit'
     print 'Type "help" if you need'
@@ -110,6 +122,9 @@ if __name__ == '__main__':
     parser.add_option("-d", "--private-dht", dest="private_dht_name",
                       metavar='STRING', default=None,
                       help="private DHT name")
+    parser.add_option("-i", "--ping-plug-in",dest="ping_m_file",
+                      metavar='FILE',default='plugins/experimental_m_ping.py',
+                      help="file containing ping-manager code")
 
     (options, args) = parser.parse_args()
     

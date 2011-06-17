@@ -33,7 +33,9 @@ from node import Node
 
 #from profilestats import profile
 
-##zinat: impoart plugins.experimentail_m
+##zinat: import plugins.experimentail_m
+
+import experimental_m_ping
 
 
 logger = logging.getLogger('dht')
@@ -50,7 +52,8 @@ class Controller:
 
     def __init__(self, dht_addr, state_filename,
                  routing_m_mod, lookup_m_mod,
-                 private_dht_name):
+                 private_dht_name,
+                 experimental_m_mod=experimental_m_ping):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
 
@@ -74,10 +77,11 @@ class Controller:
 
         self._querier = Querier()
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
-                                                       bootstrap_nodes)
+                                                       bootstrap_nodes)#z from routing_nice.py
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
-        
-        #zinat: self._experimental_m...
+       
+        self._experimental_m = experimental_m_mod.PingManager(self._my_id) 
+                  
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_maintenance_ts = current_ts
@@ -217,7 +221,6 @@ class Controller:
         contains a response to a lookup query, both routing and lookup manager
         will be informed. Additionally, if that response contains peers, the
         lookup's handler will be called (see get\_peers above).
-
         This method is designed to be used as minitwisted's networking handler.
 
         """
@@ -235,6 +238,9 @@ class Controller:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
             #zinat: inform experimental_module
+            
+            #experimental_obj = pingManager()
+            #response_msg = self.experimental_obj._get_response_ping(msg)
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
@@ -244,11 +250,11 @@ class Controller:
                 msg.src_node)
             
         elif msg.type == message.RESPONSE:
-            related_query = self._querier.get_related_query(msg)
+            related_query = self._querier.get_related_query(msg) #from querier
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
-            ## zinat: fi related_query.experimental_obj:
+            ## zinat: if related_query.experimental_obj:
             ## .......
             # datagrams = related_query.experimental_obj.on_response_received(msg.....)
             # datagrams_to_send.extend(datagrams)
