@@ -69,7 +69,7 @@ PEERS = VALUES = 'values' # List of peers in compact format (get_peers)
 GENERIC_E = [201, 'Generic Error']
 SERVER_E = [202, 'Server Error']
 PROTOCOL_E = [203, 'Protocol Error']
-UNKNOWN_E = [201, 'Method Unknown']
+UNKNOWN_E = [204, 'Method Unknown']
 
 # Valid BT ports (for announcements)
 MIN_BT_PORT = 1 #TODO: lower it to 1024? Let tracker decide.
