@@ -33,11 +33,6 @@ from node import Node
 
 #from profilestats import profile
 
-##zinat: import plugins.experimentail_m
-
-import plugins.experimental_m_ping
-
-
 logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
@@ -52,8 +47,8 @@ class Controller:
 
     def __init__(self, dht_addr, state_filename,
                  routing_m_mod, lookup_m_mod,
-                 private_dht_name,
-                 experimental_m_mod=experimental_m_ping):
+                 experimental_m_mod,
+                 private_dht_name):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
 
