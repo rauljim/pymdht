@@ -29,6 +29,7 @@ class Pymdht:
     - state_filename: the complete path to a file to load/store node state.
     - routing_m_mod: the module implementing routing management.
     - lookup_m_mod: the module implementing lookup management.
+    - experimental_m_mod: the module implementing experimental management.
     - private_dht_name: name of the private DHT (use global DHT when None)
     - debug_level: level of logs saved into dht.log (standard logging module).
 
@@ -39,12 +40,7 @@ class Pymdht:
                  private_dht_name,
                  debug_level):
         
-       # def __init__(self, dht_addr, conf_path,
-       #         routing_m_mod, lookup_m_mod,
-       #          private_dht_name,
-       #          debug_level,
-       #            ping_m_mod):
-        
+             
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(dht_addr, state_filename,

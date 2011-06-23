@@ -75,7 +75,7 @@ class Controller:
                                                        bootstrap_nodes)#z from routing_nice.py
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
        
-        self._experimental_m = experimental_m_mod.ExperimentalManager() 
+        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_id) 
                   
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
@@ -219,6 +219,8 @@ class Controller:
         This method is designed to be used as minitwisted's networking handler.
 
         """
+        exp_queries_to_send = []
+        
         data = datagram.data
         addr = datagram.addr
         datagrams_to_send = []
@@ -233,7 +235,8 @@ class Controller:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
             #zinat: inform experimental_module
-            self._experimental_m.on_query_received(msg)
+            exp_queries_to_send = self._experimental_m.on_query_received(msg)
+            
             #experimental_obj = pingManager()
             #response_msg = 
             response_msg = self._get_response(msg)
@@ -250,6 +253,7 @@ class Controller:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
             ## zinat: if related_query.experimental_obj:
+            self._experimental_m.on_response_received(msg, related_query)
             ## .......
             # datagrams = related_query.experimental_obj.on_response_received(msg.....)
             # datagrams_to_send.extend(datagrams)
@@ -338,6 +342,9 @@ class Controller:
         # now we have maintenance_queries_to_send, let's send them!
         datagrams = self._register_queries(maintenance_queries_to_send)
         datagrams_to_send.extend(datagrams)
+        if exp_queries_to_send:
+            datagrams = self._register_queries(exp_queries_to_send)
+            datagrams_to_send.extend(datagrams)
         return self._next_main_loop_call_ts, datagrams_to_send
 
     def _on_query_received(self):
@@ -388,6 +395,7 @@ class Controller:
         queries_to_send = []
         ##zinat: if related_query.experimental_obj
         #......
+        self._experimental_m.on_timeout(related_query)
         if related_query.lookup_obj:
             (lookup_queries_to_send,
              num_parallel_queries,
