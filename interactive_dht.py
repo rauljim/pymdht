@@ -31,10 +31,18 @@ def _on_peers_found(start_ts, peers):
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
+    if not os.path.isdir(options.path):
+        if os.path.exists(options.path):
+            print 'FATAL:', options.path, 'should be a directory'
+            return
+        print options.path, 'does not exist. Creating directory...'
+        os.mkdir(options.path)
     logs_path = options.path
+    
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
+    print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
@@ -97,6 +105,7 @@ Available commands are:
             print 'Invalid input: type help'
         
 if __name__ == '__main__':
+    default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
     parser = OptionParser()
     parser.add_option("-a", "--address", dest="ip",
                       metavar='IP', default='127.0.0.1',
@@ -105,7 +114,7 @@ if __name__ == '__main__':
                       metavar='INT', default=7000,
                       help="port to be used")
     parser.add_option("-x", "--path", dest="path",
-                      metavar='PATH', default='.',
+                      metavar='PATH', default=default_path,
                       help="state.dat and logs location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
