@@ -33,7 +33,7 @@ def main(options, args):
     my_addr = (options.ip, int(options.port))
     if not os.path.isdir(options.path):
         if os.path.exists(options.path):
-            print 'FATAL:', options.path, 'should be a directory'
+            print 'FATAL:', options.path, 'must be a directory'
             return
         print options.path, 'does not exist. Creating directory...'
         os.mkdir(options.path)
