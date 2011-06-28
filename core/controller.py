@@ -39,8 +39,6 @@ logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
 STATE_FILENAME = 'pymdht.state'
-BOOTSTRAP_MAIN_FILENAME = 'pymdht.bootstrap.main' #FIXME!!!!!!!1
-BOOTSTRAP_BACKUP_FILENAME = 'pymdht.bootstrap.backup'
 
 #TIMEOUT_DELAY = 2
 
@@ -59,21 +57,18 @@ class Controller:
         
         
         self.state_filename = state_filename
-        saved_id, saved_nodes = state.load(self.state_filename)
+        saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
         if saved_id:
             self._my_id = saved_id
         else:
             self._my_id = identifier.RandomId()
-        (main_bootstrap_nodes,
-            backup_bootstrap_nodes) = get_bootstrap_nodes()
-        bootstrap_nodes = (saved_nodes, main_bootstrap_nodes, backup_bootstrap_nodes)
         self._my_node = Node(dht_addr, self._my_id)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
         self._querier = Querier()
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
-                                                       bootstrap_nodes)
+                                                       saved_bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
@@ -387,8 +382,9 @@ class Controller:
                             related_query.lookup_obj))
                     lookup_id = related_query.lookup_obj.lookup_id
                     related_query.lookup_obj.callback_f(lookup_id, None)
-        queries_to_send.extend(
-            self._routing_m.on_timeout(related_query.dst_node))
+        maintenance_queries_to_send = self._routing_m.on_timeout(related_query.dst_node)
+        if maintenance_queries_to_send:
+            queries_to_send.extend(maintenance_queries_to_send)
         return queries_to_send
 
     def _announce(self, lookup_obj):
@@ -409,35 +405,3 @@ class Controller:
                                            timeout_call_ts)
         return datagrams_to_send
     
-'''    
-BOOTSTRAP_NODES = (
-    Node(('67.215.242.138', 6881)), #router.bittorrent.com
-    #    Node(('192.16.127.98', 7000)), #KTH node
-    )
-'''
-
-def _sanitize_bootstrap_node(line):
-    # no need to catch exceptions, get_bootstrap_nodes takes care of them
-    ip, port_str = line.split()
-    addr = ip, int(port_str)
-    return Node(addr)
-
-def get_bootstrap_nodes():
-    data_path = os.path.dirname(message.__file__)
-    try:
-        f = open(os.path.join(data_path, BOOTSTRAP_MAIN_FILENAME))
-        main = [_sanitize_bootstrap_node(n) for n in f]
-    except (Exception):
-        logger.exception('main bootstrap file corrupted!')
-        main = []
-        raise
-    print 'main: %d nodes' % len(main)
-    try:
-        f = open(os.path.join(data_path, BOOTSTRAP_BACKUP_FILENAME))
-        backup = [_sanitize_bootstrap_node(n) for n in f]
-    except (Exception):
-        logger.exception('backup bootstrap file corrupted!')
-        backup = []
-        raise
-    print 'backup: %d nodes' % len(backup)
-    return main, backup

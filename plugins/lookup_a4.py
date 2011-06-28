@@ -33,7 +33,7 @@ class _QueuedNode(object):
         # nodes without log_distance (bootstrap) go first
         if self.log_distance is None:
             return -1 
-        elif self.log_distance is None:
+        elif other.log_distance is None:
             return 1
         return (self.log_distance - other.log_distance
                 or (getattr(self.node, 'rtt', .5) -
