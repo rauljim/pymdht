@@ -61,6 +61,8 @@ _MAINTENANCE_DELAY = {# bootstrap delay is determined by the bootstrap module
                       FILL_BUCKETS: 1,
                       NORMAL_MODE: 6}
 
+MIN_RNODES = 100
+
 NUM_FILLING_LOOKUPS = 0 #FIXME: it was 8
 
 class RoutingManager(object):
@@ -120,9 +122,15 @@ class RoutingManager(object):
                 self._maintenance_tasks.append(task)
                 node_ = task()
                 if node_:
-                    queries_to_send = [self._get_maintenance_query(node_)]
+                    queries_to_send.append(self._get_maintenance_query(node_))
                     # This task did do some work. We are done here!
                     break
+        if self.table.num_rnodes < MIN_RNODES:
+            # Ping more found nodes when routing table has few nodes
+            node_ = self._ping_a_found_node()
+            if node_:
+                queries_to_send.append(self._get_maintenance_query(
+                        node_, do_fill_up=True))
         if not maintenance_delay:
             maintenance_delay = _MAINTENANCE_DELAY[self._maintenance_mode]
         return (maintenance_delay, queries_to_send, maintenance_lookup)
@@ -158,7 +166,7 @@ class RoutingManager(object):
     def _ping_a_replacement_node(self):
         return self._replacement_queue.pop(0)
                                   
-    def _get_maintenance_query(self, node_):
+    def _get_maintenance_query(self, node_, do_fill_up=False):
         '''
         if not node_.id: 
             # Bootstrap nodes don't have id
@@ -166,22 +174,24 @@ class RoutingManager(object):
                                                  self.my_node.id,
                                                  self.my_node.id, None)
         '''
-        if random.choice((False, True)):
-            # 50% chance to send find_node with my id as target
-            return message.OutgoingFindNodeQuery(node_,
-                                                 self.my_node.id,
-                                                 self.my_node.id, None)
+        if do_fill_up or random.choice((False, True)):
 
-        # 50% chance to send a find_node to fill up a non-full bucket
-        target_log_distance = self.table.find_next_bucket_with_room_index(
-            node_=node_)
-        if target_log_distance:
-            target = self.my_node.id.generate_close_id(target_log_distance)
-            return message.OutgoingFindNodeQuery(node_, self.my_node.id,
-                                                 target, None)
+            # 50% chance to send a find_node to fill up a non-full bucket
+            target_log_distance = self.table.find_next_bucket_with_room_index(
+                node_=node_)
+            if target_log_distance:
+                target = self.my_node.id.generate_close_id(target_log_distance)
+                msg =  message.OutgoingFindNodeQuery(node_, self.my_node.id,
+                                                     target, None)
+            else:
+                # Every bucket is full. We send a ping instead.
+                msg = message.OutgoingPingQuery(node_, self.my_node.id)
         else:
-            # Every bucket is full. We send a ping instead.
-            return message.OutgoingPingQuery(node_, self.my_node.id)
+            # 50% chance to send find_node with my id as target
+            msg = message.OutgoingFindNodeQuery(node_,
+                                                self.my_node.id,
+                                                self.my_node.id, None)
+        return msg
         
     def on_query_received(self, node_):
         '''
@@ -488,7 +498,7 @@ class _FoundNodesQueue(object):
                 continue
             log_distance = self.table.my_node.log_distance(node_)
             num_nodes_queued = self._nodes_queued_per_bucket[log_distance]
-            if num_nodes_queued >= 8:
+            if num_nodes_queued > 32:
                 # many nodes queued for this bucket already
                 continue
             try:
