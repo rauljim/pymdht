@@ -30,6 +30,11 @@ class _QueuedNode(object):
         self.token = token
 
     def __cmp__(self, other):
+        # nodes without log_distance (bootstrap) go first
+        if self.log_distance is None:
+            return -1 
+        elif other.log_distance is None:
+            return 1
         return (self.log_distance - other.log_distance
                 or (getattr(self.node, 'rtt', .5) -
                     getattr(other.node, 'rtt', .5)))
@@ -55,9 +60,14 @@ class _LookupQueue(object):
 
     def bootstrap(self, rnodes, max_nodes):
         # Assume that the ips are not duplicated.
-        qnodes = [_QueuedNode(n, n.id.log_distance(
-                    self.info_hash), None)
-                  for n in rnodes]
+        qnodes = []
+        for n in rnodes:
+            if n.id:
+                log_distance = n.id.log_distance(self.info_hash)
+            else:
+                log_distance = None
+            qnode = _QueuedNode(n, log_distance, None)
+            qnodes.append(qnode)
         self._add_queued_qnodes(qnodes)
         return self._pop_nodes_to_query(max_nodes)
 
@@ -225,7 +235,7 @@ class GetPeersLookup(object):
     def _get_lookup_queries(self, nodes):
         queries = []
         for node_ in nodes:
-            if node_.id == self._my_id:
+            if node_.id and node_.id == self._my_id:
                 # Don't send to myself
                 continue
             self._num_parallel_queries += 1

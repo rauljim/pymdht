@@ -36,7 +36,7 @@ def setup(logs_path, logs_level):
     logger.setLevel(logs_level)
 
     logger_conf = logging.FileHandler(
-        os.path.join(logs_path, 'dht.log'), 'w')
+        os.path.join(logs_path, 'pymdht.log'), 'w')
     logger_conf.setLevel(logs_level)
     logger_conf.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(logger_conf)

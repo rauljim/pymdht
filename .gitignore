@@ -6,14 +6,5 @@
 .ropeproject
 .coverage
 m.*
-
-
-
-
-
-
-
-
-
-
-
+doc/build
+profiler/20*
