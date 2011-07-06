@@ -134,7 +134,7 @@ if __name__ == '__main__':
                       metavar='STRING', default=None,
                       help="private DHT name")
     parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
-                      metavar='FILE',default='plugins/experimental_m_ping.py',
+                      metavar='FILE',default='core/exp_plugin_template.py',
                       help="file containing ping-manager code")
 
     (options, args) = parser.parse_args()
