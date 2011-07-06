@@ -17,6 +17,7 @@ import controller
 
 import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
+import exp_plugin_template as exp_m_mod
 
 import logging_conf
 logging_conf.testing_setup(__name__)
@@ -37,6 +38,7 @@ class TestController:
                                                 'test_logs/state.dat',
                                                 routing_m_mod,
                                                 lookup_m_mod,
+                                                exp_m_mod,
                                                 None)
         self.my_id = self.controller._my_id
         self.querier2 = querier.Querier()#self.my_id)
@@ -54,7 +56,8 @@ class TestController:
 
     def test_with_unexistent_state_file(self):
         controller.Controller(tc.CLIENT_ADDR, 'test_logs/state.dat.no',
-                              routing_m_mod, lookup_m_mod, None)
+                              routing_m_mod, lookup_m_mod, exp_m_mod,
+                              None)
 
     def test_adding_and_removing_node(self):
         # The routing table is initially empty

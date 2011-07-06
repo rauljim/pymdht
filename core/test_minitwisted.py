@@ -78,6 +78,7 @@ class TestMinitwisted:
         time.sleep(tc.TASK_INTERVAL)
         # main_loop is called right away
         with self.lock:
+            #FIXME: this assert fails sometimes!!!!
             eq_(self.main_loop_call_counter, 1)
         time.sleep(.1 + tc.TASK_INTERVAL)
         with self.lock:

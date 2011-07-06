@@ -67,15 +67,14 @@ class OverlayBootstrapper(object):
             del self.saved_bootstrap_nodes[:SAVED_NODES_PER_BOOTSTRAP]
             queries_to_send = [self._get_bootstrap_query(node_) for node_ in nodes]
             delay = SAVED_DELAY
-            print '>> using saved nodes', len(nodes)
+#            print '>> using saved nodes', len(nodes)
         elif num_rnodes > MIN_RNODES_BOOTSTRAP:
             delay = 0 # bootstrap done
-            print '>> bootstrap done'
         else:
             nodes = self._pop_bootstrap_nodes()
             maintenance_lookup = (self.my_id, nodes)
             delay = BOOTSTRAP_DELAY
-            print '>> using bootstrap nodes', len(nodes)
+#            print '>> using bootstrap nodes', len(nodes)
         return queries_to_send, maintenance_lookup, delay
 
     def is_bootstrap_node(self, node_):
@@ -116,7 +115,7 @@ def _get_bootstrap_nodes():
         logger.exception('main bootstrap file corrupted!')
         main = []
         raise
-    print 'main: %d nodes' % len(main)
+#    print 'main: %d nodes' % len(main)
     try:
         f = open(os.path.join(data_path, BOOTSTRAP_BACKUP_FILENAME))
         backup = [_sanitize_bootstrap_node(n) for n in f]
@@ -124,5 +123,5 @@ def _get_bootstrap_nodes():
         logger.exception('backup bootstrap file corrupted!')
         backup = []
         raise
-    print 'backup: %d nodes' % len(backup)
+#    print 'backup: %d nodes' % len(backup)
     return main, backup

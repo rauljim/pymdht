@@ -48,6 +48,7 @@ class Controller:
 
     def __init__(self, dht_addr, state_filename,
                  routing_m_mod, lookup_m_mod,
+                 experimental_m_mod,
                  private_dht_name):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
@@ -70,17 +71,17 @@ class Controller:
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        saved_bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
+        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_node.id) 
+                  
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_maintenance_ts = current_ts
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
-        '''        
-        def finalize(self):
-        #TODO2: stop each manager, save routing table
-        return
-        '''
+                
+    def on_stop(self):
+        self._experimental_m.on_stop()
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         """
@@ -176,7 +177,6 @@ class Controller:
             if maintenance_lookup:
                 target, rnodes = maintenance_lookup
                 lookup_obj = self._lookup_m.maintenance_lookup(target)
-                print '>>>> maintenance lookup: %r to %r' % (target, rnodes)
                 queries_to_send.extend(lookup_obj.start(rnodes))
             
         # Auto-save routing table
@@ -205,10 +205,11 @@ class Controller:
         contains a response to a lookup query, both routing and lookup manager
         will be informed. Additionally, if that response contains peers, the
         lookup's handler will be called (see get\_peers above).
-
         This method is designed to be used as minitwisted's networking handler.
 
         """
+        exp_queries_to_send = []
+        
         data = datagram.data
         addr = datagram.addr
         datagrams_to_send = []
@@ -222,6 +223,9 @@ class Controller:
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
+            #zinat: inform experimental_module
+            exp_queries_to_send = self._experimental_m.on_query_received(msg)
+            
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
@@ -235,6 +239,12 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
+            ## zinat: if related_query.experimental_obj:
+            self._experimental_m.on_response_received(msg, related_query)
+            #TODO: you need to get datagrams to be able to send messages (raul)
+            ## .......
+            # datagrams = related_query.experimental_obj.on_response_received(msg.....)
+            # datagrams_to_send.extend(datagrams)
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -276,6 +286,10 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
+            #TODO: zinat: same as response
+            
+            
+            
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
@@ -311,8 +325,13 @@ class Controller:
 
         else: # unknown type
             return self._next_main_loop_call_ts, datagrams_to_send
+        # we are done with the plugins
+        # now we have maintenance_queries_to_send, let's send them!
         datagrams = self._register_queries(maintenance_queries_to_send)
         datagrams_to_send.extend(datagrams)
+        if exp_queries_to_send:
+            datagrams = self._register_queries(exp_queries_to_send)
+            datagrams_to_send.extend(datagrams)
         return self._next_main_loop_call_ts, datagrams_to_send
 
     def _on_query_received(self):
@@ -361,6 +380,8 @@ class Controller:
         
     def _on_timeout(self, related_query):
         queries_to_send = []
+        #TODO: on_timeout should return queries (raul)
+        self._experimental_m.on_timeout(related_query)
         if related_query.lookup_obj:
             (lookup_queries_to_send,
              num_parallel_queries,

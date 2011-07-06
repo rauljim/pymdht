@@ -42,16 +42,21 @@ def main(options, args):
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
+    print '*', options.experimental_m_file
     print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
+    experimental_m_name = '.'.join(os.path.split(options.experimental_m_file))[:-3]
+    experimental_m_mod = __import__(experimental_m_name, fromlist=[''])
+    
 
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
+                        experimental_m_mod,
                         options.private_dht_name,
                         logs_level)
     
@@ -128,6 +133,9 @@ if __name__ == '__main__':
     parser.add_option("-d", "--private-dht", dest="private_dht_name",
                       metavar='STRING', default=None,
                       help="private DHT name")
+    parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
+                      metavar='FILE',default='core/exp_plugin_template.py',
+                      help="file containing ping-manager code")
 
     (options, args) = parser.parse_args()
     
