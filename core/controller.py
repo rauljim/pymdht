@@ -71,7 +71,6 @@ class Controller:
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
                                                        saved_bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
-       
         self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_node.id) 
                   
         current_ts = time.time()
@@ -236,12 +235,13 @@ class Controller:
                 msg.src_node)
             
         elif msg.type == message.RESPONSE:
-            related_query = self._querier.get_related_query(msg) #from querier
+            related_query = self._querier.get_related_query(msg)
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
             ## zinat: if related_query.experimental_obj:
             self._experimental_m.on_response_received(msg, related_query)
+            #TODO: you need to get datagrams to be able to send messages (raul)
             ## .......
             # datagrams = related_query.experimental_obj.on_response_received(msg.....)
             # datagrams_to_send.extend(datagrams)
@@ -286,7 +286,7 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
-            ##zinat: same as response
+            #TODO: zinat: same as response
             
             
             
@@ -380,8 +380,7 @@ class Controller:
         
     def _on_timeout(self, related_query):
         queries_to_send = []
-        ##zinat: if related_query.experimental_obj
-        #......
+        #TODO: on_timeout should return queries (raul)
         self._experimental_m.on_timeout(related_query)
         if related_query.lookup_obj:
             (lookup_queries_to_send,

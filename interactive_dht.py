@@ -22,16 +22,12 @@ MIN_BT_PORT = 1024
 MAX_BT_PORT = 2**16
 
 
-
-
 def _on_peers_found(start_ts, peers):
     if peers:
-        print '\t[%.4f]\t\t%d\t\t%s' % (time.time() - start_ts,len(peers),peers)
-        
+        print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
+        print peers
     else:
-        print '\t[%.4f] ' % (time.time() - start_ts)
-        print'END OF LOOKUP'
-
+        print '[%.4f] END OF LOOKUP' % (time.time() - start_ts)
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
