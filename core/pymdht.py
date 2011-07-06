@@ -31,7 +31,7 @@ class Pymdht:
     - lookup_m_mod: the module implementing lookup management.
     - experimental_m_mod: the module implementing experimental management.
     - private_dht_name: name of the private DHT (use global DHT when None)
-    - debug_level: level of logs saved into dht.log (standard logging module).
+    - debug_level: level of logs saved into pymdht.log (standard logging module).
 
     """
     def __init__(self, dht_addr, conf_path,
@@ -39,8 +39,6 @@ class Pymdht:
                  experimental_m_mod,
                  private_dht_name,
                  debug_level):
-        
-             
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(dht_addr, state_filename,

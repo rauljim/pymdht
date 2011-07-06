@@ -1,4 +1,4 @@
-pymdht 1.0.1-M36-tribler
+pymdht 11.07+
 
 ORGANIZATION
 
@@ -6,7 +6,7 @@ The code is organized as follows:
 
 * Directories:
   - core
-    Core modules of the Pymdht package. The 'pmdht.py' file contains the
+    Core modules of the Pymdht package. The 'pymdht.py' file contains the
     package's API.
   - doc
     Documentation.

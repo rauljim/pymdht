@@ -18,25 +18,32 @@ logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 import core.identifier as identifier
 import core.pymdht as pymdht
 
-
+MIN_BT_PORT = 1024
+MAX_BT_PORT = 2**16
 
 
 def _on_peers_found(start_ts, peers):
     if peers:
-        print '\t[%.4f]\t\t%d\t\t%s' % (time.time() - start_ts,len(peers),peers)
-        
+        print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
+        print peers
     else:
-        print '\t[%.4f] ' % (time.time() - start_ts)
-        print'END OF LOOKUP'
-
+        print '[%.4f] END OF LOOKUP' % (time.time() - start_ts)
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
+    if not os.path.isdir(options.path):
+        if os.path.exists(options.path):
+            print 'FATAL:', options.path, 'must be a directory'
+            return
+        print options.path, 'does not exist. Creating directory...'
+        os.mkdir(options.path)
     logs_path = options.path
+    
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
     print '*', options.experimental_m_file
+    print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
@@ -89,11 +96,21 @@ Available commands are:
             except:
                 print 'Invalid bt_port (%r)' % input[2]
                 continue
-            print "\tRTT\t\tNumber of peers\t\tPeer List returned"
+            if 0 < bt_port < MIN_BT_PORT:
+                print 'Mmmm, you are using reserved ports (<1024). Try again.'
+                continue
+            if bt_port > MAX_BT_PORT:
+                print "I don't know about you, but I find difficult",
+                print "to represent %d with only two bytes." % (bt_port),
+                print "Try again."
+                continue
             dht.get_peers(time.time(), info_hash,
                           _on_peers_found, bt_port)
+        else:
+            print 'Invalid input: type help'
         
 if __name__ == '__main__':
+    default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
     parser = OptionParser()
     parser.add_option("-a", "--address", dest="ip",
                       metavar='IP', default='127.0.0.1',
@@ -102,13 +119,13 @@ if __name__ == '__main__':
                       metavar='INT', default=7000,
                       help="port to be used")
     parser.add_option("-x", "--path", dest="path",
-                      metavar='PATH', default='.',
+                      metavar='PATH', default=default_path,
                       help="state.dat and logs location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
-                      metavar='FILE', default='plugins/lookup_a16.py',
+                      metavar='FILE', default='plugins/lookup_a4.py',
                       help="file containing the lookup_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT',
@@ -117,7 +134,7 @@ if __name__ == '__main__':
                       metavar='STRING', default=None,
                       help="private DHT name")
     parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
-                      metavar='FILE',default='plugins/experimental_m_ping.py',
+                      metavar='FILE',default='core/exp_plugin_template.py',
                       help="file containing ping-manager code")
 
     (options, args) = parser.parse_args()

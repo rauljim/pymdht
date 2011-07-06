@@ -47,21 +47,21 @@ STOPPING_DELAY = 10
 
 REMOVE_TORRENT_DELAY = 3
 
-IP = '192.16.125.245'
+IP = '192.16.127.98'
 PORT = 8000 
 
 CONFIG = (
-    (ut2pymdht, (IP, PORT), '0', r_bep5, l_a4),
+    #(ut2pymdht, (IP, PORT), '0', r_bep5, l_a4),
     (pymdht, (IP, PORT+1), '1', r_bep5, l_a4),
-    (pymdht, (IP, PORT+2), '2', r_nice, l_a4),
-    (pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
-#    (pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
-    (pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
-    (pymdht, (IP, PORT+6), '6', r_bep5, l_a8_m2),
-    (pymdht, (IP, PORT+7), '7', r_nice, l_a8_m2),
-    (pymdht, (IP, PORT+8), '8', r_nice_rtt, l_a8_m2),
-#    (pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_a8_m2),
-    (pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_a8_m2),
+    #(pymdht, (IP, PORT+2), '2', r_nice, l_a4),
+    #(pymdht, (IP, PORT+3), '3', r_nice_rtt, l_a4),
+    #(pymdht, (IP, PORT+4), '4', r_nice_rtt64, l_a4),
+    #(pymdht, (IP, PORT+5), '5', r_nice_rtt128, l_a4),
+    #(pymdht, (IP, PORT+6), '6', r_bep5, l_a8_m2),
+    #(pymdht, (IP, PORT+7), '7', r_nice, l_a8_m2),
+    #(pymdht, (IP, PORT+8), '8', r_nice_rtt, l_a8_m2),
+    #(pymdht, (IP, PORT+9), '9', r_nice_rtt64, l_a8_m2),
+    #(pymdht, (IP, PORT+10), '10', r_nice_rtt128, l_a8_m2),
 )
 
 INFOHASHES = [line.strip() for line in open('infohashes.dat')]

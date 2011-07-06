@@ -61,7 +61,7 @@ class TestQuerier:
                                                       tc.SERVER_ID)
         bencoded_r = ping_r_msg_out.stamp(ping_msg.tid)
         time.sleep(1)
-        ok_(not self.querier.get_timeout_queries())
+        eq_(self.querier.get_timeout_queries()[1], [])
         # The client receives the bencoded message (after 1 second)
         ping_r_in = message.IncomingMsg(
             Datagram(bencoded_r, tc.SERVER_ADDR))
@@ -79,8 +79,8 @@ class TestQuerier:
         time.sleep(3)
         # The server never responds and the timeout is triggered
         timeout_queries = self.querier.get_timeout_queries()
-        eq_(len(timeout_queries), 1)
-        assert timeout_queries[0] is ping_msg
+        eq_(len(timeout_queries[1]), 1)
+        assert timeout_queries[1][0] is ping_msg
 
     def test_unsolicited_response(self):
         # Server creates unsolicited response
@@ -175,14 +175,14 @@ class TestQuerier:
         related_query = self.querier.get_related_query(ping_r_in)
         assert related_query is None
         # Still no time to trigger timeouts
-        ok_(not self.querier.get_timeout_queries())
+        eq_(self.querier.get_timeout_queries()[1], [])
         time.sleep(1)
         # Now, the timeouts can be triggered
         timeout_queries = self.querier.get_timeout_queries()
         expected_msgs = msgs[:2] + msgs[4:]
-        eq_(len(timeout_queries), len(expected_msgs))
+        eq_(len(timeout_queries[1]), len(expected_msgs))
         for related_query, expected_msg in zip(
-            timeout_queries, expected_msgs):
+            timeout_queries[1], expected_msgs):
             assert related_query is expected_msg
 
     def teardown(self):

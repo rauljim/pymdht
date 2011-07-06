@@ -24,6 +24,7 @@ logger = logging.getLogger('dht')
 
 BUFFER_SIZE = 3000
 
+DEBUG = False
                             
 class ThreadedReactor(threading.Thread):
 
@@ -85,7 +86,8 @@ class ThreadedReactor(threading.Thread):
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
             print 'MINITWISTED CRASHED'
-            raise #Uncomment for debuggin only! #TODO: why?
+            if DEBUG:
+                raise
         self.running = False
         logger.debug('Reactor stopped')
 
@@ -144,8 +146,9 @@ class ThreadedReactor(threading.Thread):
         """Stop the thread. It cannot be resumed afterwards"""
 
         self.running = False
-        self.join(self.task_interval*10)
+        self.join(self.task_interval*20)
         if self.isAlive():
+            #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
             raise Exception, 'Minitwisted thread is still alive!'
         #TODO: stop_callback()
 
