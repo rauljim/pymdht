@@ -146,8 +146,9 @@ class ThreadedReactor(threading.Thread):
         """Stop the thread. It cannot be resumed afterwards"""
 
         self.running = False
-        self.join(self.task_interval*10)
+        self.join(self.task_interval*20)
         if self.isAlive():
+            #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
             raise Exception, 'Minitwisted thread is still alive!'
         #TODO: stop_callback()
 
