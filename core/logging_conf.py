@@ -8,12 +8,12 @@ import os
 FORMAT = '%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(funcName)s()\n\
 %(message)s\n'
 
-devnullstream = open(os.devnull,"w")
+# devnullstream = open(os.devnull,"w")
 
-logging.basicConfig(level=logging.CRITICAL,
-                   format='%(asctime)s %(levelname)-8s %(message)s',
-                   datefmt='%a, %d %b %Y %H:%M:%S',
-                   stream=devnullstream)
+# logging.basicConfig(level=logging.CRITICAL,
+#                    format='%(asctime)s %(levelname)-8s %(message)s',
+#                    datefmt='%a, %d %b %Y %H:%M:%S',
+#                    stream=devnullstream)
 
 
 def testing_setup(module_name):
@@ -36,8 +36,7 @@ def setup(logs_path, logs_level):
     logger.setLevel(logs_level)
 
     logger_conf = logging.FileHandler(
-        os.path.join(logs_path, 'dht.log'), 'w')
-    #print "Logging to", os.path.join(logs_path, 'dht.log')
+        os.path.join(logs_path, 'pymdht.log'), 'w')
     logger_conf.setLevel(logs_level)
     logger_conf.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(logger_conf)

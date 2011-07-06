@@ -7,6 +7,7 @@
 import SocketServer
 import random
 import sys, os
+import socket
 from optparse import OptionParser
 
 import core.ptime as time
@@ -22,9 +23,13 @@ import core.identifier as identifier
 import core.pymdht as pymdht
 
 MAX_PORT = 2**16 - 1
+#SCORING_PERIOD = 2 #0.2
+
+NUM_PEERS_PER_BURST = 10
 
 dht = None
 stop_server = False
+random_lookup_delay = 0
 
 class SanitizeError(Exception):
     pass
@@ -69,6 +74,7 @@ class SessionHandler(SocketServer.StreamRequestHandler):
         SocketServer.StreamRequestHandler.__init__(self, *args, **kwargs)
         
     def _on_peers_found(self, channel, peers):
+        #current_time = time.time()
         if not channel.open:
             print 'Got peers but channel is CLOSED'
             return
@@ -78,19 +84,27 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             self.wfile.write('%d CLOSE\r\n' % (channel.send))
             return
         print 'got %d peer' % len(peers)
+        scored_peers = []
         for peer in peers:
             if peer not in channel.peers:
                 channel.peers.add(peer)
-                msg_head = '%d PEER %s:%d' % (channel.send,
-                                              peer[0], peer[1])
-                msg_tail = '\r\n'
                 if geo_score:
                     peer_score = geo_score.score_peer(peer[0])
-                    msg_score = ' SCORE %d' % (peer_score)
                 else:
-                    msg_score = ''
-                msg = ''.join((msg_head, msg_score, msg_tail))
-                self.wfile.write(msg)
+                    peer_score = 0
+                scored_peers.append((peer, peer_score))
+
+        if geo_score:
+            sorted_scored_peers = sorted(scored_peers, key = lambda elem:elem[1])
+            #TODO: is the top 10 OK?
+            sorted_scored_peers = sorted_scored_peers[:NUM_PEERS_PER_BURST]
+        else:
+            sorted_scored_peers = scored_peers
+        for peer, score in sorted_scored_peers:
+            msg = '%d PEER %s:%d SCORE %d\r\n' % (channel.send,
+                                                       peer[0], peer[1],
+                                                       score)
+            self.wfile.write(msg)
         return
 
     def _on_new_channel(self, splitted_line):
@@ -161,6 +175,9 @@ class SessionHandler(SocketServer.StreamRequestHandler):
                 global stop_server
                 stop_server = True
                 return
+            if line == 'CRASH':
+                dht.stop()
+                continue
             if line == 'EXIT':
                 return
             splitted_line = line.split()
@@ -177,13 +194,20 @@ class SessionHandler(SocketServer.StreamRequestHandler):
 def main(options, args):
     port = int(options.port)
     my_addr = (options.ip, port)
-    local_ip = options.my_ip
+    if not os.path.isdir(options.path):
+        if os.path.exists(options.path):
+            print 'FATAL:', options.path, 'must be a directory'
+            return
+        print options.path, 'does not exist. Creating directory...'
+        os.mkdir(options.path)
     logs_path = options.path
     logs_level = options.logs_level or default_logs_level
     logging_conf.setup(logs_path, logs_level)
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
+    print 'Path:', options.path
+    print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
@@ -193,12 +217,26 @@ def main(options, args):
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
-                        '', logs_level)
+                        options.private_dht_name,
+                        logs_level)
 
+    random_lookup_delay = options.random_lookup_delay
+    while random_lookup_delay > 0:
+        time.sleep(float(random_lookup_delay))
+        target = identifier.RandomId()
+        dht.get_peers(None, target, None, 0)
+
+    
     global geo_score
     if options.geoip_mode:
-        import geo
-        geo_score = geo.Geo(local_ip)
+        try:
+            import geo
+            geo_score = geo.Geo(local_ip)
+        except:
+            print "---------------------------------------"
+            print "Geo module FAILED: you cannot use --geo"
+            print "---------------------------------------"
+            raise
     else:
         geo_score = None
     
@@ -209,7 +247,15 @@ def main(options, args):
     
         
 if __name__ == '__main__':
+    default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
     parser = OptionParser()
+
+    #get IP address of the local computer
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('google.com', 80))
+    local_ip = s.getsockname()[0]
+    del s
+    
     parser.add_option("-a", "--address", dest="ip",
                       metavar='IP', default='127.0.0.1',
                       help="IP address to be used")
@@ -217,13 +263,13 @@ if __name__ == '__main__':
                       metavar='INT', default=7000,
                       help="port to be used")
     parser.add_option("-x", "--path", dest="path",
-                      metavar='PATH', default='.',
+                      metavar='PATH', default=default_path,
                       help="state.dat and logs location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
-                      metavar='FILE', default='plugins/lookup_a16.py',
+                      metavar='FILE', default='plugins/lookup_a4.py',
                       help="file containing the lookup_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT', default=0,
@@ -232,11 +278,14 @@ if __name__ == '__main__':
                       metavar='STRING', default=None,
                       help="private DHT name")
     parser.add_option("-m", "--my-address", dest="my_ip",
-                      metavar='IP', default='192.16.125.198',
+                      metavar='IP', default=local_ip,
                       help="local IP address")
-    parser.add_option("--no-geoip", dest="geoip_mode",
-                      action='store_false', default=True,
+    parser.add_option("--geoip", dest="geoip_mode",
+                      action='store_true', default=False,
                       help="do not use geoIP")
+    parser.add_option("--random-lookup", dest="random_lookup_delay",
+                      metavar='INT', default=0,
+                      help="Perform lookups (to random keys) every x seconds")
 
 
     (options, args) = parser.parse_args()
