@@ -56,7 +56,9 @@ class Pymdht:
     def stop(self):
         """Stop the DHT node."""
         #TODO: notify controller so it can do cleanup?
-        self.reactor.stop()#controller.stop)
+        self.reactor.stop()
+        # No need to call_asap because the minitwisted thread is dead by now
+        self.controller.on_stop()
     
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         """ Start a get peers lookup. Return a Lookup object.
