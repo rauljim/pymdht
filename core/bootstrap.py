@@ -20,10 +20,10 @@ import os
 import random
 import logging
 
-import core.ptime as time
-import core.identifier as identifier
-import core.message as message
-import core.node as node
+import ptime as time
+import identifier
+import message
+import node
 
 logger = logging.getLogger('dht')
 
