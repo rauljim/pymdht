@@ -69,7 +69,7 @@ PEERS = VALUES = 'values' # List of peers in compact format (get_peers)
 GENERIC_E = [201, 'Generic Error']
 SERVER_E = [202, 'Server Error']
 PROTOCOL_E = [203, 'Protocol Error']
-UNKNOWN_E = [201, 'Method Unknown']
+UNKNOWN_E = [204, 'Method Unknown']
 
 
 class MsgError(Exception):
@@ -117,9 +117,10 @@ class OutgoingQueryBase(OutgoingMsgBase):
     def __init__(self, dst_node, src_id):
         OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = QUERY
-        self._dict[ARGS] = {ID: str(src_id)}
+        self._dict[ARGS] = {ID: src_id.bin_id}
         self.lookup_obj = None
         self.experimental_obj = None #zinat
+        #print "out going query: dst = %r", dst_node
         self.got_response = False
 
     @property
@@ -153,6 +154,7 @@ class OutgoingPingQuery(OutgoingQueryBase):
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = PING
         self.experimental_obj = experimental_obj
+        
 
         
 class OutgoingFindNodeQuery(OutgoingQueryBase):
@@ -167,11 +169,13 @@ class OutgoingFindNodeQuery(OutgoingQueryBase):
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
 
-    def __init__(self, dst_node, src_id, info_hash, lookup_obj):#zinat:extra param
+    def __init__(self, dst_node, src_id, info_hash, lookup_obj,experimental_obj=None):#zinat:extra param
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self.lookup_obj = lookup_obj
+        self.experimental_obj = experimental_obj#zinat
+        
 
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
