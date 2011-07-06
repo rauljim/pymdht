@@ -75,7 +75,7 @@ class Controller:
                                                        bootstrap_nodes)#z from routing_nice.py
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
        
-        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_id) 
+        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_node.id) 
                   
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
@@ -83,11 +83,15 @@ class Controller:
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
-        '''        
-    def finalize(self):
+        
+                
+    def on_stop(self):
         #TODO2: stop each manager, save routing table
+        
+        self._experimental_m.on_stop()
+        
         return
-        '''
+        
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         """
@@ -237,8 +241,6 @@ class Controller:
             #zinat: inform experimental_module
             exp_queries_to_send = self._experimental_m.on_query_received(msg)
             
-            #experimental_obj = pingManager()
-            #response_msg = 
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
