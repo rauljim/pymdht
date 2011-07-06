@@ -22,12 +22,16 @@ MIN_BT_PORT = 1024
 MAX_BT_PORT = 2**16
 
 
+
+
 def _on_peers_found(start_ts, peers):
     if peers:
-        print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
-        print peers
+        print '\t[%.4f]\t\t%d\t\t%s' % (time.time() - start_ts,len(peers),peers)
+        
     else:
-        print '[%.4f] END OF LOOKUP' % (time.time() - start_ts)
+        print '\t[%.4f] ' % (time.time() - start_ts)
+        print'END OF LOOKUP'
+
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
@@ -42,16 +46,21 @@ def main(options, args):
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
+    print '*', options.experimental_m_file
     print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
+    experimental_m_name = '.'.join(os.path.split(options.experimental_m_file))[:-3]
+    experimental_m_mod = __import__(experimental_m_name, fromlist=[''])
+    
 
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
+                        experimental_m_mod,
                         options.private_dht_name,
                         logs_level)
     
@@ -128,6 +137,9 @@ if __name__ == '__main__':
     parser.add_option("-d", "--private-dht", dest="private_dht_name",
                       metavar='STRING', default=None,
                       help="private DHT name")
+    parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
+                      metavar='FILE',default='plugins/experimental_m_ping.py',
+                      help="file containing ping-manager code")
 
     (options, args) = parser.parse_args()
     

@@ -76,6 +76,7 @@ MIN_BT_PORT = 1 #TODO: lower it to 1024? Let tracker decide.
 MAX_BT_PORT = 2**16
 
 
+
 class MsgError(Exception):
     """Raised anytime something goes wrong (specially when
     decoding/sanitizing).
@@ -121,8 +122,10 @@ class OutgoingQueryBase(OutgoingMsgBase):
     def __init__(self, dst_node, src_id):
         OutgoingMsgBase.__init__(self, dst_node)
         self._dict[TYPE] = QUERY
-        self._dict[ARGS] = {ID: str(src_id)}
+        self._dict[ARGS] = {ID: src_id.bin_id}
         self.lookup_obj = None
+        self.experimental_obj = None #zinat
+        #print "out going query: dst = %r", dst_node
         self.got_response = False
 
     @property
@@ -152,27 +155,32 @@ class OutgoingQueryBase(OutgoingMsgBase):
         
 class OutgoingPingQuery(OutgoingQueryBase):
     
-    def __init__(self, dst_node, src_id):
+    def __init__(self, dst_node, src_id, experimental_obj=None):#zinat
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = PING
+        self.experimental_obj = experimental_obj
+        
 
         
 class OutgoingFindNodeQuery(OutgoingQueryBase):
 
-    def __init__(self, dst_node, src_id, target, lookup_obj):
+    def __init__(self, dst_node, src_id, target, lookup_obj, experimental_obj=None):
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
         self.lookup_obj = lookup_obj
+        self.experimental_obj = experimental_obj#zinat
 
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
 
-    def __init__(self, dst_node, src_id, info_hash, lookup_obj):
+    def __init__(self, dst_node, src_id, info_hash, lookup_obj,experimental_obj=None):#zinat:extra param
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self.lookup_obj = lookup_obj
+        self.experimental_obj = experimental_obj#zinat
+        
 
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
