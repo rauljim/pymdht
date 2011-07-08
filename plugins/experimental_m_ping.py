@@ -15,7 +15,7 @@ class ExperimentalManager:
         self._stop = False
         #TODO data structure to keep track of things
         self.pinged_ips = {}
-        # this dict contains................ #TODO
+        # this dict contains ip and status ................ #TODO
         self.num_ok = 0
         self.num_fail = 0
         pass
@@ -25,7 +25,7 @@ class ExperimentalManager:
         
                 
             
-        if not self._stop and msg.query =='find_node':
+        if not self._stop and msg.query =='ping':
             #self._stop = True
             #self.pinged_ips[msg.src_node.ip] = msg.src_node.ip
             print '\nExperimentalModule got query (%s) from  node  %r =' % (msg.query ,  msg.src_node)
@@ -54,7 +54,7 @@ class ExperimentalManager:
             self.pinged_ips[msg.src_node.ip] = STATUS_OK
             elapsed_time = time.time() - related_query.experimental_obj.query_ts
             print 'RTT = ',elapsed_time
-            self.num_ok += 1
+            #self.num_ok += 1
             
         pass
            
@@ -64,7 +64,7 @@ class ExperimentalManager:
             print 'prove FAILED Due to Time-Out' ,related_query.experimental_obj.value
             print 'RTT = ',elapsed_time
             self.pinged_ips[related_query.dst_node.ip] = STATUS_FAIL
-            self.num_fail += 1 
+            #self.num_fail += 1 
             
                
                
@@ -72,26 +72,26 @@ class ExperimentalManager:
         
         fob=open('c:/Users/zinat/pythonworkspace/pymdht/plugins/ping_res.txt','w')
         for ip, status in self.pinged_ips.iteritems():
-            fob.write('%s %s\n' % (ip, status))
+            fob.write('%s\t %s\n' % (ip, status))
         fob.close()
         
         # TODO print node.ip  port  node.id    ping_response(ok/fail)
         # count number of nodes which responses
         # create a file and store the data
-        '''
-        for self.pinged_ips['ip_address'],self.pinged_ips['status'] in self.pinged_ips.iteritems():
-            if self.pinged_ips['status'] == 'OK':
+        '''  
+        for ip,status in self.pinged_ips.iteritems():
+            if self.pinged_ips[msg.src_node.ip] == STATUS_OK:
                 num_ok += 1
                 print 'OK= ', num_ok
-            elif self.pinged_ips['status'] == 'Fail':
+            elif self.pinged_ips[related_query.dst_node.ip] == STATUS_FAIL:
                 num_fail += 1 
                 print 'Fail=', num_fail
             else:
                 print 'fail'    
     
         pass
-        
         '''
+        
          
         
             
