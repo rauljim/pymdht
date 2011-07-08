@@ -39,28 +39,35 @@ conf = [
     ]
 
 multiparser_mods = [
-    __import__('parsers.traffic_multiparser'
+'''
+   __import__('parsers.traffic_multiparser'
                ).traffic_multiparser,
     __import__('parsers.same_ip').same_ip,
     __import__('parsers.multi_rtt').multi_rtt,
+'''
+    __import__('parsers.multi_bootstrap_miner').multi_rtt,
     #__import__('parsers.announce').announce,
     #__import__('parsers.infohashes').infohashes,
     ]
 
 parser_mods = [
+'''
     __import__('parsers.lookup_parser').lookup_parser,
     __import__('parsers.maintenance_parser'
                ).maintenance_parser,
     __import__('parsers.rtt_parser').rtt_parser,
+'''
     ]    
 
 cdf_files = [
+'''
     'l_time',
     'l_queries',
     'l_queries_till_peers',
     'l_time_closest',
     'l_time_auth',
     'l_num_nodes'
+'''
     ]
 
 multiparser_cdf_files = [

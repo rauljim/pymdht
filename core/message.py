@@ -71,6 +71,10 @@ SERVER_E = [202, 'Server Error']
 PROTOCOL_E = [203, 'Protocol Error']
 UNKNOWN_E = [204, 'Method Unknown']
 
+# Valid BT ports (for announcements)
+MIN_BT_PORT = 1 #TODO: lower it to 1024? Let tracker decide.
+MAX_BT_PORT = 2**16
+
 
 class MsgError(Exception):
     """Raised anytime something goes wrong (specially when
@@ -119,8 +123,7 @@ class OutgoingQueryBase(OutgoingMsgBase):
         self._dict[TYPE] = QUERY
         self._dict[ARGS] = {ID: src_id.bin_id}
         self.lookup_obj = None
-        self.experimental_obj = None #zinat
-        #print "out going query: dst = %r", dst_node
+        self.experimental_obj = None
         self.got_response = False
 
     @property
@@ -150,11 +153,10 @@ class OutgoingQueryBase(OutgoingMsgBase):
         
 class OutgoingPingQuery(OutgoingQueryBase):
     
-    def __init__(self, dst_node, src_id, experimental_obj=None):#zinat
+    def __init__(self, dst_node, src_id, experimental_obj=None):
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = PING
         self.experimental_obj = experimental_obj
-        
 
         
 class OutgoingFindNodeQuery(OutgoingQueryBase):
@@ -164,18 +166,17 @@ class OutgoingFindNodeQuery(OutgoingQueryBase):
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
         self.lookup_obj = lookup_obj
-        self.experimental_obj = experimental_obj#zinat
+        self.experimental_obj = experimental_obj
 
 
 class OutgoingGetPeersQuery(OutgoingQueryBase):
 
-    def __init__(self, dst_node, src_id, info_hash, lookup_obj,experimental_obj=None):#zinat:extra param
+    def __init__(self, dst_node, src_id, info_hash, lookup_obj, experimental_obj=None):
         OutgoingQueryBase.__init__(self, dst_node, src_id)
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self.lookup_obj = lookup_obj
-        self.experimental_obj = experimental_obj#zinat
-        
+        self.experimental_obj = experimental_obj
 
         
 class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
@@ -355,6 +356,9 @@ class IncomingMsg(object):
             self.info_hash = self._get_id(ARGS, INFO_HASH)
             if self.query == ANNOUNCE_PEER:
                 self.bt_port = self._get_int(ARGS, PORT)
+                if not MIN_BT_PORT <= self.bt_port <= MAX_BT_PORT:
+                    raise MsgError, 'announcing to %d. Out of range' % (
+                        self.bt_port)
                 self.token = self._get_str(ARGS, TOKEN)
         elif self.query == FIND_NODE:
             # target

@@ -10,6 +10,7 @@ import pymdht
 
 import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
+import exp_plugin_template as exp_m_mod
 
 class TestPymdht:
 
@@ -20,6 +21,7 @@ class TestPymdht:
         self.dht = pymdht.Pymdht(tc.CLIENT_ADDR, 'test_logs',
                                  routing_m_mod,
                                  lookup_m_mod,
+                                 exp_m_mod,
                                  None, logging.DEBUG)
 
     def test_interface(self):
