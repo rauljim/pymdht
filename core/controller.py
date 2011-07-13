@@ -243,9 +243,6 @@ class Controller:
             exp_queries_to_send = self._experimental_m.on_response_received(
                                                         msg, related_query)
             #TODO: you need to get datagrams to be able to send messages (raul)
-            ## .......
-            # datagrams = related_query.experimental_obj.on_response_received(msg.....)
-            # datagrams_to_send.extend(datagrams)
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -288,9 +285,7 @@ class Controller:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
             #TODO: zinat: same as response
-            
-            
-            
+            exp_queries_to_send = self._experimental_m.on_error_received(msg, related_query)
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
