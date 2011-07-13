@@ -54,8 +54,6 @@ class ExperimentalManager:
             self.pinged_ips[msg.src_node.ip] = STATUS_OK
             elapsed_time = time.time() - related_query.experimental_obj.query_ts
             print 'RTT = ',elapsed_time
-            #self.num_ok += 1
-            
         pass
            
     def on_timeout(self, related_query):
@@ -64,35 +62,16 @@ class ExperimentalManager:
             print 'prove FAILED Due to Time-Out' ,related_query.experimental_obj.value
             print 'RTT = ',elapsed_time
             self.pinged_ips[related_query.dst_node.ip] = STATUS_FAIL
-            #self.num_fail += 1 
             
                
-               
     def on_stop(self):
-        
+        # TODO print node.ip  port  node.id ping_response(ok/fail)
+        # count number of nodes which responses
+        # create a file and store the data
         fob=open('c:/Users/zinat/pythonworkspace/pymdht/plugins/ping_res.txt','w')
         for ip, status in self.pinged_ips.iteritems():
             fob.write('%s\t %s\n' % (ip, status))
         fob.close()
-        
-        # TODO print node.ip  port  node.id    ping_response(ok/fail)
-        # count number of nodes which responses
-        # create a file and store the data
-        '''  
-        for ip,status in self.pinged_ips.iteritems():
-            if self.pinged_ips[msg.src_node.ip] == STATUS_OK:
-                num_ok += 1
-                print 'OK= ', num_ok
-            elif self.pinged_ips[related_query.dst_node.ip] == STATUS_FAIL:
-                num_fail += 1 
-                print 'Fail=', num_fail
-            else:
-                print 'fail'    
-    
-        pass
-        '''
-        
-         
         
             
 class ExpObj:
