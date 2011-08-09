@@ -165,7 +165,8 @@ def _decode_dict(bencoded, pos, max_depth):
     bencoded_length = len(bencoded)
     if bencoded_length < 2:
         # The shortest valid bencoded dictionary is "de" (len == 2)
-        raise DecodeError("Found end of bencoded dict right after 'd'")
+        raise DecodeError("Found end of bencoded dict right after 'd'",
+                          bencoded)
     while bencoded[next_pos] != 'e':
         # Decode key
         decode_f = _get_decode_f(bencoded, next_pos)
