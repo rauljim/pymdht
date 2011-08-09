@@ -60,6 +60,10 @@ class ThreadedReactor(threading.Thread):
         my_addr = ('', self._port)
         self.s.bind(my_addr)
 
+        self.num_sent_msgs = 0
+        self.num_recvd_msgs = 0
+        self.last_print_ts = 0
+
     def _get_running(self):
         self._lock.acquire()
         try:
@@ -96,6 +100,14 @@ class ThreadedReactor(threading.Thread):
 
         # Deal with call_asap requests
         #TODO: retry for 5 seconds if no msgs_to_send (inside controller?)
+        current_time_int = int(time.time())
+        if current_time_int > self.last_print_ts:
+            logger.critical('[%d] sent: %d, received: %d' % (current_time_int, 
+                                                             self.num_sent_msgs,
+                                                             self.num_recvd_msgs))
+            self.last_print_ts = current_time_int
+            self.num_sent_msgs = self.num_recvd_msgs = 0
+
         call_asap_tuple = None
         self._lock.acquire()
         try:
@@ -120,6 +132,7 @@ class ThreadedReactor(threading.Thread):
         # Get data from the network
         try:
             data, addr = self.s.recvfrom(BUFFER_SIZE)
+            self.num_recvd_msgs+=1
         except (socket.timeout):
             pass #timeout
         except (socket.error), e:
@@ -169,6 +182,7 @@ class ThreadedReactor(threading.Thread):
 
         try:
             bytes_sent = self.s.sendto(datagram.data, datagram.addr)
+            self.num_sent_msgs+=1
             if bytes_sent != len(datagram.data):
                 logger.warning(
                     'Just %d bytes sent out of %d (Data follows)' % (

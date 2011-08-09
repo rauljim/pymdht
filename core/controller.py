@@ -53,6 +53,18 @@ class Controller:
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
 
+        self.num_p_in = 0
+        self.num_fn_in = 0
+        self.num_gp_in = 0
+        self.num_ap_in = 0
+        self.num_r_in = 0
+        self.num_p_out = 0
+        self.num_fn_out = 0
+        self.num_gp_out = 0
+        self.num_ap_out = 0
+        self.num_r_out = 0
+        self.last_print_ts = 0
+
         if size_estimation:
             self._size_estimation_file = open('size_estimation.dat', 'w')
         
@@ -208,6 +220,17 @@ class Controller:
         This method is designed to be used as minitwisted's networking handler.
 
         """
+        current_time = time.time()
+        current_time_int = int(current_time)
+        if current_time_int > self.last_print_ts:
+            logger.critical(
+                "IN: %d p, %d fn, %d gp, %d ap, %d r\nOUT: %d p, %d fn, %d gp, %d ap, %d r" % (
+                    self.num_p_in, self.num_fn_in, self.num_gp_in, self.num_ap_in, self.num_r_in,
+                    self.num_p_out, self.num_fn_out, self.num_gp_out, self.num_ap_out, self.num_r_out))
+            self.num_p_in = self.num_fn_in = self.num_gp_in = self.num_ap_in = self.num_r_in = 0
+            self.num_p_out = self.num_fn_out = self.num_gp_out = self.num_ap_out = self.num_r_out = 0
+            self.last_print_ts = current_time_int
+
         exp_queries_to_send = []
         
         data = datagram.data
@@ -220,6 +243,16 @@ class Controller:
             return self._next_main_loop_call_ts, datagrams_to_send
 
         if msg.type == message.QUERY:
+            if msg.query == message.PING:
+                self.num_p_in += 1
+                return self._next_main_loop_call_ts, datagrams_to_send
+            elif msg.query == message.FIND_NODE:
+                self.num_fn_in += 1
+            if msg.query == message.GET_PEERS:
+                self.num_gp_in += 1
+            if msg.query == message.ANNOUNCE_PEER:
+                self.num_ap_in += 1
+
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
@@ -235,6 +268,7 @@ class Controller:
                 msg.src_node)
             
         elif msg.type == message.RESPONSE:
+            self.num_r_in += 1
             related_query = self._querier.get_related_query(msg)
             if not related_query:
                 # Query timed out or unrequested response
