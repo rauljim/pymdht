@@ -64,6 +64,8 @@ class Controller:
         self.num_ap_out = 0
         self.num_r_out = 0
         self.last_print_ts = 0
+        self.responded_fn = set()
+        self.last_responded_fn_cleanup = 0
 
         if size_estimation:
             self._size_estimation_file = open('size_estimation.dat', 'w')
@@ -248,6 +250,12 @@ class Controller:
                 return self._next_main_loop_call_ts, datagrams_to_send
             elif msg.query == message.FIND_NODE:
                 self.num_fn_in += 1
+                if time.time() > self.last_responded_fn_cleanup + 3600:
+                    self.responded_fn = set()
+                ip = datagram.addr[0]
+                if ip in self.responded_fn:
+                    return self._next_main_loop_call_ts, datagrams_to_send
+                self.responded_fn.add(ip)
             if msg.query == message.GET_PEERS:
                 self.num_gp_in += 1
             if msg.query == message.ANNOUNCE_PEER:
