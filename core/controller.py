@@ -63,6 +63,7 @@ class Controller:
         self.num_gp_out = 0
         self.num_ap_out = 0
         self.num_r_out = 0
+        self.num_ignored_fn = 0
         self.last_print_ts = 0
         self.responded_fn = set()
         self.last_responded_fn_cleanup = 0
@@ -226,11 +227,13 @@ class Controller:
         current_time_int = int(current_time)
         if current_time_int > self.last_print_ts:
             logger.critical(
-                "IN: %d p, %d fn, %d gp, %d ap, %d r\nOUT: %d p, %d fn, %d gp, %d ap, %d r" % (
+                "IN: %d p, %d fn, %d gp, %d ap, %d r\nOUT: %d p, %d fn, %d gp, %d ap, %d r\n%d" % (
                     self.num_p_in, self.num_fn_in, self.num_gp_in, self.num_ap_in, self.num_r_in,
-                    self.num_p_out, self.num_fn_out, self.num_gp_out, self.num_ap_out, self.num_r_out))
+                    self.num_p_out, self.num_fn_out, self.num_gp_out, self.num_ap_out, self.num_r_out,
+                    self.num_ignored_fn))
             self.num_p_in = self.num_fn_in = self.num_gp_in = self.num_ap_in = self.num_r_in = 0
             self.num_p_out = self.num_fn_out = self.num_gp_out = self.num_ap_out = self.num_r_out = 0
+            self.num_ignored_fn = 0
             self.last_print_ts = current_time_int
 
         exp_queries_to_send = []
@@ -252,8 +255,10 @@ class Controller:
                 self.num_fn_in += 1
                 if time.time() > self.last_responded_fn_cleanup + 3600:
                     self.responded_fn = set()
+                    self.last_responded_fn_cleanup = time.time()
                 ip = datagram.addr[0]
                 if ip in self.responded_fn:
+                    self.num_ignored_fn += 1
                     return self._next_main_loop_call_ts, datagrams_to_send
                 self.responded_fn.add(ip)
             if msg.query == message.GET_PEERS:
