@@ -65,7 +65,7 @@ class Controller:
         self.num_r_out = 0
         self.num_ignored_fn = 0
         self.last_print_ts = 0
-        self.responded_fn = set()
+        self.responded_fn = {}
         self.last_responded_fn_cleanup = 0
 
         if size_estimation:
@@ -254,13 +254,13 @@ class Controller:
             elif msg.query == message.FIND_NODE:
                 self.num_fn_in += 1
                 if time.time() > self.last_responded_fn_cleanup + 3600:
-                    self.responded_fn = set()
+                    self.responded_fn = {}
                     self.last_responded_fn_cleanup = time.time()
                 ip = datagram.addr[0]
-                if ip in self.responded_fn:
+                self.responded_fn[ip] = self.responded_fn.get(ip, 0) + 1
+                if self.responded_fn[ip] > 2:
                     self.num_ignored_fn += 1
                     return self._next_main_loop_call_ts, datagrams_to_send
-                self.responded_fn.add(ip)
             if msg.query == message.GET_PEERS:
                 self.num_gp_in += 1
             if msg.query == message.ANNOUNCE_PEER:
