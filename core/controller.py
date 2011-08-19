@@ -402,7 +402,7 @@ class Controller:
                     queries_to_send.extend(self._announce(
                             related_query.lookup_obj))
                     lookup_id = related_query.lookup_obj.lookup_id
-                    related_query.lookup_obj.callback_f(lookup_id, None, msg.src_node)
+                    related_query.lookup_obj.callback_f(lookup_id, None, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(related_query.dst_node)
         if maintenance_queries_to_send:
             queries_to_send.extend(maintenance_queries_to_send)
