@@ -82,6 +82,11 @@ class Pymdht:
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()
 
+    def start_capture(self):
+        self.reactor.start_capture()
+        
+    def stop_and_get_capture(self):
+        return self.reactor.stop_and_get_capture()
 
     #TODO2: Future Work
     #TODO2: def add_bootstrap_node(self, node_addr, node_id=None):
