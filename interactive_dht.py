@@ -22,7 +22,7 @@ MIN_BT_PORT = 1024
 MAX_BT_PORT = 2**16
 
 
-def _on_peers_found(start_ts, peers):
+def _on_peers_found(start_ts, peers, src_node):
     if peers:
         print '[%.4f] %d peer(s)' % (time.time() - start_ts, len(peers))
         print peers
