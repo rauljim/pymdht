@@ -14,7 +14,7 @@ logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 import core.identifier as identifier
 import core.pymdht as pymdht
 import time
-import interactive_dht_ext as idht_ext
+import gui.interactive_dht_ext as idht_ext
 
 import pymdht.core.message as message
 
