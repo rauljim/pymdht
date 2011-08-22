@@ -59,55 +59,62 @@ def main(options, args):
                         experimental_m_mod,
                         options.private_dht_name,
                         logs_level)
-    
-    print '\nType "exit" to stop the DHT and exit'
-    print 'Type "help" if you need'
-    while (1):
-        input = sys.stdin.readline().strip().split()
-        if not input:
-            continue
-        command = input[0]
-        if command == 'help':
-            print '''
+    if options.gui:
+        import wx
+        import gui.gui
+        app = wx.PySimpleApp()
+        frame = gui.gui.Interactive_GUI(None, "Interactive DHT . . .", None,(1440,900), dht)
+        frame.Show(True)
+        app.MainLoop()
+    elif options.cli:
+        print '\nType "exit" to stop the DHT and exit'
+        print 'Type "help" if you need'
+        while (1):
+            input = sys.stdin.readline().strip().split()
+            if not input:
+                continue
+            command = input[0]
+            if command == 'help':
+                print '''
 Available commands are:
 - help
 - fast info_hash bt_port
 - exit
 - m                  Memory information
 '''
-        elif command == 'exit':
-            dht.stop()
-            break
-        elif command == 'm':
-            import guppy
-            h = guppy.hpy()
-            print h.heap()
-        elif command == 'fast':
-            if len(input) != 3:
-                print 'usage: fast info_hash bt_port'
-                continue
-            try:
-                info_hash = identifier.Id(input[1])
-            except (identifier.IdError):
-                print 'Invalid info_hash (%s)' % input[1]
-                continue
-            try:
-                bt_port = int(input[2])
-            except:
-                print 'Invalid bt_port (%r)' % input[2]
-                continue
-            if 0 < bt_port < MIN_BT_PORT:
-                print 'Mmmm, you are using reserved ports (<1024). Try again.'
-                continue
-            if bt_port > MAX_BT_PORT:
-                print "I don't know about you, but I find difficult",
-                print "to represent %d with only two bytes." % (bt_port),
-                print "Try again."
-                continue
-            dht.get_peers(time.time(), info_hash,
-                          _on_peers_found, bt_port)
-        else:
-            print 'Invalid input: type help'
+            elif command == 'exit':
+                dht.stop()
+                break
+            elif command == 'm':
+                import guppy
+                h = guppy.hpy()
+                print h.heap()
+            elif command == 'fast':
+                if len(input) != 3:
+                    print 'usage: fast info_hash bt_port'
+                    continue
+                try:
+                    info_hash = identifier.Id(input[1])
+                except (identifier.IdError):
+                    print 'Invalid info_hash (%s)' % input[1]
+                    continue
+                try:
+                    bt_port = int(input[2])
+                except:
+                    print 'Invalid bt_port (%r)' % input[2]
+                    continue
+                if 0 < bt_port < MIN_BT_PORT:
+                    print 'Mmmm, you are using reserved ports (<1024). Try again.'
+                    continue
+                if bt_port > MAX_BT_PORT:
+                    print "I don't know about you, but I find difficult",
+                    print "to represent %d with only two bytes." % (bt_port),
+                    print "Try again."
+                    continue
+                dht.get_peers(time.time(), info_hash,
+                              _on_peers_found, bt_port)
+            else:
+                print 'Invalid input: type help'
         
 if __name__ == '__main__':
     default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
@@ -134,32 +141,29 @@ if __name__ == '__main__':
                       metavar='STRING', default=None,
                       help="private DHT name")
     parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
-                      metavar='FILE',default='core/exp_plugin_template.py',
+                      metavar='FILE', default='core/exp_plugin_template.py',
                       help="file containing ping-manager code")
     parser.add_option("--debug",dest="debug",
-                      metavar='BOOLEAN',default=False,
+                      action='store_true', default=False,
                       help="DEBUG mode")
     parser.add_option("--gui",dest="gui",
-                      metavar='BOOLEAN',default=False,
+                      action='store_true', default=False,
                       help="Graphical user interface")
     parser.add_option("--cli",dest="cli",
-                      metavar='BOOLEAN',default=True,
+                      action='store_true', default=True,
                       help="Command line interface (no GUI) <- default")
     parser.add_option("--daemon", dest="daemon",
-                      metavar='BOOLEAN',default=False,
+                      action='store_true', default=False,
                       help="DAEMON mode (no interface)")
     parser.add_option("--telnet",dest="telnet",
-                      metavar='BOOLEAN',default=False,
+                      action='store_true', default=False,
                       help="Telnet interface (only on DAEMON mode)")
-    parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
-                      metavar='FILE',default='core/exp_plugin_template.py',
-                      help="file containing ping-manager code")
 
     (options, args) = parser.parse_args()
     
-    if option.telnet and not option.daemon:
-        print 'FATAL: telnet interfate only works on DAEMON mode'
-        return
+#    if option.telnet and not option.daemon:
+#        print 'FATAL: telnet interfate only works on DAEMON mode'
+        #return
     main(options, args)
 
 

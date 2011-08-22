@@ -14,22 +14,22 @@ logs_level = logging.DEBUG # This generates HUGE (and useful) logs
 import core.identifier as identifier
 import core.pymdht as pymdht
 import time
-import gui.interactive_dht_ext as idht_ext
+import interactive_dht_ext as idht_ext
 
 import pymdht.core.message as message
 
-import gui.mainclass as mainclass
+import mainclass as mainclass
 
-import gui.graphical_display as gdisplay
+import graphical_display as gdisplay
 
 import cPickle
 
 class Interactive_GUI(wx.Frame):
     MainList=[]
-    def __init__(self, parent, mytitle, list, Size):
+    def __init__(self, parent, mytitle, list, Size, dht):
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0), size=Size)
-        self.dht=None
-        self.init_main_of_idht()        
+        self.dht = dht
+        #self.init_main_of_idht()        
         self.counter1=0
         self.counter2=0
         self.packets=[]
@@ -80,7 +80,7 @@ class Interactive_GUI(wx.Frame):
         dht.start_capture()
         dht.get_peers(time.time(), identifier.Id(input[1]),
                           self._on_peers_found, int(input[2]))
-    def init_main_of_idht(self):
+    def _DEPRECATED_init_main_of_idht(self):
         parser = OptionParser()
         parser.add_option("-a", "--address", dest="ip",
                           metavar='IP', default='127.0.0.1',
