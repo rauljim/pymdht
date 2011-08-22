@@ -238,7 +238,7 @@ class Interactive_GUI(wx.Frame):
     def save_infile(self,event):
         if not self.packets==[]:
             file_name=str(time.strftime("%Y%m%d%H%M%S"))
-            file_path_name=os.path.join('data_files', file_name+'.out')
+            file_path_name=os.path.join('gui/data_files', file_name+'.out')
             f = open(file_path_name, "wb")
             cPickle.dump(self.packets, f)
             wx.MessageDialog(self, "The file "+file_name+" has been saved !!!", "File Saved!", wx.OK | wx.CENTRE | wx.ICON_EXCLAMATION).ShowModal()

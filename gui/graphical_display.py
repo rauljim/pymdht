@@ -357,7 +357,7 @@ class Graphical_display(wx.Frame):
         self.precalculation_nextstep()
     def on_browse(self,event):
         dlg = wx.FileDialog(self, "Choose a file", 
-                                os.getcwd()+"/data_files", "", "*.*",
+                                os.getcwd()+"/gui/data_files", "", "*.*",
                                 wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()

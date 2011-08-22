@@ -34,11 +34,11 @@ class idht_ext(threading.Thread):
 #            '601', '602', '603', '604',
             ]
         try:
-            os.mkdir('torrent_pages')
+            os.mkdir('gui/torrent_pages')
         except (OSError):
             pass # directory already exists
     def get_html(self,page):
-        html_filename = os.path.join('torrent_pages', page+'.html')
+        html_filename = os.path.join('gui/torrent_pages', page+'.html')
         print 'Retrieving', page, 'to', html_filename, '...',
         sys.stdout.flush()
         
