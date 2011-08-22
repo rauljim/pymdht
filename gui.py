@@ -18,9 +18,9 @@ import interactive_dht_ext as idht_ext
 
 import pymdht.core.message as message
 
-import mainclass
+import gui.mainclass as mainclass
 
-import graphical_display as gdisplay
+import gui.graphical_display as gdisplay
 
 import cPickle
 
