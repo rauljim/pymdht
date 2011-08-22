@@ -158,16 +158,16 @@ class Graphical_display(wx.Frame):
         
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL|wx.TB_TEXT)
         self.toolbar.AddLabelTool(1, "Play/Pause",
-            wx.Bitmap('images/Picture9.png'))
+            wx.Bitmap('gui/images/Picture9.png'))
         self.Bind(wx.EVT_TOOL, self.start_processing, id=1)
         self.toolbar.AddLabelTool(2, "Stop",
-            wx.Bitmap('images/Picture12.png'))
+            wx.Bitmap('gui/images/Picture12.png'))
         self.Bind(wx.EVT_TOOL, self.stop_processing, id=2)
         self.toolbar.AddLabelTool(3, "Previous",
-            wx.Bitmap('images/Picture10.png'))
+            wx.Bitmap('gui/images/Picture10.png'))
         self.Bind(wx.EVT_TOOL, self.previous_step, id=3)
         self.toolbar.AddLabelTool(4, "Next",
-            wx.Bitmap('images/Picture11.png'))
+            wx.Bitmap('gui/images/Picture11.png'))
         self.Bind(wx.EVT_TOOL, self.next_step, id=4)
         
         
