@@ -1,4 +1,17 @@
-pymdht 11.07
+pymdht 11.8.0
+aka "NS\8\0" (message label) or "M45" (P2P-Next's NextShare)
+
+NOTE on version number.
+We use the following version format:
+- first number: release year (two digits)
+- second number: release month number
+- third number: sub-release number, even numbers indicate stable release, odd
+numbers indicate development (unstable)
+
+Examples:
+- 11.8.0 Code released in Aug 2011 (stable release)
+- 11.8.1 Development code right after 11.8.0 release (unstable)
+- 11.8.2 Bugfix release (stable release)
 
 ORGANIZATION
 
