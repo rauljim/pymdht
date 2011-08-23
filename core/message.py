@@ -29,7 +29,7 @@ private_dht_name = None
 logger = logging.getLogger('dht')
 
 
-NEXTSHARE_VERSION = 'NS\7\1' # 11.7.1
+NEXTSHARE_VERSION = 'NS\8\0' # 11.8.0
 
 # High level keys
 TYPE = 'y'     # Message's type
