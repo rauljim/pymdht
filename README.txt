@@ -1,4 +1,5 @@
 pymdht 11.8.0
+aka "NS\8\0" (message label) or "M45" (P2P-Next's NextShare)
 
 NOTE on version number.
 We use the following version format:
