@@ -9,7 +9,7 @@ import string
 import pcap
 import dpkt
 import binascii
-import pymdht.core.message as message
+import core.message as message
 
 #import mainclass
 

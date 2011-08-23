@@ -8,10 +8,10 @@ import pcap
 import dpkt
 import binascii
 from StringIO import StringIO
-import pymdht.core.message as message
+import core.message as message
 import os
 import stat
-import pymdht.core.identifier as identifier
+import core.identifier as identifier
 import keyword
 
 import filereader as fread

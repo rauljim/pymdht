@@ -1,7 +1,7 @@
 # Copyright (C) 2010 Sara Dar
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information               
-import pymdht.core.identifier as identifier
+import core.identifier as identifier
 
 class Aliasing():
    def __init__(self):
