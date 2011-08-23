@@ -11,7 +11,7 @@ import string
 import pcap
 import dpkt
 import binascii
-import core.message as message
+import core.old_message as message
 import filereader as fread
 
 #import mainclass
