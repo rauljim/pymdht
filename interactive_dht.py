@@ -11,10 +11,6 @@ from optparse import OptionParser
 import logging
 import core.logging_conf as logging_conf
 
-logs_level = logging.DEBUG # This generates HUGE (and useful) logs
-#logs_level = logging.INFO # This generates some (useful) logs
-#logs_level = logging.WARNING # This generates warning and error logs
-
 import core.identifier as identifier
 import core.pymdht as pymdht
 
@@ -28,6 +24,14 @@ def main(options, args):
         print options.path, 'does not exist. Creating directory...'
         os.mkdir(options.path)
     logs_path = options.path
+
+    if options.debug:
+        logs_level = logging.DEBUG # This generates HUGE (and useful) logs
+    else:
+        #logs_level = logging.INFO # This generates some (useful) logs
+        logs_level = logging.WARNING # This generates warning and error logs
+
+        
     
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
@@ -35,6 +39,7 @@ def main(options, args):
     print '*', options.experimental_m_file
     print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
+    print 'debug mode:', options.debug
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
