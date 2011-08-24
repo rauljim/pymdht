@@ -34,21 +34,21 @@ class Pymdht:
     - debug_level: level of logs saved into pymdht.log (standard logging module).
 
     """
-    def __init__(self, dht_addr, conf_path,
+    def __init__(self, my_node, conf_path,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
                  debug_level):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
-        self.controller = controller.Controller(dht_addr, state_filename,
+        self.controller = controller.Controller(my_node, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 experimental_m_mod,
                                                 private_dht_name)
         self.reactor = minitwisted.ThreadedReactor(
             self.controller.main_loop,
-            dht_addr[1], self.controller.on_datagram_received)
+            my_node.addr[1], self.controller.on_datagram_received)
         self.reactor.start()
 
     def stop(self):

@@ -12,11 +12,17 @@ import logging
 import core.logging_conf as logging_conf
 
 import core.identifier as identifier
+import core.node as node
 import core.pymdht as pymdht
 
 
 def main(options, args):
     my_addr = (options.ip, int(options.port))
+    my_id = None
+    if options.node_id:
+        base_id = identifier.Id(options.node_id)
+        my_id = base_id.generate_close_id(options.log_distance)
+    my_node = node.Node(my_addr, my_id)
     if not os.path.isdir(options.path):
         if os.path.exists(options.path):
             print 'FATAL:', options.path, 'must be a directory'
@@ -48,29 +54,31 @@ def main(options, args):
     experimental_m_mod = __import__(experimental_m_name, fromlist=[''])
     
 
-    dht = pymdht.Pymdht(my_addr, logs_path,
+    dht = pymdht.Pymdht(my_node, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
                         experimental_m_mod,
                         options.private_dht_name,
                         logs_level)
-    if options.daemon:
-        if options.lookup_delay:
-            loop_forever = not options.num_lookups
-            print '>>>>', loop_forever
-            remaining_lookups = options.num_lookups
-            while loop_forever or remaining_lookups:
-                time.sleep(options.lookup_delay)
-                if options.lookup_target:
-                    target = options.lookup_target
-                else:
-                    target = identifier.RandomId()
-                dht.get_peers(None, target, None, options.announce_port)
-                remaining_lookups = remaining_lookups - 1
-        else:
-            # Just loop for ever
-            while 1:
-                time.sleep(10)
+    if options.lookup_delay:
+        if not options.daemon:
+            print 'Switching to DAEMON mode (no user interface)'
+        loop_forever = not options.num_lookups
+        remaining_lookups = options.num_lookups
+        while loop_forever or remaining_lookups:
+            time.sleep(options.lookup_delay)
+            if options.lookup_target:
+                target = options.lookup_target
+            else:
+                target = identifier.RandomId()
+            print 'lookup', target
+            dht.get_peers(None, target, None, options.announce_port)
+            remaining_lookups = remaining_lookups - 1
+        time.sleep(options.stop_delay)
+    elif options.daemon:
+        # Just loop for ever
+        while 1:
+            time.sleep(10)
     elif options.gui:
         import wx
         import ui.gui
@@ -100,9 +108,9 @@ if __name__ == '__main__':
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
                       metavar='FILE', default='plugins/lookup_a4.py',
                       help="file containing the lookup_manager code")
-    parser.add_option("-z", "--logs-level", dest="logs_level",
-                      metavar='INT',
-                      help="logging level")
+#    parser.add_option("-z", "--logs-level", dest="logs_level",
+#                      metavar='INT', default=0
+#                      help="logging level")
     parser.add_option("-d", "--private-dht", dest="private_dht_name",
                       metavar='STRING', default=None,
                       help="private DHT name")
@@ -126,8 +134,8 @@ if __name__ == '__main__':
 #                      help="Telnet interface (only on DAEMON mode)")
     parser.add_option("--lookup-delay",dest="lookup_delay",
                       metavar='INT', default=0,
-                      help="Perform a lookup every x seconds (only on DAEMON\
-    mode). The lookup-target option determines the lookup target")
+                      help="Perform a lookup every x seconds (it will switch\
+    to DAEMON mode). The lookup-target option determines the lookup target")
     parser.add_option("--lookup-target",dest="lookup_target",
                       metavar='STRING', default='',
                       help="Hexadecimal (40 characters) representation of the\
@@ -135,31 +143,37 @@ if __name__ == '__main__':
     targets each lookup (use in combination with lookup-delay")
     parser.add_option("--number-lookups",dest="num_lookups",
                       metavar='INT', default=0,
-                      help="Exit after x lookups. Default infinite (run\
-    forever) (use in combination with lookup-delay)")
+                      help="Exit after x lookups + stop_delay. Default\
+    infinite (run forever) (use in combination with lookup-delay)")
+    parser.add_option("--stop-delay",dest="stop_delay",
+                      metavar='INT', default=60,
+                      help="Sleep for x seconds before exiting (use in\
+    combination with number-lookups). Default 60 seconds.")
     parser.add_option("--announce-port",dest="announce_port",
                       metavar='INT', default=0,
                       help="(only with lookup-delay) Announce after each\
     lookup. No announcement by default")
     parser.add_option("--node-id",dest="node_id",
-                      metavar='STRING', default='',
+                      metavar='STRING', default=None,
                       help="Hexadecimal (40 characters) representation of the\
     identifier (node id) to be used. This option overrides the node id saved\
     into pymdht.state. (option log-distance can modify the final node id) TODO")
     parser.add_option("--log-distance",dest="log_distance",
-                      metavar='INT', default=0,
+                      metavar='INT', default=-1,
                       help="(only when option node-id is used) Modifies the\
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
     messages for a given info_hash TODO")
-    
-    
 
     (options, args) = parser.parse_args()
-    
-#    if option.telnet and not option.daemon:
-#        print 'FATAL: telnet interfate only works on DAEMON mode'
-        #return
+    options.port = int(options.port)
+#    options.logs_level = int(options.logs_level)
+    options.lookup_delay = int(options.lookup_delay)
+    options.num_lookups = int(options.num_lookups)
+    options.stop_delay = int(options.stop_delay)
+    options.announce_port = int(options.announce_port)
+    options.log_distance = int(options.log_distance)
+
     main(options, args)
 
 

@@ -46,7 +46,7 @@ NUM_NODES = 8
 
 class Controller:
 
-    def __init__(self, dht_addr, state_filename,
+    def __init__(self, my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name):
@@ -59,11 +59,13 @@ class Controller:
         
         self.state_filename = state_filename
         saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
-        if saved_id:
-            self._my_id = saved_id
-        else:
-            self._my_id = identifier.RandomId()
-        self._my_node = Node(dht_addr, self._my_id)
+        my_addr = my_node.addr
+        self._my_id = my_node.id # id indicated by user 
+        if not self._my_id:
+            self._my_id = saved_id # id loaded from file
+        if not self._my_id:
+            self._my_id = self._my_id = identifier.RandomId() # random id
+        self._my_node = Node(my_addr, self._my_id)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
