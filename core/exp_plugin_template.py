@@ -10,6 +10,9 @@ class ExperimentalManager:
     
     def on_response_received(self, msg, related_query):
         pass
+
+    def on_error_received(self, msg, related_query):
+        pass
            
     def on_timeout(self, related_query):
         pass
