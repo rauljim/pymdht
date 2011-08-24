@@ -157,13 +157,13 @@ if __name__ == '__main__':
                       metavar='STRING', default=None,
                       help="Hexadecimal (40 characters) representation of the\
     identifier (node id) to be used. This option overrides the node id saved\
-    into pymdht.state. (option log-distance can modify the final node id) TODO")
+    into pymdht.state. (option log-distance can modify the final node id)")
     parser.add_option("--log-distance",dest="log_distance",
                       metavar='INT', default=-1,
                       help="(only when option node-id is used) Modifies the\
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
-    messages for a given info_hash TODO")
+    messages for a given info_hash")
 
     (options, args) = parser.parse_args()
     options.port = int(options.port)
