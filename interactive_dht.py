@@ -54,7 +54,24 @@ def main(options, args):
                         experimental_m_mod,
                         options.private_dht_name,
                         logs_level)
-    if options.gui:
+    if options.daemon:
+        if options.lookup_delay:
+            loop_forever = not options.num_lookups
+            print '>>>>', loop_forever
+            remaining_lookups = options.num_lookups
+            while loop_forever or remaining_lookups:
+                time.sleep(options.lookup_delay)
+                if options.lookup_target:
+                    target = options.lookup_target
+                else:
+                    target = identifier.RandomId()
+                dht.get_peers(None, target, None, options.announce_port)
+                remaining_lookups = remaining_lookups - 1
+        else:
+            # Just loop for ever
+            while 1:
+                time.sleep(10)
+    elif options.gui:
         import wx
         import ui.gui
         app = wx.PySimpleApp()
@@ -103,10 +120,40 @@ if __name__ == '__main__':
                       help="Command line interface (no GUI) <- default")
     parser.add_option("--daemon", dest="daemon",
                       action='store_true', default=False,
-                      help="DAEMON mode (no interface)")
-    parser.add_option("--telnet",dest="telnet",
-                      action='store_true', default=False,
-                      help="Telnet interface (only on DAEMON mode)")
+                      help="DAEMON mode (no user interface)")
+#    parser.add_option("--telnet",dest="telnet",
+#                      action='store_true', default=False,
+#                      help="Telnet interface (only on DAEMON mode)")
+    parser.add_option("--lookup-delay",dest="lookup_delay",
+                      metavar='INT', default=0,
+                      help="Perform a lookup every x seconds (only on DAEMON\
+    mode). The lookup-target option determines the lookup target")
+    parser.add_option("--lookup-target",dest="lookup_target",
+                      metavar='STRING', default='',
+                      help="Hexadecimal (40 characters) representation of the\
+    identifier (info_hash) to be looked up. Default is different random\
+    targets each lookup (use in combination with lookup-delay")
+    parser.add_option("--number-lookups",dest="num_lookups",
+                      metavar='INT', default=0,
+                      help="Exit after x lookups. Default infinite (run\
+    forever) (use in combination with lookup-delay)")
+    parser.add_option("--announce-port",dest="announce_port",
+                      metavar='INT', default=0,
+                      help="(only with lookup-delay) Announce after each\
+    lookup. No announcement by default")
+    parser.add_option("--node-id",dest="node_id",
+                      metavar='STRING', default='',
+                      help="Hexadecimal (40 characters) representation of the\
+    identifier (node id) to be used. This option overrides the node id saved\
+    into pymdht.state. (option log-distance can modify the final node id)")
+    parser.add_option("--log-distance",dest="log_distance",
+                      metavar='INT', default=0,
+                      help="(only when option node-id is used) Modifies the\
+    node id to be close to the node-id specified. This is useful to place\
+    nodes close to a particular identifier. For instance, to collect get_peers\
+    messages for a given info_hash")
+    
+    
 
     (options, args) = parser.parse_args()
     
