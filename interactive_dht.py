@@ -99,9 +99,9 @@ if __name__ == '__main__':
     parser.add_option("-p", "--port", dest="port",
                       metavar='INT', default=7000,
                       help="port to be used")
-    parser.add_option("-x", "--path", dest="path",
+    parser.add_option("--path", dest="path",
                       metavar='PATH', default=default_path,
-                      help="state.dat and logs location")
+                      help="pymdht.state and pymdht.log location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
@@ -111,12 +111,12 @@ if __name__ == '__main__':
 #    parser.add_option("-z", "--logs-level", dest="logs_level",
 #                      metavar='INT', default=0
 #                      help="logging level")
-    parser.add_option("-d", "--private-dht", dest="private_dht_name",
-                      metavar='STRING', default=None,
-                      help="private DHT name")
     parser.add_option("-e", "--experimental-plug-in",dest="experimental_m_file",
                       metavar='FILE', default='core/exp_plugin_template.py',
                       help="file containing ping-manager code")
+    parser.add_option("-d", "--private-dht", dest="private_dht_name",
+                      metavar='STRING', default=None,
+                      help="private DHT name")
     parser.add_option("--debug",dest="debug",
                       action='store_true', default=False,
                       help="DEBUG mode")
