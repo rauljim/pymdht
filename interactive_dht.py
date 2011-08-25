@@ -17,19 +17,30 @@ import core.pymdht as pymdht
 
 
 def main(options, args):
+    if not os.path.isdir(options.path):
+        if os.path.exists(options.path):
+            print >>sys.stderr, 'FATAL:', options.path, 'must be a directory'
+            return
+        print >>sys.stderr, options.path, 'does not exist. Creating directory...'
+        os.mkdir(options.path)
+    logs_path = options.path
+    if options.lookup_delay and not options.daemon:
+        print >>sys.stderr, 'Switching to DAEMON mode (no user interface)'
+    if options.lookup_delay or options.daemon:
+        # redirect output
+        stdout_file = os.path.join(options.path, 'pymdht.stdout')
+        stderr_file = os.path.join(options.path, 'pymdht.stderr')
+        print >>sys.stderr, 'Redirecting output to %s and %s' % (
+                    stdout_file, stderr_file)
+        sys.stdout = open(stdout_file, 'w')
+        sys.stderr = open(stderr_file, 'w')
+
     my_addr = (options.ip, int(options.port))
     my_id = None
     if options.node_id:
         base_id = identifier.Id(options.node_id)
         my_id = base_id.generate_close_id(options.log_distance)
     my_node = node.Node(my_addr, my_id)
-    if not os.path.isdir(options.path):
-        if os.path.exists(options.path):
-            print 'FATAL:', options.path, 'must be a directory'
-            return
-        print options.path, 'does not exist. Creating directory...'
-        os.mkdir(options.path)
-    logs_path = options.path
 
     if options.debug:
         logs_level = logging.DEBUG # This generates HUGE (and useful) logs
@@ -61,8 +72,6 @@ def main(options, args):
                         options.private_dht_name,
                         logs_level)
     if options.lookup_delay:
-        if not options.daemon:
-            print 'Switching to DAEMON mode (no user interface)'
         loop_forever = not options.num_lookups
         remaining_lookups = options.num_lookups
         while loop_forever or remaining_lookups:
