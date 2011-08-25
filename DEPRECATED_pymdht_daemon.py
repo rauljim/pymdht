@@ -194,23 +194,34 @@ class SessionHandler(SocketServer.StreamRequestHandler):
 def main(options, args):
     port = int(options.port)
     my_addr = (options.ip, port)
-    local_ip = options.my_ip
+    if not os.path.isdir(options.path):
+        if os.path.exists(options.path):
+            print 'FATAL:', options.path, 'must be a directory'
+            return
+        print options.path, 'does not exist. Creating directory...'
+        os.mkdir(options.path)
     logs_path = options.path
     logs_level = options.logs_level or default_logs_level
     logging_conf.setup(logs_path, logs_level)
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
+    print 'Path:', options.path
+    print 'Private DHT name:', options.private_dht_name
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
+    exp_m_name = '.'.join(os.path.split(options.exp_m_file))[:-3]
+    exp_m_mod = __import__(exp_m_name, fromlist=[''])
 
     global dht
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
-                        '', logs_level)
+                        exp_m_mod,
+                        options.private_dht_name,
+                        logs_level)
 
     random_lookup_delay = options.random_lookup_delay
     while random_lookup_delay > 0:
@@ -239,6 +250,7 @@ def main(options, args):
     
         
 if __name__ == '__main__':
+    default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
     parser = OptionParser()
 
     #get IP address of the local computer
@@ -254,14 +266,17 @@ if __name__ == '__main__':
                       metavar='INT', default=7000,
                       help="port to be used")
     parser.add_option("-x", "--path", dest="path",
-                      metavar='PATH', default='.',
+                      metavar='PATH', default=default_path,
                       help="state.dat and logs location")
     parser.add_option("-r", "--routing-plug-in", dest="routing_m_file",
                       metavar='FILE', default='plugins/routing_nice_rtt.py',
                       help="file containing the routing_manager code")
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
-                      metavar='FILE', default='plugins/lookup_a16.py',
+                      metavar='FILE', default='plugins/lookup_a4.py',
                       help="file containing the lookup_manager code")
+    parser.add_option("-e", "--exp-plug-in", dest="exp_m_file",
+                      metavar='FILE', default='core/exp_plugin_template.py',
+                      help="file containing the experiment_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT', default=0,
                       help="logging level")

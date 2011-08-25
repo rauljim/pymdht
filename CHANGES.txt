@@ -1,1 +1,31 @@
-v1.0, 31 Jan 2011 -- Initial release with proper documentation
+== 11.8.1
+
+- Moved all user interface code to ui directory
+- Integrated all user interfaces and options in interactive_dht.py
+- pymdht_daemon.py is now deprecated (functionality moved to
+  interactive_dht.py)
+- user can now choose a nodeId (node-id option) or choose a nodeId close to
+  some identifier (node-id + log-distance)
+
+== 11.8.0
+
+- Added GUI code (from Shariq)
+
+=== 11.07
+
+- Profiling toolkit integrated (profiler directory)
+
+- Many nodes to bootstrap into the overlay. boostrap.main contains nodes
+controlled by us and bootstrap.backup contains nodes we have seen alive for a
+long time.
+
+- The default path is now ~/.pymdht. Deleting that directory cleans any state
+(it would be as if the code never run before on the machine).  
+
+- TODO: some plugins do not work, need to clean up or fix them
+
+- TODO: if connectivity is lost for a long enough period (1 hour?), all nodes
+will be expelled from the routing table. Need to stop expelling nodes when n
+timeouts in a row.
+
+=== v1.0, 31 Jan 2011 -- Initial release with proper documentation

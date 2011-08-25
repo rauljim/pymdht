@@ -5,16 +5,17 @@
 import sys
 import threading
 import logging
-try:
-    import core.ptime as time
-    import core.identifier as identifier
-    import core.message as message
-except ImportError:
-    import Tribler.Core.DecentralizedTracking.pymdht.core.ptime as time
-    from Tribler.Core.DecentralizedTracking.pymdht.core.querier import Query
-    import Tribler.Core.DecentralizedTracking.pymdht.core.identifier as identifier
-    import Tribler.Core.DecentralizedTracking.pymdht.core.message as message
 
+import os, sys
+this_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.join(this_dir, '..')
+sys.path.append(root_dir)
+
+import core.ptime as time
+import core.identifier as identifier
+import core.message as message
+
+sys.path.pop()
 
 logger = logging.getLogger('dht')
 

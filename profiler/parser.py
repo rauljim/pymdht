@@ -39,37 +39,40 @@ conf = [
     ]
 
 multiparser_mods = [
-	]
+'''
+   __import__('parsers.traffic_multiparser'
+               ).traffic_multiparser,
+    __import__('parsers.same_ip').same_ip,
+    __import__('parsers.multi_rtt').multi_rtt,
+'''
+    __import__('parsers.multi_bootstrap_miner').multi_rtt,
+    #__import__('parsers.announce').announce,
+    #__import__('parsers.infohashes').infohashes,
+    ]
 
 parser_mods = [
     __import__('parsers.get_peers').get_peers,
     __import__('parsers.announce_peer').announce_peer,
     __import__('parsers.find_node').find_node,
     __import__('parsers.ping').ping,
-    __import__('parsers.ip_geo_locator').ip_geo_locator, 
-    __import__('parsers.unique_ip_geo_locator').unique_ip_geo_locator, 
+    __import__('parsers.ip_geo_locator').ip_geo_locator,
+    __import__('parsers.unique_ip_geo_locator').unique_ip_geo_locator,
+'''
+    __import__('parsers.lookup_parser').lookup_parser,
+    __import__('parsers.maintenance_parser'
+               ).maintenance_parser,
+    __import__('parsers.rtt_parser').rtt_parser,
+'''
     ]    
 '''
 cdf_files = [
-    'per_sec_gp',
-    'per_min_gp',
-    'per_hour_gp',
-    'per_sec_find_node',
-    'per_min_find_node',
-    'per_hour_find_node',
-    'per_sec_announce_peer',
-    'per_min_announce_peer',
-    'per_hour_announce_peer',
-    'per_sec_ping',
-    'per_min_ping',
-    'per_hour_ping',
-
-    #'l_time',
-    #'l_queries',
-    #'l_queries_till_peers',
-    #'l_time_closest',
-    #'l_time_auth',
-    #'l_num_nodes'
+    'l_time',
+    'l_queries',
+    'l_queries_till_peers',
+    'l_time_closest',
+    'l_time_auth',
+    'l_num_nodes'
+'''
     ]
 
 multiparser_cdf_files = [

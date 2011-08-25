@@ -1,0 +1,17 @@
+Raul's TO DO list:
+
+- Use good variable names (you can add comments also if you like)
+
+- Use PEP8 code style
+
+- Save user data in ~/.pymdht/ (for instance ~/.pymdht/data_files and
+torrent_pages). See interactive_dht.py how to use
+os.path.expanduser('~'). Even better, you can use the path given in
+options.path from the command line options.
+ - If the directory does not exist, you should create it instead of
+ crashing. See interactive_dht.py how to use os.path.exists(options.path)
+
+- The SAVE icon should not be the same as EXIT, it's confusing.
+
+- In "graphical display" it would help if "browse" were on the left, then the
+  "choice box", and finally "load" because that's the user's sequence.

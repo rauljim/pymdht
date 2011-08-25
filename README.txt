@@ -1,4 +1,17 @@
-pymdht 1.0.1-M36-tribler
+pymdht 11.8.1
+aka "NS\8\1" (message label)
+
+NOTE on version number.
+We use the following version format:
+- first number: release year (two digits)
+- second number: release month number
+- third number: sub-release number, even numbers indicate stable release, odd
+numbers indicate development (unstable)
+
+Examples:
+- 11.8.0 Code released in Aug 2011 (stable release)
+- 11.8.1 Development code right after 11.8.0 release (unstable)
+- 11.8.2 Bugfix release (stable release)
 
 ORGANIZATION
 
@@ -6,7 +19,7 @@ The code is organized as follows:
 
 * Directories:
   - core
-    Core modules of the Pymdht package. The 'pmdht.py' file contains the
+    Core modules of the Pymdht package. The 'pymdht.py' file contains the
     package's API.
   - doc
     Documentation.

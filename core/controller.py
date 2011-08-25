@@ -15,6 +15,7 @@ implementations of routing and lookup managers in parallel.
 
 size_estimation = False
 
+import sys
 import ptime as time
 import datetime
 import os
@@ -31,14 +32,14 @@ import tracker
 from querier import Querier
 from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
 from node import Node
+import pkgutil
 
 #from profilestats import profile
 
 logger = logging.getLogger('dht')
 
 SAVE_STATE_DELAY = 1 * 60
-STATE_FILENAME = 'state.dat'
-
+STATE_FILENAME = 'pymdht.state'
 
 #TIMEOUT_DELAY = 2
 
@@ -46,9 +47,10 @@ NUM_NODES = 8
 
 class Controller:
 
-    def __init__(self, dht_addr, state_filename,
+    def __init__(self, my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
-                 private_dht_name, id_):
+                 experimental_m_mod,
+                 private_dht_name):
         #TODO: don't do this evil stuff!!!
         message.private_dht_name = private_dht_name
 
@@ -57,34 +59,32 @@ class Controller:
         
         
         self.state_filename = state_filename
-        saved_id, saved_nodes = state.load(self.state_filename)
-        if saved_id:
-            self._my_id = id_ or saved_id
-            bootstrap_nodes = saved_nodes
-            #TODO: include bootstrap nodes also because all saved nodes might
-            #be down
-        else:
-            self._my_id = id_ or identifier.RandomId()
-            bootstrap_nodes = BOOTSTRAP_NODES
-        self._my_node = Node(dht_addr, self._my_id)
+        saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
+        my_addr = my_node.addr
+        self._my_id = my_node.id # id indicated by user 
+        if not self._my_id:
+            self._my_id = saved_id # id loaded from file
+        if not self._my_id:
+            self._my_id = self._my_id = identifier.RandomId() # random id
+        self._my_node = Node(my_addr, self._my_id)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
         self._querier = Querier()
         self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
-                                                       bootstrap_nodes)
+                                                       saved_bootstrap_nodes)
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
+        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_node.id) 
+                  
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_maintenance_ts = current_ts
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
-        '''        
-    def finalize(self):
-        #TODO2: stop each manager, save routing table
-        return
-        '''
+                
+    def on_stop(self):
+        self._experimental_m.on_stop()
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         """
@@ -105,7 +105,7 @@ class Controller:
         queries_to_send =  self._try_do_lookup()
         datagrams_to_send = self._register_queries(queries_to_send)
         return self._next_main_loop_call_ts, datagrams_to_send
-        
+    
     def _try_do_lookup(self):
         queries_to_send = []
         if self._pending_lookups:
@@ -123,7 +123,7 @@ class Controller:
             peers = self._tracker.get(lookup_obj.info_hash)
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
-                callback_f(lookup_obj.lookup_id, peers)
+                callback_f(lookup_obj.lookup_id, peers, None)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
         else:
@@ -131,7 +131,7 @@ class Controller:
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                next_lookup_attempt_ts)
         return queries_to_send
-        
+    
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
 
@@ -172,20 +172,15 @@ class Controller:
         if time.time() >= self._next_maintenance_ts:
             (maintenance_delay,
              queries,
-             maintenance_lookup_target) = self._routing_m.do_maintenance()
+             maintenance_lookup) = self._routing_m.do_maintenance()
             self._next_maintenance_ts = current_ts + maintenance_delay
             self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                                self._next_maintenance_ts)
             queries_to_send.extend(queries)
-
-            if maintenance_lookup_target:
-                log_distance = maintenance_lookup_target.log_distance(
-                    self._my_id)
-                bootstrap_rnodes = self._routing_m.get_closest_rnodes(
-                    log_distance, 0, True) # Get the full bucket
-                lookup_obj = self._lookup_m.maintenance_lookup(
-                    maintenance_lookup_target)
-                queries_to_send.extend(lookup_obj.start(bootstrap_rnodes))
+            if maintenance_lookup:
+                target, rnodes = maintenance_lookup
+                lookup_obj = self._lookup_m.maintenance_lookup(target)
+                queries_to_send.extend(lookup_obj.start(rnodes))
             
         # Auto-save routing table
         if current_ts >= self._next_save_state_ts:
@@ -213,10 +208,11 @@ class Controller:
         contains a response to a lookup query, both routing and lookup manager
         will be informed. Additionally, if that response contains peers, the
         lookup's handler will be called (see get\_peers above).
-
         This method is designed to be used as minitwisted's networking handler.
 
         """
+        exp_queries_to_send = []
+        
         data = datagram.data
         addr = datagram.addr
         datagrams_to_send = []
@@ -232,6 +228,9 @@ class Controller:
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
+            #zinat: inform experimental_module
+            exp_queries_to_send = self._experimental_m.on_query_received(msg)
+            
             response_msg = self._get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
@@ -245,6 +244,10 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
+            ## zinat: if related_query.experimental_obj:
+            exp_queries_to_send = self._experimental_m.on_response_received(
+                                                        msg, related_query)
+            #TODO: you need to get datagrams to be able to send messages (raul)
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -256,27 +259,26 @@ class Controller:
                 datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
+                lookup_id = related_query.lookup_obj.lookup_id
+                callback_f = related_query.lookup_obj.callback_f
+                if peers and callable(callback_f):
+                    callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
-                    # Size estimation
-                    if size_estimation:
-                        line = '%d %d\n' % (
-                            related_query.lookup_obj.get_number_nodes_within_region())
-                        self._size_estimation_file.write(line)
-                        self._size_estimation_file.flush()
-
-
+                    if callable(callback_f):
+                        callback_f(lookup_id, None, msg.src_node)
                     queries_to_send = self._announce(
                         related_query.lookup_obj)
                     datagrams = self._register_queries(
                         queries_to_send)
                     datagrams_to_send.extend(datagrams)
-                callback_f = related_query.lookup_obj.callback_f
-                if callback_f and callable(callback_f):
-                    lookup_id = related_query.lookup_obj.lookup_id
-                    if peers:
-                        callback_f(lookup_id, peers)
-                    if lookup_done:
-                        callback_f(lookup_id, None)
+                        
+                # Size estimation
+                if size_estimation and lookup_done:
+                    line = '%d %d\n' % (
+                        related_query.lookup_obj.get_number_nodes_within_region())
+                    self._size_estimation_file.write(line)
+                    self._size_estimation_file.flush()
+                    
             # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_response_received(
@@ -287,6 +289,8 @@ class Controller:
             if not related_query:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
+            #TODO: zinat: same as response
+            exp_queries_to_send = self._experimental_m.on_error_received(msg, related_query)
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
@@ -315,15 +319,20 @@ class Controller:
                 if callback_f and callable(callback_f):
                     lookup_id = related_query.lookup_obj.lookup_id
                     if lookup_done:
-                        callback_f(lookup_id, None)
-            # maintenance related tasks
+                        callback_f(lookup_id, None, msg.src_node)
+			    # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_error_received(addr)
 
         else: # unknown type
             return self._next_main_loop_call_ts, datagrams_to_send
+        # we are done with the plugins
+        # now we have maintenance_queries_to_send, let's send them!
         datagrams = self._register_queries(maintenance_queries_to_send)
         datagrams_to_send.extend(datagrams)
+        if exp_queries_to_send:
+            datagrams = self._register_queries(exp_queries_to_send)
+            datagrams_to_send.extend(datagrams)
         return self._next_main_loop_call_ts, datagrams_to_send
 
     def _on_query_received(self):
@@ -340,7 +349,7 @@ class Controller:
         elif msg.query == message.FIND_NODE:
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                       NUM_NODES, False)
+                                                        NUM_NODES, False)
             #TODO: return the closest rnodes to the target instead of the 8
             #first in the bucket.
             return message.OutgoingFindNodeResponse(msg.src_node,
@@ -350,7 +359,7 @@ class Controller:
             token = self._token_m.get()
             log_distance = msg.info_hash.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                       NUM_NODES, False)
+                                                        NUM_NODES, False)
             #TODO: return the closest rnodes to the target instead of the 8
             #first in the bucket.
             peers = self._tracker.get(msg.info_hash)
@@ -372,6 +381,8 @@ class Controller:
         
     def _on_timeout(self, related_query):
         queries_to_send = []
+        #TODO: on_timeout should return queries (raul)
+        exp_queries_to_send = self._experimental_m.on_timeout(related_query)
         if related_query.lookup_obj:
             (lookup_queries_to_send,
              num_parallel_queries,
@@ -392,20 +403,24 @@ class Controller:
                     queries_to_send.extend(self._announce(
                             related_query.lookup_obj))
                     lookup_id = related_query.lookup_obj.lookup_id
-                    related_query.lookup_obj.callback_f(lookup_id, None)
-        queries_to_send.extend(
-            self._routing_m.on_timeout(related_query.dst_node))
+                    related_query.lookup_obj.callback_f(lookup_id, None, None)
+        maintenance_queries_to_send = self._routing_m.on_timeout(related_query.dst_node)
+        if maintenance_queries_to_send:
+            queries_to_send.extend(maintenance_queries_to_send)
+        if exp_queries_to_send:
+            datagrams = self._register_queries(exp_queries_to_send)
+            datagrams_to_send.extend(datagrams)
         return queries_to_send
 
     def _announce(self, lookup_obj):
         queries_to_send, announce_to_myself = lookup_obj.announce()
         return queries_to_send
-        '''
-        if announce_to_myself:
-            self._tracker.put(lookup_obj._info_hash,
-                              (self._my_node.addr[0], lookup_obj._bt_port))
-        '''
-        
+    '''
+    if announce_to_myself:
+    self._tracker.put(lookup_obj._info_hash,
+    (self._my_node.addr[0], lookup_obj._bt_port))
+    '''
+    
     def _register_queries(self, queries_to_send, lookup_obj=None):
         if not queries_to_send:
             return []
@@ -414,9 +429,4 @@ class Controller:
         self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
                                            timeout_call_ts)
         return datagrams_to_send
-                    
-        
-BOOTSTRAP_NODES = (
-    Node(('67.215.242.138', 6881)), #router.bittorrent.com
-#    Node(('192.16.127.98', 7000)), #KTH node
-    )
+    

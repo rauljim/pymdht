@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010 Raul Jimenez
+# Copyright (C) 2009-2011 Raul Jimenez
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 """
@@ -17,12 +17,20 @@ import heapq
 
 import logging
 
+import os, sys
+this_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.join(this_dir, '..')
+sys.path.append(root_dir)
+
 import core.ptime as time
 import core.identifier as identifier
 import core.message as message
 import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable
+import core.bootstrap as bootstrap
+
+sys.path.pop()
 
 logger = logging.getLogger('dht')
 
@@ -51,27 +59,25 @@ QUARANTINE_PERIOD = 3 * 60 # 3 minutes
 MAX_NUM_TIMEOUTS = 2
 PING_DELAY_AFTER_TIMEOUT = 30 #seconds
 
-
-MIN_RNODES_BOOTSTRAP = 10
-NUM_NODES_PER_BOOTSTRAP_STEP = 1
-
 BOOTSTRAP_MODE = 'bootstrap_mode'
 FIND_CLOSEST_MODE = 'find_closest_mode'
 FILL_BUCKETS= 'fill_buckets'
 NORMAL_MODE = 'normal_mode'
-_MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
+_MAINTENANCE_DELAY = {# bootstrap delay is determined by the bootstrap module
                       FIND_CLOSEST_MODE: 3,
                       FILL_BUCKETS: 1,
                       NORMAL_MODE: 6}
-NUM_FILLING_LOOKUPS = 8
+
+MIN_RNODES = 100
+
+NUM_FILLING_LOOKUPS = 0 #FIXME: it was 8
 
 class RoutingManager(object):
     
     def __init__(self, my_node, bootstrap_nodes):
         self.my_node = my_node
-        #Copy the bootstrap list
-        self.bootstrap_nodes = iter(bootstrap_nodes)
-        
+        self.bootstrapper = bootstrap.OverlayBootstrapper(my_node.id,
+                                                          bootstrap_nodes)
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
         # maintenance variables
         self._next_stale_maintenance_index = 0
@@ -85,21 +91,33 @@ class RoutingManager(object):
                                    self._ping_a_replacement_node,
                                    ]
         self._num_pending_filling_lookups = NUM_FILLING_LOOKUPS
+
+    def _get_maintenance_lookup(self, lookup_target=None, nodes=[]):
+        if not lookup_target:
+            lookup_target = identifier.RandomId()
+        if not nodes:
+            log_distance = lookup_target.log_distance(self.my_node.id)
+            nodes = self.get_closest_rnodes(log_distance, 0, True)
+        return lookup_target, nodes
         
+                
     def do_maintenance(self):
         queries_to_send = []
-        maintenance_lookup_target = None
-        if self._maintenance_mode == BOOTSTRAP_MODE:
-            try:
-                node_ = self.bootstrap_nodes.next()
-                queries_to_send = [self._get_maintenance_query(node_)]
-            except (StopIteration):
-                maintenance_lookup_target = self.my_node.id
-                self._maintenance_mode = FILL_BUCKETS
+        maintenance_lookup = None
+        maintenance_delay = 0
+        if self._maintenance_mode == BOOTSTRAP_MODE: 
+                (queries_to_send,
+                 maintenance_lookup,
+                 bootstrap_delay) = self.bootstrapper.do_bootstrap(
+                    self.table.num_rnodes)
+                if bootstrap_delay:
+                    maintenance_delay = bootstrap_delay
+                else:
+                    self._maintenance_mode = FILL_BUCKETS
         elif self._maintenance_mode == FILL_BUCKETS:
             if self._num_pending_filling_lookups:
                 self._num_pending_filling_lookups -= 1
-                maintenance_lookup_target = identifier.RandomId()
+                maintenance_lookup = self._get_maintenance_lookup()
             else:
                 self._maintenance_mode = NORMAL_MODE
         elif self._maintenance_mode == NORMAL_MODE:
@@ -111,12 +129,18 @@ class RoutingManager(object):
                 self._maintenance_tasks.append(task)
                 node_ = task()
                 if node_:
-                    queries_to_send = [self._get_maintenance_query(node_)]
+                    queries_to_send.append(self._get_maintenance_query(node_))
                     # This task did do some work. We are done here!
                     break
-        
-        return (_MAINTENANCE_DELAY[self._maintenance_mode],
-                queries_to_send, maintenance_lookup_target)
+        if self.table.num_rnodes < MIN_RNODES:
+            # Ping more found nodes when routing table has few nodes
+            node_ = self._ping_a_found_node()
+            if node_:
+                queries_to_send.append(self._get_maintenance_query(
+                        node_, do_fill_up=True))
+        if not maintenance_delay:
+            maintenance_delay = _MAINTENANCE_DELAY[self._maintenance_mode]
+        return (maintenance_delay, queries_to_send, maintenance_lookup)
 
     def _ping_a_staled_rnode(self):
         starting_index = self._next_stale_maintenance_index
@@ -138,45 +162,43 @@ class RoutingManager(object):
         return result
 
     def _ping_a_found_node(self):
-        num_pings = 1
-        if self.table.num_rnodes < MIN_RNODES_BOOTSTRAP:
-            # Extra ping when bootstrapping
-            num_pings += 1
-        for _ in range(num_pings):
-            node_ = self._found_nodes_queue.pop(0)
-            if node_:
-                logger.debug('pinging node found: %r', node_)
-                return node_
-        return
-
+        node_ = self._found_nodes_queue.pop(0)
+        if node_:
+            logger.debug('pinging node found: %r', node_)
+        return node_
+        
     def _ping_a_query_received_node(self):
         return self._query_received_queue.pop(0)
 
     def _ping_a_replacement_node(self):
         return self._replacement_queue.pop(0)
                                   
-    def _get_maintenance_query(self, node_):
+    def _get_maintenance_query(self, node_, do_fill_up=False):
+        '''
         if not node_.id: 
             # Bootstrap nodes don't have id
             return message.OutgoingFindNodeQuery(node_,
                                                  self.my_node.id,
                                                  self.my_node.id, None)
-        if random.choice((False, True)):
-            # 50% chance to send find_node with my id as target
-            return message.OutgoingFindNodeQuery(node_,
-                                                 self.my_node.id,
-                                                 self.my_node.id, None)
+        '''
+        if do_fill_up or random.choice((False, True)):
 
-        # 50% chance to send a find_node to fill up a non-full bucket
-        target_log_distance = self.table.find_next_bucket_with_room_index(
-            node_=node_)
-        if target_log_distance:
-            target = self.my_node.id.generate_close_id(target_log_distance)
-            return message.OutgoingFindNodeQuery(node_, self.my_node.id,
-                                                 target, None)
+            # 50% chance to send a find_node to fill up a non-full bucket
+            target_log_distance = self.table.find_next_bucket_with_room_index(
+                node_=node_)
+            if target_log_distance:
+                target = self.my_node.id.generate_close_id(target_log_distance)
+                msg =  message.OutgoingFindNodeQuery(node_, self.my_node.id,
+                                                     target, None)
+            else:
+                # Every bucket is full. We send a ping instead.
+                msg = message.OutgoingPingQuery(node_, self.my_node.id)
         else:
-            # Every bucket is full. We send a ping instead.
-            return message.OutgoingPingQuery(node_, self.my_node.id)
+            # 50% chance to send find_node with my id as target
+            msg = message.OutgoingFindNodeQuery(node_,
+                                                self.my_node.id,
+                                                self.my_node.id, None)
+        return msg
         
     def on_query_received(self, node_):
         '''
@@ -184,6 +206,9 @@ class RoutingManager(object):
         Return a list of queries when queries need to be sent (the queries
         will be sent out by the caller)
         '''
+        if self.bootstrapper.is_bootstrap_node(node_):
+            return
+        
         log_distance = self.my_node.log_distance(node_)
         try:
             sbucket = self.table.get_sbucket(log_distance)
@@ -215,6 +240,9 @@ class RoutingManager(object):
         return
             
     def on_response_received(self, node_, rtt, nodes):
+        if self.bootstrapper.is_bootstrap_node(node_):
+            return
+
         if nodes:
             logger.debug('nodes found: %r', nodes)
         self._found_nodes_queue.add(nodes)
@@ -294,11 +322,15 @@ class RoutingManager(object):
         return
         
     def on_error_received(self, node_addr):
-        pass
+        if self.bootstrapper.is_bootstrap_node(node_):
+            return
+
+        return
     
     def on_timeout(self, node_):
-        if not node_.id:
-            return [] # This is a bootstrap node (just addr, no id)
+        if self.bootstrapper.is_bootstrap_node(node_):
+            return
+
         log_distance = self.my_node.log_distance(node_)
         try:
             sbucket = self.table.get_sbucket(log_distance)
@@ -473,7 +505,7 @@ class _FoundNodesQueue(object):
                 continue
             log_distance = self.table.my_node.log_distance(node_)
             num_nodes_queued = self._nodes_queued_per_bucket[log_distance]
-            if num_nodes_queued >= 8:
+            if num_nodes_queued > 32:
                 # many nodes queued for this bucket already
                 continue
             try:

@@ -24,6 +24,7 @@ logger = logging.getLogger('dht')
 
 BUFFER_SIZE = 3000
 
+DEBUG = False
                             
 class ThreadedReactor(threading.Thread):
 
@@ -44,6 +45,9 @@ class ThreadedReactor(threading.Thread):
         self._running = False
         self._call_asap_queue = []
         self._next_main_loop_call_ts = 0 # call immediately
+
+        self._capturing = False
+        self._captured = []
 
         self._main_loop_f = main_loop_f
         self._port = port
@@ -85,9 +89,23 @@ class ThreadedReactor(threading.Thread):
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
             print 'MINITWISTED CRASHED'
-            raise #Uncomment for debuggin only! #TODO: why?
+            if DEBUG:
+                raise
         self.running = False
         logger.debug('Reactor stopped')
+
+    def start_capture(self):
+        with self._lock:
+            assert not self._capturing
+            self._capturing = True
+
+    def stop_and_get_capture(self):
+        with self._lock:
+            assert self._capturing
+            self._capturing = False
+            captured = self._captured
+            self._captured = []
+        return captured
 
     def _protected_run(self):
         """Main loop activated by calling self.start()"""
@@ -124,6 +142,9 @@ class ThreadedReactor(threading.Thread):
             logger.warning(
                 'Got socket.error when receiving data:\n%s' % e)
         else:
+            with self._lock:
+                if self._capturing:
+                    self._captured.append((time.time(), addr, False, data))
             ip_is_blocked = self.floodbarrier_active and \
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
@@ -144,8 +165,9 @@ class ThreadedReactor(threading.Thread):
         """Stop the thread. It cannot be resumed afterwards"""
 
         self.running = False
-        self.join(self.task_interval*10)
+        self.join(self.task_interval*20)
         if self.isAlive():
+            #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
             raise Exception, 'Minitwisted thread is still alive!'
         #TODO: stop_callback()
 
@@ -179,4 +201,6 @@ class ThreadedReactor(threading.Thread):
             print 'datagram >>>>>>>>>>>', datagram
             print 'data,addr', datagram.data, datagram.addr
             raise
-            
+        with self._lock:
+            if self._capturing:
+                self._captured.append((time.time(), datagram.addr, True, datagram.data))
