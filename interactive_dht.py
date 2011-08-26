@@ -92,7 +92,9 @@ def main(options, args):
         import wx
         import ui.gui
         app = wx.PySimpleApp()
-        frame = ui.gui.Interactive_GUI(None, "Interactive DHT . . .", None,(1440,900), dht)
+        frame = ui.gui.Interactive_GUI(
+            None, "Interactive DHT . . .", None,(1440,900),
+            dht, logs_path)
         frame.Show(True)
         app.MainLoop()
     elif options.cli:

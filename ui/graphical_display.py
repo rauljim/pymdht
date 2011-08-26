@@ -34,8 +34,10 @@ class Graphical_display(wx.Frame):
     ptr=0
     pp_flag=False
     
-    def __init__(self, parent, mytitle, Size):
-        wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0), size=Size)
+    def __init__(self, parent, mytitle, Size, data_path):
+        self.data_path = data_path
+        wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0),
+                          size=Size)
         self.create_controls()
         self.create_bindings()
     def convert_list(self,list):
@@ -356,8 +358,9 @@ class Graphical_display(wx.Frame):
     def next_step(self, event):
         self.precalculation_nextstep()
     def on_browse(self,event):
+        final_path = os.path.join(self.data_path, 'data_files')
         dlg = wx.FileDialog(self, "Choose a file", 
-                                os.getcwd()+"/ui/data_files", "", "*.*",
+                                final_path, "", "*.*",
                                 wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
