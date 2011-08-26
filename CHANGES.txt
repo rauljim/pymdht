@@ -1,4 +1,13 @@
-== 11.08+
+== 11.8.1
+
+- Moved all user interface code to ui directory
+- Integrated all user interfaces and options in interactive_dht.py
+- pymdht_daemon.py is now deprecated (functionality moved to
+  interactive_dht.py)
+- user can now choose a nodeId (node-id option) or choose a nodeId close to
+  some identifier (node-id + log-distance)
+
+== 11.8.0
 
 - Added GUI code (from Shariq)
 

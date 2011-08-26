@@ -17,25 +17,25 @@ from logging import DEBUG, CRITICAL
 import core.logging_conf as lc
 lc.setup('.', CRITICAL)
 
-import parsers.cdf as cdf
+#import parsers.cdf as cdf
 
 print '************** Check parser config *******************'
 
-ip = '192.16.125.245'
+
+ip = '192.16.127.98'
 port = 7000
 
 conf = [
-    ['0', (ip, port)],
-    ['1', (ip, port+1)],
-    ['2', (ip, port+2)],
-    ['3', (ip, port+3)],
-    ['4', (ip, port+4)],
-    ['5', (ip, port+5)],
-    ['6', (ip, port+6)],
-    ['7', (ip, port+7)],
-    ['8', (ip, port+8)],
-    ['9', (ip, port+9)],
-    ['10', (ip, port+10)],
+    ['0', (ip, port+10)],
+    ['1', (ip, port+11)],
+    ['2', (ip, port+12)],
+    ['3', (ip, port+13)],
+    ['4', (ip, port+14)],
+    ['5', (ip, port+15)],
+    ['6', (ip, port+16)],
+    ['7', (ip, port+17)],
+    ['8', (ip, port+18)],
+    ['9', (ip, port+19)],
     ]
 
 multiparser_mods = [
@@ -51,6 +51,12 @@ multiparser_mods = [
     ]
 
 parser_mods = [
+    __import__('parsers.get_peers').get_peers,
+    __import__('parsers.announce_peer').announce_peer,
+    __import__('parsers.find_node').find_node,
+    __import__('parsers.ping').ping,
+    __import__('parsers.ip_geo_locator').ip_geo_locator,
+    __import__('parsers.unique_ip_geo_locator').unique_ip_geo_locator,
 '''
     __import__('parsers.lookup_parser').lookup_parser,
     __import__('parsers.maintenance_parser'
@@ -58,9 +64,8 @@ parser_mods = [
     __import__('parsers.rtt_parser').rtt_parser,
 '''
     ]    
-
-cdf_files = [
 '''
+cdf_files = [
     'l_time',
     'l_queries',
     'l_queries_till_peers',
@@ -71,9 +76,9 @@ cdf_files = [
     ]
 
 multiparser_cdf_files = [
-    't_rtt',
-    ]
-
+     't_rtt',
+     ]
+'''
 TIMEOUT_DELAY = 2
 
 class QueryInfo(object):
@@ -108,7 +113,7 @@ class NodeParser(object):
                 try:
                     related_query = self.tids[msg.tid[0]]
                 except (KeyError):
-                    print '%s: rtt_parser: no query for this response' % (
+                    print '%s: parser: no query for this response' % (
                         self.label)
                 if related_query and ts - related_query.ts > TIMEOUT_DELAY:
                     related_query = None
@@ -233,7 +238,8 @@ def parse(filenames):
     all_parsers =  node_parsers + [multinode_parser]
 
     num_frames = 0
-    for filename in filenames:
+    try:
+     for filename in filenames:
         print '>>>>', filename
         frames = pcap.pcap(filename)
         for num_frames, (ts_absolute, frame) in enumerate(frames): 
@@ -266,6 +272,8 @@ def parse(filenames):
                     ts, src_addr, dst_addr, msg) or related_query
             multinode_parser.new_msg(ts, src_addr, dst_addr, msg,
                                      related_query)
+    except (KeyboardInterrupt):
+        print 'WARNING: parsing incomplete'
     for parser in all_parsers:
         parser.done()
 
@@ -276,8 +284,7 @@ if __name__ == '__main__':
     try:
         os.mkdir('parser_results')
     except OSError:
-        print 'Existing data in parser_results will be overwriten'
-    
+   	print "Existing data in parser_results will be overwriten!!!" 
     file_prefix = os.path.basename(current_dir)[:15] + '.pcap'
     if not os.path.isfile(file_prefix):
         raise Exception, 'Capture file (%s) does not exist' % (file_prefix)
@@ -293,13 +300,13 @@ if __name__ == '__main__':
     
     print 'Parsing', filenames, '...'
     parse(filenames)
-
+    '''	
     for filename in cdf_files:
         for label, _ in conf:
             cdf.cdf_file('parser_results/' + label + '.' + filename)
     for filename in multiparser_cdf_files:
         cdf.cdf_file('parser_results/m.' + filename)
-
+    '''
     
 class _Parser(object):
     '''Template'''

@@ -17,6 +17,7 @@ size_estimation = False
 
 import sys
 import ptime as time
+import datetime
 import os
 import cPickle
 
@@ -46,7 +47,7 @@ NUM_NODES = 8
 
 class Controller:
 
-    def __init__(self, dht_addr, state_filename,
+    def __init__(self, my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name):
@@ -59,11 +60,13 @@ class Controller:
         
         self.state_filename = state_filename
         saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
-        if saved_id:
-            self._my_id = saved_id
-        else:
-            self._my_id = identifier.RandomId()
-        self._my_node = Node(dht_addr, self._my_id)
+        my_addr = my_node.addr
+        self._my_id = my_node.id # id indicated by user 
+        if not self._my_id:
+            self._my_id = saved_id # id loaded from file
+        if not self._my_id:
+            self._my_id = self._my_id = identifier.RandomId() # random id
+        self._my_node = Node(my_addr, self._my_id)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
@@ -215,11 +218,13 @@ class Controller:
         datagrams_to_send = []
         try:
             msg = message.IncomingMsg(datagram)
+            
         except(message.MsgError):
             # ignore message
             return self._next_main_loop_call_ts, datagrams_to_send
 
         if msg.type == message.QUERY:
+           
             if msg.src_id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
@@ -315,7 +320,7 @@ class Controller:
                     lookup_id = related_query.lookup_obj.lookup_id
                     if lookup_done:
                         callback_f(lookup_id, None, msg.src_node)
-            # maintenance related tasks
+			    # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_error_received(addr)
 
