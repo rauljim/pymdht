@@ -53,8 +53,6 @@ class Controller:
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name):
-        self.msg_f = message.MsgFactory(PYMDHT_VERSION, my_node.id,
-                                        private_dht_name)
         
         if size_estimation:
             self._size_estimation_file = open('size_estimation.dat', 'w')
@@ -69,6 +67,8 @@ class Controller:
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
         self._my_node = Node(my_addr, self._my_id)
+        self.msg_f = message.MsgFactory(PYMDHT_VERSION, self._my_id,
+                                        private_dht_name)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
