@@ -30,7 +30,7 @@ import message
 import token_manager
 import tracker
 from querier import Querier
-from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
+from message import QUERY, RESPONSE, ERROR
 from node import Node
 import pkgutil
 
