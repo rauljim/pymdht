@@ -1,3 +1,7 @@
+=== 11.8.2
+
+- Bugfix: there was no error msg handler in exp_plugin_template.py
+
 == 11.8.1
 
 - Moved all user interface code to ui directory
@@ -9,6 +13,7 @@
 
 == 11.8.0
 
+- Refined all code related to bootstraping.
 - Added GUI code (from Shariq)
 
 === 11.07

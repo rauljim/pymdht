@@ -1,5 +1,5 @@
-pymdht 11.8.1
-aka "NS\8\1" (message label)
+pymdht 11.8.3
+aka "NS\8\3" (message label)
 
 NOTE on version number.
 We use the following version format:
