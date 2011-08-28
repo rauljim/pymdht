@@ -1,3 +1,6 @@
+- Message is now a factory. Now 'private_dht_name' is a parameter instead of
+  an evil global variable
+
 == 11.8.1
 
 - Moved all user interface code to ui directory
