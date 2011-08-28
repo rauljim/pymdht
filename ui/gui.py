@@ -154,7 +154,7 @@ class Interactive_GUI(wx.Frame):
         sizer_v1_h1_v1_h2.Add(staticbox2)
         self.textbox2 = wx.TextCtrl(self, size=wx.Size(400, -1))
         sizer_v1_h1_v1_h2.Add(self.textbox2, wx.EXPAND)
-        self.textbox2.SetValue("1234")
+        self.textbox2.SetValue("0")
         sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h2, 1, flag=wx.ALL | wx.EXPAND)
 
         sizer_v1_h1.Add(sizer_v1_h1_v1, 0, flag=wx.ALL | wx.EXPAND)
