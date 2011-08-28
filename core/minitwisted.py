@@ -167,6 +167,10 @@ class ThreadedReactor(threading.Thread):
         self.running = False
         self.join(self.task_interval*20)
         if self.isAlive():
+            logger.info('minitwisted thread still alive. Wait a little more')
+            time.sleep(task_interval*20)
+            self.join(self.task_interval*20)
+        if self.isAlive():
             #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
             raise Exception, 'Minitwisted thread is still alive!'
         #TODO: stop_callback()
