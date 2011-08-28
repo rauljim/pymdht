@@ -217,6 +217,29 @@ class TestSend:
         time.sleep(tc.TASK_INTERVAL/2)
         eq_(self.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
+    def test_capture(self):
+        self.reactor.start_capture()
+        ts1 = time.time()
+        time.sleep(tc.TASK_INTERVAL)
+        ts2 = time.time()
+        self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
+        time.sleep(tc.TASK_INTERVAL/2)
+        captured_msgs = self.reactor.stop_and_get_capture()
+        for msg in  captured_msgs:
+            print msg
+        assert ts1 < captured_msgs[0][0] < ts2
+        eq_(captured_msgs[0][1], tc.SERVER_ADDR)
+        eq_(captured_msgs[0][2], True) #outgoing
+        eq_(captured_msgs[0][3], DATA1)
+        assert captured_msgs[1][0] > ts2
+        eq_(captured_msgs[1][1], DATAGRAM1.addr)
+        eq_(captured_msgs[1][2], False) #incoming
+        eq_(captured_msgs[1][3], DATAGRAM1.data)
+        assert captured_msgs[2][0] > captured_msgs[1][0]
+        eq_(captured_msgs[2][1], DATAGRAM3.addr)
+        eq_(captured_msgs[2][2], True) #outgoing
+        eq_(captured_msgs[2][3], DATAGRAM3.data)
+        
     def teardown(self):
         self.reactor.stop()
 
