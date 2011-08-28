@@ -168,7 +168,7 @@ class ThreadedReactor(threading.Thread):
         self.join(self.task_interval*20)
         if self.isAlive():
             logger.info('minitwisted thread still alive. Wait a little more')
-            time.sleep(task_interval*20)
+            time.sleep(self.task_interval*20)
             self.join(self.task_interval*20)
         if self.isAlive():
             #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
