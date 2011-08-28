@@ -34,8 +34,13 @@ def _test_matching_tid():
 
 
 class TestMsgExchanges:
-
+    
     def test_msg_exhanges(self):
+        self._exchange_msgs(clients_msg_f.outgoing_ping_query(
+                node.Node(tc.SERVER_ADDR)), # no ID (bootstrap node)
+                          servers_msg_f.outgoing_ping_response(
+                tc.CLIENT_NODE))
+
         self._exchange_msgs(clients_msg_f.outgoing_ping_query(
                 tc.SERVER_NODE),
                           servers_msg_f.outgoing_ping_response(
@@ -135,6 +140,11 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
                           Datagram(data, tc.CLIENT_ADDR))
 
 
+    def test_double_stamp(self):
+        for msg in self._get_queries() + self._get_responses():
+            msg.stamp(tc.TID)
+            assert_raises(m.MsgError, msg.stamp, tc.TID)
+            
     def test_bad_tids(self):
         # tid must be a non-empty string
         bad_tids = self.bad_non_empty_string
@@ -311,7 +321,17 @@ class TestEvilIncomingQueries: #aka invalid bencode messages
         #incoming_response.sanitize_response(outgoing_query.query)
 
     def test_announce_peer_error(self):
-        assert 1
+        low_port_announce = clients_msg_f.outgoing_announce_peer_query(
+            tc.SERVER_NODE, tc.INFO_HASH, m.MIN_BT_PORT-1, tc.TOKEN)
+        high_port_announce = clients_msg_f.outgoing_announce_peer_query(
+            tc.SERVER_NODE, tc.INFO_HASH, m.MAX_BT_PORT+1, tc.TOKEN)
+        for outgoing_query in (low_port_announce, high_port_announce):
+            #client
+            data = outgoing_query.stamp(tc.TID)
+            #server (port is too low or too high)
+            assert_raises(m.MsgError, servers_msg_f.incoming_msg,
+                          Datagram(data, tc.CLIENT_ADDR))
+        
     '''
     def _test_error(self):
         outgoing_error_msg = m.OutgoingErrorMsg(tc.TID, m.GENERIC_E)
