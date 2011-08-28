@@ -45,11 +45,11 @@ STATE_FILENAME = 'pymdht.state'
 
 NUM_NODES = 8
 
-PYMDHT_VERSION = (11, 8, 3)
 
 class Controller:
 
-    def __init__(self, my_node, state_filename,
+    def __init__(self, pymdht_version,
+                 my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name):
@@ -67,7 +67,7 @@ class Controller:
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
         self._my_node = Node(my_addr, self._my_id)
-        self.msg_f = message.MsgFactory(PYMDHT_VERSION, self._my_id,
+        self.msg_f = message.MsgFactory(pymdht_version, self._my_id,
                                         private_dht_name)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
