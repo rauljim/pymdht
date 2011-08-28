@@ -68,6 +68,7 @@ class Interactive_GUI(wx.Frame):
             wx.CallAfter(self.display_on_grid,t)
             self.toolbar.EnableTool(1, True)
             self.packets=self.dht.stop_and_get_capture()
+            self.toolbar.EnableTool(2, True)
 #    def LoadList(self,Packets):
 #        obj=mainclass.MainClass()
 #        q,r,e,qre=obj.open_file("/home/shariq/Desktop/Eclipse/Workspace/Phase-2/test.out")
@@ -166,6 +167,7 @@ class Interactive_GUI(wx.Frame):
         self.toolbar.AddSeparator()
         self.toolbar.AddLabelTool(2, "Save", wx.Bitmap('ui/images/exit.png'))
         self.Bind(wx.EVT_TOOL, self.save_infile, id=2)
+        self.toolbar.EnableTool(2, False)
         self.toolbar.AddLabelTool(3, "Graphical Display", wx.Bitmap('ui/images/Graph.png'))
         self.toolbar.AddSeparator()
         self.Bind(wx.EVT_TOOL, self.on_graphical_display, id=3)
@@ -249,7 +251,7 @@ class Interactive_GUI(wx.Frame):
             f = open(file_path_name, "wb")
             cPickle.dump(self.packets, f)
             wx.MessageDialog(self, "The file "+file_name+" has been saved !!!", "File Saved!", wx.OK | wx.CENTRE | wx.ICON_EXCLAMATION).ShowModal()
-         
+            self.toolbar.EnableTool(2, False)
     def exit(self,event):
         self.dht=None
         self.Destroy()
