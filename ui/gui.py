@@ -163,15 +163,15 @@ class Interactive_GUI(wx.Frame):
         sizer_v1_h1_v2 = wx.BoxSizer(wx.HORIZONTAL)
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_TEXT | wx.EXPAND)
         self.toolbar.AddLabelTool(1, "Run", wx.Bitmap('ui/images/run.png'))
-        self.Bind(wx.EVT_TOOL, self.run, id=1)
         self.toolbar.AddSeparator()
+        self.Bind(wx.EVT_TOOL, self.run, id=1)
         self.toolbar.AddLabelTool(2, "Save", wx.Bitmap('ui/images/exit.png'))
+        self.toolbar.AddSeparator()
         self.Bind(wx.EVT_TOOL, self.save_infile, id=2)
         self.toolbar.EnableTool(2, False)
         self.toolbar.AddLabelTool(3, "Graphical Display", wx.Bitmap('ui/images/Graph.png'))
         self.toolbar.AddSeparator()
         self.Bind(wx.EVT_TOOL, self.on_graphical_display, id=3)
-        self.toolbar.AddSeparator()
         self.toolbar.AddLabelTool(4, "Exit", wx.Bitmap('ui/images/exit.png'))
         self.Bind(wx.EVT_TOOL, self.exit, id=4)
         self.toolbar.Realize()
@@ -265,7 +265,7 @@ class Interactive_GUI(wx.Frame):
             obj=gdisplay.Graphical_display(None,
                                            "Graphical display of\
 Interactive DHT",
-                                           (1440,900), self.data_path).Show()
+                                           (1440,850), self.data_path).Show()
 
     def display(self,information,lock):
         i=information[0]
@@ -297,11 +297,5 @@ Interactive DHT",
             self.textbox1.Disable()
         else:
             self.textbox1.Enable()
-
-if __name__ == '__main__':
-    app = wx.PySimpleApp()
-    frame = Interactive_GUI(None, "Interactive DHT . . .", None,(1440,900))
-    frame.Show(True)
-    app.MainLoop()
 
 

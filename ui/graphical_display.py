@@ -158,7 +158,9 @@ class Graphical_display(wx.Frame):
         sizer_h0.Add(self.Button1,flag=wx.ALL, border=10 )
         sizer_v.Add(sizer_h0, 0)
         
-        self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL|wx.TB_TEXT)
+        self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_TEXT)
+        color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
+        self.toolbar.SetBackgroundColour(color)
         self.toolbar.AddLabelTool(1, "Play/Pause",
             wx.Bitmap('ui/images/Picture9.png'))
         self.Bind(wx.EVT_TOOL, self.start_processing, id=1)
@@ -174,11 +176,12 @@ class Graphical_display(wx.Frame):
         
         
         sizer_h1 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_h1.Add(self.toolbar, wx.EXPAND)        
+        sizer_h1.Add(self.toolbar)        
         sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
         
         sizer_h2 = wx.BoxSizer(wx.HORIZONTAL)
         self.panel2 = wx.Panel(self, -1)
+        self.panel2.SetBackgroundColour(color)
         self.rb1 = wx.RadioButton(self.panel2,-1, 'Time Interval (in millseconds) :', (10, 5), style=wx.RB_GROUP)
         self.rb2 = wx.RadioButton(self.panel2,-1, 'Slow Motion  (x times)          :', (10, 40))
         self.TextBox1 = wx.TextCtrl(self.panel2, pos=(250,5),size=wx.Size(200, -1))
@@ -762,11 +765,4 @@ class Graphical_display(wx.Frame):
             self.Refresh()
             return            
         dc = wx.PaintDC(self)
-        dc.DrawBitmap(self.buffer, 0, 0)       
-        
-
-if __name__ == '__main__':
-    app = wx.PySimpleApp()
-    frame = Graphical_display(None, "Lookup@KAD Converge Visualization", None, (1400, 900))
-    frame.Show(True)
-    app.MainLoop()
+        dc.DrawBitmap(self.buffer, 0, 0)
