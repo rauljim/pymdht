@@ -157,9 +157,6 @@ class Interactive_GUI(wx.Frame):
         self.Bind(wx.EVT_TOOL, self.exit, id=4)
         self.toolbar.Realize()
         
-        self.checkbox1=wx.CheckBox (self, -1, 'Load Information from PirateBay' )
-        self.checkbox1.Bind(wx.EVT_CHECKBOX, self.on_checkbox1)
-        
         self.lc = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER | wx.LC_VRULES , size=(-1, a))
         self.lc.InsertColumn(0, "No.")
         self.lc.SetColumnWidth(0, 40)
@@ -184,6 +181,7 @@ class Interactive_GUI(wx.Frame):
         self.lc2.SetColumnWidth(1, 350)
         self.lc2.InsertColumn(2, "Description")
         self.lc2.SetColumnWidth(2, 700)
+        self.lc2.Bind(wx.EVT_LIST_ITEM_SELECTED,self.onSelect)
 
         ################### Sizers
         sizer_v1 = wx.BoxSizer(wx.VERTICAL)
@@ -209,9 +207,7 @@ class Interactive_GUI(wx.Frame):
         sizer_v1_h1.Add(sizer_v1_h1_v1, 0, flag=wx.ALL | wx.EXPAND)
         sizer_v1_h1_v2.Add(self.toolbar, wx.EXPAND)
         sizer_v1_h1.Add(sizer_v1_h1_v2, 0, flag=wx.ALL | wx.EXPAND)
-        sizer_v1.Add(sizer_v1_h1, 0, flag=wx.ALL | wx.GROW)
-        sizer_v1_h2.Add(self.checkbox1, 0, flag=wx.ALL, border=10)
-        sizer_v1.Add(sizer_v1_h2, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1.Add(sizer_v1_h1, 0, flag=wx.ALL | wx.GROW)        
         sizer_v1_h3.Add(self.lc, 1, flag=wx.ALL ,border=10)
         sizer_v1.Add(sizer_v1_h3, 0, flag=wx.TOP | wx.EXPAND)
         sizer_v1_h4.Add(self.button1, 1, flag=wx.ALL, border=10)
@@ -221,20 +217,15 @@ class Interactive_GUI(wx.Frame):
         sizer_v1.Add(sizer_v1_h5, 1, flag=wx.ALL | wx.EXPAND)
         self.SetSizer(sizer_v1)
         
+    def onSelect(self, event):
+        ix_selected = self.lc2.GetNextItem(item=-1,
+                                              geometry=wx.LIST_NEXT_ALL,
+                                              state=wx.LIST_STATE_SELECTED)  
+        self.textbox1.SetValue(self.lc2.GetItem(ix_selected, 1).GetText()) 
     def run(self, event):
         self.counter1=0
         self.lc.DeleteAllItems()
-        if self.checkbox1.IsChecked():
-            ix_selected = self.lc2.GetNextItem(item=-1,
-                                              geometry=wx.LIST_NEXT_ALL,
-                                              state=wx.LIST_STATE_SELECTED)
-            if(ix_selected!=-1):
-                self.toolbar.EnableTool(1, False)
-                self.textbox1.SetValue(self.lc2.GetItem(ix_selected, 1).GetText()) 
-                self.start_get_peers(self.dht,str(self.textbox1.GetValue()), str(self.textbox2.GetValue()))
-        else:
-            self.toolbar.EnableTool(1, False)
-            self.start_get_peers(self.dht,str(self.textbox1.GetValue()), str(self.textbox2.GetValue()))
+        self.start_get_peers(self.dht,str(self.textbox1.GetValue()), str(self.textbox2.GetValue()))
     def save_infile(self,event):
         if not self.packets==[]:
             file_name=str(time.strftime("%Y%m%d%H%M%S"))
