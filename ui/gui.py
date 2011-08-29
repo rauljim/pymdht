@@ -28,6 +28,8 @@ class Interactive_GUI(wx.Frame):
     MainList=[]
     def __init__(self, parent, mytitle, list, Size, dht, data_path):
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0), size=Size)
+        self.Resolution = wx.Display().GetGeometry()[2:4]
+        print self.Resolution
         self.dht = dht
         self.data_path = data_path
         #self.init_main_of_idht()        
@@ -130,37 +132,16 @@ class Interactive_GUI(wx.Frame):
                             options.private_dht_name,
                             logs_level)
     def load_controls(self):
-
-
-        sizer_v1 = wx.BoxSizer(wx.VERTICAL)
-
-        sizer_v1_h1 = wx.BoxSizer(wx.HORIZONTAL)
-
-        sizer_v1_h1.AddSpacer((10, 0))
-
-        sizer_v1_h1_v1 = wx.BoxSizer(wx.VERTICAL)
-
-        sizer_v1_h1_v1.AddSpacer((0, 10))
-
-        sizer_v1_h1_v1_h1 = wx.BoxSizer(wx.HORIZONTAL)
+        
+        a=(self.Resolution[1]*0.35)
+        ################### Controls
         staticbox1 = wx.StaticText(self, label="Info Hash : ",size=wx.Size(100, -1))
-        sizer_v1_h1_v1_h1.Add(staticbox1)
         self.textbox1 = wx.TextCtrl(self, size=wx.Size(400, -1))
-        sizer_v1_h1_v1_h1.Add(self.textbox1, wx.EXPAND)        
         self.textbox1.SetValue("2aedb99b1e79e776433eecbec675c84704677124")
-        sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h1, 1, flag=wx.ALL | wx.EXPAND)
-
-        sizer_v1_h1_v1_h2 = wx.BoxSizer(wx.HORIZONTAL)
         staticbox2 = wx.StaticText(self, label="Port : ",size=wx.Size(100, -1))
-        sizer_v1_h1_v1_h2.Add(staticbox2)
         self.textbox2 = wx.TextCtrl(self, size=wx.Size(400, -1))
-        sizer_v1_h1_v1_h2.Add(self.textbox2, wx.EXPAND)
         self.textbox2.SetValue("0")
-        sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h2, 1, flag=wx.ALL | wx.EXPAND)
-
-        sizer_v1_h1.Add(sizer_v1_h1_v1, 0, flag=wx.ALL | wx.EXPAND)
-
-        sizer_v1_h1_v2 = wx.BoxSizer(wx.HORIZONTAL)
+        
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_TEXT | wx.EXPAND)
         self.toolbar.AddLabelTool(1, "Run", wx.Bitmap('ui/images/run.png'))
         self.toolbar.AddSeparator()
@@ -175,19 +156,11 @@ class Interactive_GUI(wx.Frame):
         self.toolbar.AddLabelTool(4, "Exit", wx.Bitmap('ui/images/exit.png'))
         self.Bind(wx.EVT_TOOL, self.exit, id=4)
         self.toolbar.Realize()
-        sizer_v1_h1_v2.Add(self.toolbar, wx.EXPAND)
-        sizer_v1_h1.Add(sizer_v1_h1_v2, 0, flag=wx.ALL | wx.EXPAND)
-
-        sizer_v1.Add(sizer_v1_h1, 0, flag=wx.ALL | wx.EXPAND)
-
-        sizer_v1_h5 = wx.BoxSizer(wx.HORIZONTAL)
+        
         self.checkbox1=wx.CheckBox (self, -1, 'Load Information from PirateBay' )
         self.checkbox1.Bind(wx.EVT_CHECKBOX, self.on_checkbox1)
-        sizer_v1_h5.Add(self.checkbox1, 5, flag=wx.ALL, border=10)
-        sizer_v1.Add(sizer_v1_h5, 0, flag=wx.ALL | wx.EXPAND)
-
-        sizer_v1_h2 = wx.BoxSizer(wx.HORIZONTAL)
-        self.lc = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER | wx.LC_VRULES , size=(-1, 400))
+        
+        self.lc = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER | wx.LC_VRULES , size=(-1, a))
         self.lc.InsertColumn(0, "No.")
         self.lc.SetColumnWidth(0, 40)
         self.lc.InsertColumn(1, "Query Time")
@@ -197,31 +170,55 @@ class Interactive_GUI(wx.Frame):
         self.lc.InsertColumn(3, "Queried Node")
         self.lc.SetColumnWidth(3, 173)
         self.lc.InsertColumn(4, "Peers")
-        sizer_v1_h2.Add(self.lc, 5, flag=wx.ALL, border=10)
-        sizer_v1.Add(sizer_v1_h2, 0, flag=wx.ALL | wx.EXPAND)
         
-        sizer_v1_h4 = wx.BoxSizer(wx.HORIZONTAL)
         self.button1=wx.Button(self, 1, 'Load Information from PirateBay', (50, 130))
         self.Bind(wx.EVT_BUTTON, self.collect_values, id=1)
-        sizer_v1_h4.Add(self.button1, 5, flag=wx.ALL, border=10)
         self.button2=wx.Button(self, 2, 'Stop!', (50, 130))
         self.Bind(wx.EVT_BUTTON, self.stop_collect_values, id=2)
         self.button2.Disable()
-        sizer_v1_h4.Add(self.button2, 6, flag=wx.ALL, border=10)
         
-        sizer_v1.Add(sizer_v1_h4, 0, flag=wx.ALL | wx.EXPAND)
-        
-        sizer_v1_h3 = wx.BoxSizer(wx.HORIZONTAL)
-        self.lc2 = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER | wx.LC_VRULES , size=(-1, 250))
+        self.lc2 = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER | wx.LC_HRULES)
         self.lc2.InsertColumn(0, "No.")
         self.lc2.SetColumnWidth(0, 40)
         self.lc2.InsertColumn(1, "InfoHash")
         self.lc2.SetColumnWidth(1, 350)
         self.lc2.InsertColumn(2, "Description")
         self.lc2.SetColumnWidth(2, 700)
-        sizer_v1_h3.Add(self.lc2, 5, flag=wx.ALL, border=10)
-        sizer_v1.Add(sizer_v1_h3, 0, flag=wx.ALL | wx.EXPAND)
 
+        ################### Sizers
+        sizer_v1 = wx.BoxSizer(wx.VERTICAL)
+        sizer_v1_h1 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h1_v1 = wx.BoxSizer(wx.VERTICAL)
+        sizer_v1_h1_v1_h1 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h1_v1_h2 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h1_v2 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h2 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h3 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h4 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_v1_h5 = wx.BoxSizer(wx.HORIZONTAL)
+             
+        ################### Add Controls to Sizers
+        sizer_v1_h1.AddSpacer((10, 0))
+        sizer_v1_h1_v1.AddSpacer((0, 10))
+        sizer_v1_h1_v1_h1.Add(staticbox1)
+        sizer_v1_h1_v1_h1.Add(self.textbox1, wx.EXPAND)        
+        sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h1, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h1_v1_h2.Add(staticbox2)
+        sizer_v1_h1_v1_h2.Add(self.textbox2, wx.EXPAND)
+        sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h2, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h1.Add(sizer_v1_h1_v1, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h1_v2.Add(self.toolbar, wx.EXPAND)
+        sizer_v1_h1.Add(sizer_v1_h1_v2, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1.Add(sizer_v1_h1, 0, flag=wx.ALL | wx.GROW)
+        sizer_v1_h2.Add(self.checkbox1, 0, flag=wx.ALL, border=10)
+        sizer_v1.Add(sizer_v1_h2, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h3.Add(self.lc, 1, flag=wx.ALL ,border=10)
+        sizer_v1.Add(sizer_v1_h3, 0, flag=wx.TOP | wx.EXPAND)
+        sizer_v1_h4.Add(self.button1, 1, flag=wx.ALL, border=10)
+        sizer_v1_h4.Add(self.button2, 1, flag=wx.ALL, border=10)
+        sizer_v1.Add(sizer_v1_h4, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h5.Add(self.lc2, 1, wx.ALL|wx.EXPAND, border=10)
+        sizer_v1.Add(sizer_v1_h5, 1, flag=wx.ALL | wx.EXPAND)
         self.SetSizer(sizer_v1)
         
     def run(self, event):
@@ -265,7 +262,7 @@ class Interactive_GUI(wx.Frame):
             obj=gdisplay.Graphical_display(None,
                                            "Graphical display of\
 Interactive DHT",
-                                           (1440,850), self.data_path).Show()
+                                           (1440,900), self.data_path).Show()
 
     def display(self,information,lock):
         i=information[0]
