@@ -141,12 +141,12 @@ class Graphical_display(wx.Frame):
         sizer_h5 = wx.BoxSizer(wx.HORIZONTAL)
         
         # Controls
+        self.Button1=wx.Button(self,5,'  Browse   ')
         self.srclabel = wx.StaticText(self, label="Source Address : Infohash ")
         self.combo1 = wx.ComboBox(self,size=(500,wx.DefaultSize.y),choices=self.list3)
         self.combo1.SetEditable(False)
-        self.Button1=wx.Button(self,5,'  Browse   ')
-        self.Button2=wx.Button(self,6,'   Load    ')
-        self.Button3=wx.Button(self,7,'    Exit   ')
+        self.combo1.Bind(wx.wx.EVT_COMBOBOX,self.onSelect)
+        self.Button3=wx.Button(self,6,'    Exit   ')
         
         self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_TEXT)
         color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
@@ -205,11 +205,9 @@ class Graphical_display(wx.Frame):
         
         self.TxtBox1=wx.TextCtrl(self, wx.ID_ANY,value="",style=wx.TE_MULTILINE,size=(-1,-1))
                
-        
         sizer_h0.Add(self.Button1,flag=wx.ALL, border=10 )
         sizer_h0.Add(self.srclabel, flag=wx.ALL, border=10)
         sizer_h0.Add(self.combo1, flag=wx.ALL, border=10)
-        sizer_h0.Add(self.Button2,flag=wx.ALL, border=10 )
         sizer_h0.Add(self.Button3,flag=wx.ALL, border=10 )
         sizer_v.Add(sizer_h0, 0)
         sizer_h1.Add(self.toolbar)        
@@ -277,7 +275,20 @@ class Graphical_display(wx.Frame):
                 self.lc.SetStringItem(index, 5, str(line[0].hexaTid))
                 self.lc.SetItemBackgroundColour(index, 'red')
                 self.newResList.append(line)
-        
+                
+    def onSelect(self, event):
+        print "Called"
+        selected=self.combo1.GetCurrentSelection()
+        if not selected==-1:
+            src_addr=self.list3[selected][0]
+            info_hash=self.list3[selected][1]
+            self.list1=[]
+            for i in self.list2:  
+                if str(i[0].src_addr[0])==src_addr:
+                    if repr(i[0].infohash)==info_hash:
+                        self.list1.append(i)
+            self.main_list=self.convert_list(self.list1)
+            self.load_list(self.main_list)
     def create_bindings(self):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -290,8 +301,7 @@ class Graphical_display(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.previous_step, id=3)
         self.Bind(wx.EVT_BUTTON, self.next_step, id=4)
         self.Bind(wx.EVT_BUTTON, self.on_browse, id=5)
-        self.Bind(wx.EVT_BUTTON, self.on_load, id=6)
-        self.Bind(wx.EVT_BUTTON, self.on_exit, id=7)
+        self.Bind(wx.EVT_BUTTON, self.on_exit, id=6)
     
     def handle_enable_disable(self):
         if (self.pp_flag==True):
