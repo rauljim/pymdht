@@ -29,7 +29,6 @@ class Interactive_GUI(wx.Frame):
     def __init__(self, parent, mytitle, list, Size, dht, data_path):
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0), size=Size)
         self.Resolution = wx.Display().GetGeometry()[2:4]
-        print self.Resolution
         self.dht = dht
         self.data_path = data_path
         #self.init_main_of_idht()        

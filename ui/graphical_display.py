@@ -13,9 +13,9 @@ class Graphical_display(wx.Frame):
     newResList = []
     stepnumber = 0
     sizeofnodes=10
-    xspacingofnodes = 42
+    xspacingofnodes = 45
     yspacingofnodes = 40
-    startingx = 25
+    startingx = 30
     startingy = 40
     vsb = 1
     povsb = -1
@@ -277,7 +277,6 @@ class Graphical_display(wx.Frame):
                 self.newResList.append(line)
                 
     def onSelect(self, event):
-        print "Called"
         selected=self.combo1.GetCurrentSelection()
         if not selected==-1:
             src_addr=self.list3[selected][0]
@@ -716,9 +715,8 @@ class Graphical_display(wx.Frame):
             else:
                 print index1.color1,index1.color2
         self.wait_time=float(self.main_list[i][2])
-        print self.wait_time
         maxy,maxx=find_max_xy()
-        self.vsb = ((maxy-300) / self.yspacingofnodes)
+        self.vsb = ((maxy) / self.yspacingofnodes)
         self.panel1.SetScrollbar(wx.VERTICAL, self.povsb+1, 1, self.vsb);
         self.hsb = 130 # yet to be calculated (maxy-500)/25
         self.panel1.SetScrollbar(wx.HORIZONTAL, self.pohsb+1, 1, self.hsb);
