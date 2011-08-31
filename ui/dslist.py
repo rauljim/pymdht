@@ -71,13 +71,21 @@ class ListofNodes:
         return tNode
     def Return_Node_At_Position(self,px,py,node):
         if math.sqrt((self.MainNode.x - px) ** 2 + (self.MainNode.y - py) ** 2)<self.MainNode.size:
-            if not self==node:
-                return self,0
+            if not node == None:
+                if not self==node[0]:
+                    return self,0
+            else:
+                if not self==node:
+                    return self,0
         for i in self.NodeList:
             if i.__class__.__name__!='ListofNodes':
                 if math.sqrt((i.x - px) ** 2 + (i.y - py) ** 2)<self.MainNode.size:
-                    if not i==node:
-                        return i,1
+                    if not node == None:
+                        if not i==node[0]:
+                            return i,1
+                    else:
+                        if not i==node:
+                            return i,1
             else:
                 Temp = i.Return_Node_At_Position(px,py,node)
                 if Temp!=False:

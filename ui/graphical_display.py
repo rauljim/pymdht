@@ -461,8 +461,9 @@ class Graphical_display(wx.Frame):
                                         ((self.povsb + 1) * self.yspacingofnodes)
                                     )                                        
                                 ),None)
+        ninfo2=False
         if not ninfo1==False:
-            if not str(ninfo1[0].__class__)=='dslist.ListofNodes':
+            if not str(ninfo1[0].__class__)=='ui.dslist.ListofNodes':
                 ninfo2=ninfo1
                 while not ninfo1==False:
                     ninfo1=process_all_list((
@@ -473,12 +474,12 @@ class Graphical_display(wx.Frame):
                                             )                                        
                                         ),ninfo2)
                     if not ninfo1==False:
-                        if str(ninfo1[0].__class__)=='dslist.ListofNodes':
+                        if str(ninfo1[0].__class__)=='ui.dslist.ListofNodes':
                             ninfo2=ninfo1
                             ninfo1=False
         if not ninfo1==False:
             ninfo2=ninfo1
-        self.TxtBox1.Clear()        
+        self.TxtBox1.Clear()    
         if not(ninfo2==False):
             if(ninfo2[1]==0):
                 display_main_node(ninfo2[0])
