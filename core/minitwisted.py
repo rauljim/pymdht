@@ -202,8 +202,8 @@ class ThreadedReactor(threading.Thread):
                 'Got socket.error when sending data to %r\n%r' % (
                     datagram.addr, datagram.data))
         except:
-            print 'datagram >>>>>>>>>>>', datagram
-            print 'data,addr', datagram.data, datagram.addr
+            logging.error('datagram >>>>>>>>>>>', datagram)
+            logging.error('data,addr: %s %s' % (datagram.data, datagram.addr))
             raise
         with self._lock:
             if self._capturing:

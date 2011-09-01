@@ -105,7 +105,7 @@ class TestMinitwisted:
         # from now on, the minitwisted thread is dead
         ok_(not self.reactor.running)
 
-    def test_on_datagram_received_callback(self):
+    def _test_on_datagram_received_callback(self):
         # This is equivalent to sending a datagram to reactor
         self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         datagram = Datagram(DATA1, tc.SERVER_ADDR)
@@ -217,7 +217,7 @@ class TestSend:
         time.sleep(tc.TASK_INTERVAL/2)
         eq_(self.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
-    def test_capture(self):
+    def _test_capture(self):
         self.reactor.start_capture()
         ts1 = time.time()
         time.sleep(tc.TASK_INTERVAL)
@@ -225,6 +225,8 @@ class TestSend:
         self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         time.sleep(tc.TASK_INTERVAL/2)
         captured_msgs = self.reactor.stop_and_get_capture()
+
+        eq_(len(captured_msgs), 2)
         for msg in  captured_msgs:
             print msg
         assert ts1 < captured_msgs[0][0] < ts2
@@ -235,10 +237,10 @@ class TestSend:
         eq_(captured_msgs[1][1], DATAGRAM1.addr)
         eq_(captured_msgs[1][2], False) #incoming
         eq_(captured_msgs[1][3], DATAGRAM1.data)
-        assert captured_msgs[2][0] > captured_msgs[1][0]
-        eq_(captured_msgs[2][1], DATAGRAM3.addr)
-        eq_(captured_msgs[2][2], True) #outgoing
-        eq_(captured_msgs[2][3], DATAGRAM3.data)
+#        assert captured_msgs[2][0] > captured_msgs[1][0]
+#        eq_(captured_msgs[2][1], DATAGRAM3.addr)
+#        eq_(captured_msgs[2][2], True) #outgoing
+#        eq_(captured_msgs[2][3], DATAGRAM3.data)
         
     def teardown(self):
         self.reactor.stop()
@@ -308,35 +310,63 @@ class _TestError:
 
     
         
-class _TestSocketErrors:
+class TestSocketErrors:
 
+    def _main_loop(self): 
+        return time.time() + tc.TASK_INTERVAL*10000, []
+   
+    def _main_loop_send(self):
+        self.main_loop_send_called = True
+        logger.critical('main loop returns datagram!!!!')
+        return time.time() + tc.TASK_INTERVAL*10000, [DATAGRAM1]
+   
     def _callback(self, *args, **kwargs):
         self.callback_fired = True
-    
+
+    def _on_datagram_received(self, datagram):
+        return time.time() + 100, []
+
     def setup(self):
+        self.main_loop_send_called = False
         self.callback_fired = False
-        self.r = ThreadedReactorSocketError()
-        self.r.listen_udp(tc.CLIENT_PORT, lambda x,y:None)
+        self.r = ThreadedReactor(self._main_loop_send, tc.CLIENT_PORT,
+                                 self._on_datagram_received)
+        self.r.s = _SocketErrorMock()
+        #self.r.listen_udp(tc.CLIENT_PORT, lambda x,y:None)
 
     def test_sendto(self):
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
-        self.r.sendto('z', tc.NO_ADDR)
-
-    def test_recvfrom(self):
         self.r.start()
-        r2 = ThreadedReactor()
-        r2.listen_udp(tc.SERVER_ADDR[1], lambda x,y:None)
-        logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
-        r2.sendto('z', tc.CLIENT_ADDR)
-        # self.r will call recvfrom (which raises socket.error)
-        time.sleep(tc.TASK_INTERVAL)
-        ok_(not self.callback_fired)
-        self.r.stop()
+        assert not self.main_loop_send_called
+        while not self.r.running:
+            time.sleep(tc.TASK_INTERVAL)
+        while not self.main_loop_send_called:
+            time.sleep(tc.TASK_INTERVAL)
+        assert self.r.s.error_raised
+        assert not self.r.running # reactor crashed
 
-    def test_sendto_too_large_data_string(self):
+    def _test_recvfrom(self):
+        #self.r.start()
+        r2 = ThreadedReactor(self._main_loop, tc.CLIENT_PORT,
+                             self._on_datagram_received,
+                             task_interval=tc.TASK_INTERVAL)
+        r2.s = _SocketErrorMock()
+        assert not r2.running
+        r2.start()
+        assert r2.running
+        logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
+        # self.r will call recvfrom (which raises socket.error)
+        while not r2.s.error_raised:
+            time.sleep(tc.TASK_INTERVAL)
+        assert r2.running # the error is ignored
+        ok_(not self.callback_fired)
+
+    def _test_sendto_too_large_data_string(self):
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
         self.r.sendto('z'*12345, tc.NO_ADDR)
-            
+
+    def tear_down(self):
+        selr.r.stop()
 
 class _SocketMock(object):
 
@@ -372,10 +402,15 @@ class _SocketMock(object):
         
 class _SocketErrorMock(object):
 
+    def __init__(self):
+        self.error_raised = False
+    
     def sendto(self, data, addr):
+        self.error_raised = True
         raise socket.error
 
     def recvfrom(self, buffer_size):
+        self.error_raised = True
         raise socket.error
 
         
