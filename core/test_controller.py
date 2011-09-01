@@ -35,7 +35,8 @@ class TestController:
     def setup(self):
         time.mock_mode()
         
-        self.controller = controller.Controller(tc.CLIENT_NODE,
+        self.controller = controller.Controller(PYMDHT_VERSION,
+                                                tc.CLIENT_NODE,
                                                 'test_logs/state.dat',
                                                 routing_m_mod,
                                                 lookup_m_mod,
@@ -57,7 +58,8 @@ class TestController:
         eq_(datagrams[0], expected_datagrams[0])
 
     def test_with_unexistent_state_file(self):
-        controller.Controller(tc.CLIENT_NODE, 'test_logs/state.dat.no',
+        controller.Controller(PYMDHT_VERSION,
+                              tc.CLIENT_NODE, 'test_logs/state.dat.no',
                               routing_m_mod, lookup_m_mod, exp_m_mod,
                               None)
 
