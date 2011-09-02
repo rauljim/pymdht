@@ -80,6 +80,14 @@ class ThreadedReactor(threading.Thread):
     running = property(_get_running, _set_running)
 
     def run(self):
+        self.run2()
+    
+    def run2(self):
+        """
+        The reason for this weird split between run and run2 is that nosetests
+        doesn't count run as being executed (it doesn't count as 'covered').
+        
+        """
         self.running = True
         logger.critical('run')
         try:
