@@ -73,7 +73,7 @@ class TestMinitwisted:
                                        tc.CLIENT_PORT,
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
-        self.reactor.s = _SocketMock(tc.TASK_INTERVAL)
+        self.reactor.s = _SocketMock()
         #self.reactor.start() >> instead of usint start(), we use run_one_step()
 
     def test_call_main_loop(self):
@@ -183,7 +183,7 @@ class TestSend:
                                        tc.CLIENT_PORT,
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
-        self.reactor.s = _SocketMock(tc.TASK_INTERVAL)
+        self.reactor.s = _SocketMock()
         
     def test_main_loop_send_data(self):
         eq_(self.reactor.s.get_datagrams_sent(), [])
@@ -237,11 +237,11 @@ class TestSend:
         eq_(captured_msgs[2][3], DATAGRAM3.data)
         
     def teardown(self):
-        #self.reactor.stop()
+
         return
 
         
-class _TestSocketError:
+class TestSocketError:
 
     def _main_loop(self):
         return time.time() + tc.TASK_INTERVAL*10000, [DATAGRAM1]
@@ -254,19 +254,20 @@ class _TestSocketError:
         self.callback_values = []
         self.datagrams_received = []
         
-        self.lock = threading.RLock()
         self.reactor = ThreadedReactor(self._main_loop,
                                        tc.CLIENT_PORT,
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
-        self.reactor.s = _SocketErrorMock()
-#        self.reactor.start()
+        self.reactor.s = _SocketMock()
 
-    def test_sendto_socket_error(self): 
-        time.sleep(tc.TASK_INTERVAL/5)
+    def test_socket_error(self):
+        self.reactor.s.raise_error_on_next_sendto()
+        self.reactor.run_one_step()
+        self.reactor.s.raise_error_on_next_recvfrom()
+        self.reactor.run_one_step()
 
     def teardown(self):
-        self.reactor.stop()
+        return
 
 
 
@@ -354,20 +355,18 @@ class _TestSocketErrors:
             time.sleep(tc.TASK_INTERVAL)
         assert r2.running # the error is ignored
         ok_(not self.callback_fired)
-        r2.stop()
+#        r2.stop()
 
     def _test_sendto_too_large_data_string(self):
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
         self.r.sendto('z'*12345, tc.NO_ADDR)
 
     def tear_down(self):
-        selr.r.stop()
         pass
 
 class _SocketMock(object):
 
-    def __init__(self, timeout_delay):
-        self.timeout_delay = timeout_delay
+    def __init__(self):
         self.lock = threading.RLock()
         self.datagrams_sent = []
         self.datagrams_received = []
@@ -375,13 +374,13 @@ class _SocketMock(object):
         self.num_recvfrom_errors = 0
         self.num_recvfrom_timeouts = 0
 
-        self.raise_error_on_send = False
+        self.raise_error_on_sendto = False
         self.raise_error_on_recvfrom = False
         self.raise_timeout = False
         
     def sendto(self, data, addr):
-        if self.raise_error_on_send:
-            self.raise_error_on_send = False
+        if self.raise_error_on_sendto:
+            self.raise_error_on_sendto = False
             self.num_send_errors += 1
             raise socket.error
         with self.lock:
@@ -418,8 +417,8 @@ class _SocketMock(object):
     def raise_timeout_on_next_recvfrom(self):
         self.raise_timeout = True
 
-    def raise_error_on_next_send(self):
-        self.raise_error_on_send = True
+    def raise_error_on_next_sendto(self):
+        self.raise_error_on_sendto = True
     
 class _SocketErrorMock(object):
 
