@@ -2,7 +2,7 @@
 import core.message as message
 from core.node import Node
 import core.ptime as time
-import pickle
+
 
 STATUS_PINGED = 'PINGED'
 STATUS_OK = 'OK'
@@ -17,22 +17,19 @@ class ExperimentalManager:
         self.my_id = my_id
         self._send_query = True
         self.num_responses = 0
-        self.num_ok = 0
-        self.num_fail = 0
-        self.pinged_ips = {}
-       
+        
     def on_query_received(self, msg):
         find_msgs = []
         if self._send_query:
             # We only want to extract from ONE node
-            self._send_query = False
+            self._send_query = False 
             print 'Got query (%s) from  Node  %r ' % (
                             msg.query ,  msg.src_node)
             print '=============================================='
             exp_obj = ExpObj()
             target = msg.src_node.id.generate_close_id(
                                             exp_obj.next_log_dist())
-            print 'sending first find_node'
+            print 'Sending first find_node'
             find_msgs.append(message.OutgoingFindNodeQuery(msg.src_node,
                                                            self.my_id,
                                                            target, None,
@@ -57,9 +54,9 @@ class ExperimentalManager:
                 if node_.id in exp_obj.all_ids:
                     # repetition
                     exp_obj.num_repetitions += 1
-                    print '>>>>>>.repetition', exp_obj.num_repetitions
+                    print '>>repetition', exp_obj.num_repetitions
                 else:
-                    time.sleep(0.01)
+                    #time.sleep(0.01)
                     ping_msgs.append(message.OutgoingPingQuery(node_,
                                                                self.my_id,
                                                                exp_obj))
@@ -74,7 +71,7 @@ class ExperimentalManager:
                                                                None,
                                                                exp_obj))
             
-            print 'sending %d find and %d pings' % (len(find_msgs),
+            print 'Sending %d find and %d pings' % (len(find_msgs),
                                                     len(ping_msgs))            
         exp_obj.num_pending_queries -= 1
             #END OF EXTRACTION
@@ -87,7 +84,7 @@ class ExperimentalManager:
     def on_timeout(self, related_query):
         exp_obj = related_query.experimental_obj 
         if  exp_obj:
-            print 'timeout', related_query.query
+            print 'Timeout', related_query.query
             if related_query.query == message.PING:
                 exp_obj.reg_ping_result(
                                         related_query.dst_node, 
@@ -115,7 +112,6 @@ class ExperimentalManager:
         for ip, status in self.pinged_ips.iteritems():
             print('%s\t %s\n' % (ip, status))
         pass
-
 
 class ExpObj:
     def __init__(self):
@@ -146,9 +142,9 @@ class ExpObj:
         total[STATUS_ERROR] = 0
         
         for logdist, nodes in self.nodes:
-            print 'Log Distance = ', logdist
+            print '\nLog Distance = ', logdist
             for node_ in nodes:
                 total[self.status[node_.ip]] += 1
                 print self.status.get(node_.ip), node_.addr
-        print '++++'
+        print '\nTotal OK/FAIL/ERROR'
         print total
