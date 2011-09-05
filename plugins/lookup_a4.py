@@ -278,7 +278,7 @@ class GetPeersLookup(object):
             
 class MaintenanceLookup(GetPeersLookup):
 
-    def __init__(self, my_id, target):
+    def __init__(self, msg_f, my_id, target):
         GetPeersLookup.__init__(self, msg_f, my_id,
                                 None, target, None, 0)
         self._target = target
