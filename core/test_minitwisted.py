@@ -119,7 +119,7 @@ class TestMinitwisted:
     def test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
         for _ in xrange(FLOOD_LIMIT * 2):
-            self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
+            self.reactor.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         for i in xrange(FLOOD_LIMIT): 
             eq_(len(self.datagrams_received), i)
             self.reactor.run_one_step()
@@ -131,7 +131,7 @@ class TestMinitwisted:
             self.reactor.run_one_step()
         eq_(len(self.datagrams_received), FLOOD_LIMIT)
 
-    def _test_network_and_callback(self):
+    def test_network_and_callback(self):
         self.reactor.call_asap(self._callback, 1)
         eq_(self.main_loop_call_counter, 0)
         eq_(self.callback_values, [])
@@ -141,33 +141,18 @@ class TestMinitwisted:
         eq_(self.callback_values, [1])
         eq_(self.main_loop_call_counter, 1)
 
-        return
+        self.reactor.s.put_datagram_received(DATAGRAM1)
+        eq_(self.datagrams_received, [])
+        self.reactor.run_one_step()
+        eq_(self.datagrams_received, [DATAGRAM1])
 
-        task2 = self.client_r.call_later(.2, self.callback_f, 2)
-        with self.lock:
-            eq_(self.callback_order, [])
-        time.sleep(.1)
+        self.reactor.call_asap(self._callback, 2)
+        self.reactor.s.put_datagram_received(DATAGRAM3)
+        self.reactor.run_one_step() # receive AND call_asap
+        eq_(self.datagrams_received, [DATAGRAM1, DATAGRAM3])
+        eq_(self.callback_values, [1, 2])
 
-        with self.lock:
-            logger.debug('callback_order: %s' % self.callback_order)
-            assert self.callback_order == [1]
-            self.callback_order = []
-            assert not self.datagrams_received
-        self.server_r.sendto(DATA, tc.CLIENT_PORT)
-        time.sleep(.02) # wait for network interruption
-        with self.lock:
-            logger.debug('callback_order: %s' % self.callback_order)
-            assert self.callback_order == []
-            logger.debug('callback_order: %s' % self.callback_order)
-            datagram = self.datagrams_received.pop(0)
-            eq_(datagram.data, DATA)
-            eq_(datagram.addr, tc.SERVER_ADDR)
-            task2.cancel() #inside critical region??
-        time.sleep(.1) # wait for task 0 (task 2 should be cancelled)
-        with self.lock:
-            assert self.callback_order == [0]
-            assert not self.datagrams_received
-
+        
     def teardown(self):
         #self.reactor.stop() >> reactor is not really running
         time.normal_mode()

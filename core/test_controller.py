@@ -123,8 +123,8 @@ class TestController:
             message.Datagram(data, addr))
         #The lookup starts with a single node
         lookup_result = []
-        ts, datagrams = self.controller.get_peers(lookup_result, tc.INFO_HASH,
-                                             lambda x,y: x.append(y), 0)
+        datagrams = self.controller.get_peers(lookup_result, tc.INFO_HASH,
+                                              lambda x,y: x.append(y), 0)
         #FIXME: assert_almost_equal(ts, ping_timeout_ts)#time.time()+2)
         #FIXME: eq_(len(datagrams), 1)
 
@@ -145,7 +145,7 @@ class TestController:
         ping = datagrams[0].data
         addr = datagrams[0].addr
         #this get_peers fails because there are no nodes in the routing table
-        ts, datagrams = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
+        datagrams = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
         eq_(len(datagrams), 0)
         #fabricate response
         ping = self.servers_msg_f.incoming_msg(Datagram(ping, addr))
