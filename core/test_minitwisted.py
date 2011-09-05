@@ -74,7 +74,6 @@ class TestMinitwisted:
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
         self.reactor.s = _SocketMock(tc.TASK_INTERVAL)
-        self.s = self.reactor.s
         #self.reactor.start() >> instead of usint start(), we use run_one_step()
 
     def test_call_main_loop(self):
@@ -111,7 +110,7 @@ class TestMinitwisted:
         eq_(self.datagrams_received, [])
         datagram = Datagram(DATA1, tc.SERVER_ADDR)
         # This is equivalent to sending a datagram to reactor
-        self.s.put_datagram_received(datagram)
+        self.reactor.s.put_datagram_received(datagram)
         self.reactor.run_one_step()
         eq_(len(self.datagrams_received), 1)
         eq_(self.datagrams_received[0], datagram)
@@ -158,21 +157,19 @@ class TestMinitwisted:
         time.normal_mode()
 
 
-class _TestSend:
+class TestSend:
 
     
     def _main_loop(self):
-        return time.time() + 100, [DATAGRAM1]
+        return time.time() + MAIN_LOOP_DELAY, [DATAGRAM1]
 
     def _callback(self, value):
-        with self.lock:
-            self.callback_values.append(value)
-        return time.time() + 100, [DATAGRAM2]
+        self.callback_values.append(value)
+        return [DATAGRAM2]
 
     def _on_datagram_received(self, datagram):
-        with self.lock:
-            self.datagrams_received.append(datagram)
-        return time.time() + 100, [DATAGRAM3]
+        self.datagrams_received.append(datagram)
+        return time.time() + MAIN_LOOP_DELAY, [DATAGRAM3]
 
     def _crashing_callback(self):
         raise CrashError, 'Crash testing'
@@ -182,44 +179,47 @@ class _TestSend:
         self.callback_values = []
         self.datagrams_received = []
         
-        self.lock = threading.RLock()
         self.reactor = ThreadedReactor(self._main_loop,
                                        tc.CLIENT_PORT,
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
         self.reactor.s = _SocketMock(tc.TASK_INTERVAL)
-        self.s = self.reactor.s
-        self.reactor.start()
         
-    def _test_main_loop_send_data(self):
-        time.sleep(tc.TASK_INTERVAL)
-        eq_(self.s.get_datagrams_sent(), [DATAGRAM1])
-        return
+    def test_main_loop_send_data(self):
+        eq_(self.reactor.s.get_datagrams_sent(), [])
+        self.reactor.run_one_step()
+        # main_loop sends DATAGRAM1
+        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
     
-    def _test_call_asap_send_data(self):
-        time.sleep(tc.TASK_INTERVAL)
-        eq_(self.s.get_datagrams_sent(), [DATAGRAM1])
+    def test_call_asap_send_data(self):
+        self.reactor.run_one_step()
+        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
         self.reactor.call_asap(self._callback, 1)
-        time.sleep(tc.TASK_INTERVAL*2)
-        eq_(self.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM2])
+        self.reactor.run_one_step()
+        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM2])
         
-    def _test_on_datagram_received_send_data(self): 
-        time.sleep(tc.TASK_INTERVAL)
-        eq_(self.s.get_datagrams_sent(), [DATAGRAM1])
-        self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
-        time.sleep(tc.TASK_INTERVAL/2)
-        eq_(self.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
+    def test_on_datagram_received_send_data(self): 
+        self.reactor.run_one_step()
+        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
+        self.reactor.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
+        self.reactor.run_one_step()
+        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
-    def _test_capture(self):
+    def test_capture(self):
         self.reactor.start_capture()
         ts1 = time.time()
-        time.sleep(tc.TASK_INTERVAL)
-        ts2 = time.time()
-        self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         time.sleep(tc.TASK_INTERVAL/2)
+        # out > DATAGRAM1 (main_loop)
+        self.reactor.run_one_step()
+        ts2 = time.time()
+        incoming_datagram = Datagram(DATA1, tc.SERVER_ADDR)
+        self.reactor.s.put_datagram_received(incoming_datagram)
+        time.sleep(tc.TASK_INTERVAL/2)
+        self.reactor.run_one_step() 
+        # in < incoming_datagram (socket)
+        # out > DATAGRAM3 (on_datagram_received)
         captured_msgs = self.reactor.stop_and_get_capture()
 
-        #FIXME: sometimes 2, sometimes 3
         eq_(len(captured_msgs), 3)
         for msg in  captured_msgs:
             print msg
@@ -231,13 +231,14 @@ class _TestSend:
         eq_(captured_msgs[1][1], DATAGRAM1.addr)
         eq_(captured_msgs[1][2], False) #incoming
         eq_(captured_msgs[1][3], DATAGRAM1.data)
-#        assert captured_msgs[2][0] > captured_msgs[1][0]
-#        eq_(captured_msgs[2][1], DATAGRAM3.addr)
-#        eq_(captured_msgs[2][2], True) #outgoing
-#        eq_(captured_msgs[2][3], DATAGRAM3.data)
+        assert captured_msgs[2][0] > captured_msgs[1][0]
+        eq_(captured_msgs[2][1], DATAGRAM3.addr)
+        eq_(captured_msgs[2][2], True) #outgoing
+        eq_(captured_msgs[2][3], DATAGRAM3.data)
         
     def teardown(self):
-        self.reactor.stop()
+        #self.reactor.stop()
+        return
 
         
 class _TestSocketError:
@@ -259,7 +260,7 @@ class _TestSocketError:
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
         self.reactor.s = _SocketErrorMock()
-        self.reactor.start()
+#        self.reactor.start()
 
     def test_sendto_socket_error(self): 
         time.sleep(tc.TASK_INTERVAL/5)
@@ -292,8 +293,7 @@ class _TestError:
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
         self.reactor.s = _SocketMock(tc.TASK_INTERVAL)
-        self.s = self.reactor.s
-        self.reactor.start()
+#        self.reactor.start()
         self.reactor.call_asap(self._very_long_callback)
         time.sleep(tc.TASK_INTERVAL*2)
         assert_raises(Exception, self.reactor.stop)
@@ -331,7 +331,7 @@ class _TestSocketErrors:
     def test_sendto(self):
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
         assert not self.main_loop_send_called
-        self.r.start()
+#        self.r.start()
         while not self.r.running:
             time.sleep(tc.TASK_INTERVAL)
         while not self.main_loop_send_called:
@@ -346,7 +346,7 @@ class _TestSocketErrors:
                              task_interval=tc.TASK_INTERVAL)
         r2.s = _SocketErrorMock()
         assert not r2.running
-        r2.start()
+#        r2.start()
         assert r2.running
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
         # self.r will call recvfrom (which raises socket.error)
