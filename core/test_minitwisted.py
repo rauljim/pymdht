@@ -39,25 +39,24 @@ class CrashError(Exception):
 class TestMinitwisted:
 
     def _main_loop(self):
-        with self.lock:
-            self.main_loop_call_counter += 1
+        print 'main loop call'
+        self.main_loop_call_counter += 1
         return time.time() + self.main_loop_delay, []
 
     def _main_loop_return_datagrams(self):
         return time.time() + self.main_loop_delay, [DATAGRAM1]
 
     def _callback(self, value):
-        with self.lock:
-            self.callback_values.append(value)
-        return time.time() + 100, []
+        self.callback_values.append(value)
+        return []
 
     def _very_long_callback(self, value):
         time.sleep(tc.TASK_INTERVAL*11)
+        return []
 
     def _on_datagram_received(self, datagram):
         print 'on_datagram', datagram, datagram.data, datagram.addr
-        with self.lock:
-            self.datagrams_received.append(datagram)
+        self.datagrams_received.append(datagram)
         return time.time() + 100, []
 
     def _crashing_callback(self):
@@ -69,7 +68,6 @@ class TestMinitwisted:
         self.callback_values = []
         self.datagrams_received = []
         
-        self.lock = threading.RLock()
         self.main_loop_delay = MAIN_LOOP_DELAY
         self.reactor = ThreadedReactor(self._main_loop,
                                        tc.CLIENT_PORT,
@@ -118,25 +116,33 @@ class TestMinitwisted:
         eq_(len(self.datagrams_received), 1)
         eq_(self.datagrams_received[0], datagram)
 
-    def _test_block_flood(self):
+    def test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
-        for _ in xrange(FLOOD_LIMIT):
+        for _ in xrange(FLOOD_LIMIT * 2):
             self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
-        time.sleep(tc.TASK_INTERVAL*5)
-        with self.lock:
+        for i in xrange(FLOOD_LIMIT): 
+            eq_(len(self.datagrams_received), i)
+            self.reactor.run_one_step()
+        eq_(len(self.datagrams_received), FLOOD_LIMIT)
+        for i in xrange(FLOOD_LIMIT):
             eq_(len(self.datagrams_received), FLOOD_LIMIT)
-        for _ in xrange(10):
-            self.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
-            time.sleep(tc.TASK_INTERVAL*3)
-            with self.lock:
-                eq_(len(self.datagrams_received), FLOOD_LIMIT)
-                logger.warning(
-                    "TESTING LOGS ** IGNORE EXPECTED WARNING **")
+            logger.warning(
+                "TESTING LOGS ** IGNORE EXPECTED WARNING **")
+            self.reactor.run_one_step()
+        eq_(len(self.datagrams_received), FLOOD_LIMIT)
 
-    def _test_network_and_delayed(self):
-        # TODO
-        self.client_r.call_later(.2, self.callback_f, 0)
-        self.client_r.call_asap(self.callback_f, 1)
+    def _test_network_and_callback(self):
+        self.reactor.call_asap(self._callback, 1)
+        eq_(self.main_loop_call_counter, 0)
+        eq_(self.callback_values, [])
+        time.sleep(.1)
+        self.reactor.run_one_step()
+        # call_asap and main_loop triggered
+        eq_(self.callback_values, [1])
+        eq_(self.main_loop_call_counter, 1)
+
+        return
+
         task2 = self.client_r.call_later(.2, self.callback_f, 2)
         with self.lock:
             eq_(self.callback_order, [])

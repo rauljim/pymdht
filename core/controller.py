@@ -107,7 +107,7 @@ class Controller:
                                                               bt_port))
         queries_to_send =  self._try_do_lookup()
         datagrams_to_send = self._register_queries(queries_to_send)
-        return self._next_main_loop_call_ts, datagrams_to_send
+        return datagrams_to_send
     
     def _try_do_lookup(self):
         queries_to_send = []

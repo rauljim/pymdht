@@ -7,7 +7,7 @@ Minitwisted is inspired by the Twisted framework. Although, it is much
 simpler.
 - It can only handle one UDP connection per reactor.
 - Reactor runs in a thread
-- You can use call_later and call_now to run your code in thread-safe mode
+- You can use call_asap to run your code in thread-safe mode
 
 '''
 
@@ -129,13 +129,13 @@ class ThreadedReactor(threading.Thread):
             self._lock.release()
         if call_asap_tuple:
             callback_f, args, kwds = call_asap_tuple
-            (self._next_main_loop_call_ts,
-             datagrams_to_send) = callback_f(*args, **kwds)
+            datagrams_to_send = callback_f(*args, **kwds)
             for datagram in datagrams_to_send:
                 self._sendto(datagram)
-                    
+
+        print time.time() >= self._next_main_loop_call_ts
         # Call main_loop
-        if time.time() > self._next_main_loop_call_ts:
+        if time.time() >= self._next_main_loop_call_ts:
             (self._next_main_loop_call_ts,
              datagrams_to_send) = self._main_loop_f()
             for datagram in datagrams_to_send:
