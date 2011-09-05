@@ -76,6 +76,18 @@ class TestMinitwisted:
         self.reactor.s = _SocketMock()
         #self.reactor.start() >> instead of usint start(), we use run_one_step()
 
+
+    def test_start_and_stop(self):
+        '''
+        NOTE:
+        This is the only test using real threading
+        '''
+        ok_(not self.reactor.running)
+        self.reactor.start()
+        ok_(self.reactor.running)
+        self.reactor.stop()
+        ok_(not self.reactor.running)
+
     def test_call_main_loop(self):
         eq_(self.main_loop_call_counter, 0)
         self.reactor.run_one_step()

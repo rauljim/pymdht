@@ -79,6 +79,14 @@ class ThreadedReactor(threading.Thread):
             self._lock.release()
     running = property(_get_running, _set_running)
 
+    def _add_capture(self, capture):
+        self._lock.acquire()
+        try:
+            if self._capturing:
+                self._captured.append(capture)
+        finally:
+            self._lock.release()
+     
     def run(self):
         self.run2()
     
@@ -103,16 +111,22 @@ class ThreadedReactor(threading.Thread):
         logger.debug('Reactor stopped')
 
     def start_capture(self):
-        with self._lock:
+        self._lock.acquire()
+        try:
             assert not self._capturing
             self._capturing = True
+        finally:
+            self._lock.release()
 
     def stop_and_get_capture(self):
-        with self._lock:
+        self._lock.acquire()
+        try:
             assert self._capturing
             self._capturing = False
             captured = self._captured
             self._captured = []
+        finally:
+            self._lock.release()
         return captured
 
     def run_one_step(self):
@@ -150,9 +164,7 @@ class ThreadedReactor(threading.Thread):
             logger.warning(
                 'Got socket.error when receiving data:\n%s' % e)
         else:
-            with self._lock:
-                if self._capturing:
-                    self._captured.append((time.time(), addr, False, data))
+            self._add_capture((time.time(), addr, False, data))
             ip_is_blocked = self.floodbarrier_active and \
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
@@ -179,9 +191,8 @@ class ThreadedReactor(threading.Thread):
             time.sleep(self.task_interval*20)
             self.join(self.task_interval*20)
         if self.isAlive():
-            #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
             raise Exception, 'Minitwisted thread is still alive!'
-        #TODO: stop_callback()
+        #TODO: conductor.stop_callback()?
 
     def call_asap(self, callback_f, *args, **kwds):
         """Call the given callback with given arguments as soon as possible
@@ -213,6 +224,4 @@ class ThreadedReactor(threading.Thread):
             logging.error('datagram >>>>>>>>>>>', datagram)
             logging.error('data,addr: %s %s' % (datagram.data, datagram.addr))
             raise
-        with self._lock:
-            if self._capturing:
-                self._captured.append((time.time(), datagram.addr, True, datagram.data))
+        self._add_capture((time.time(), datagram.addr, True, datagram.data))
