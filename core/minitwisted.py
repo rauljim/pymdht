@@ -92,7 +92,7 @@ class ThreadedReactor(threading.Thread):
         logger.critical('run')
         try:
             while self.running:
-                self._protected_run()
+                self.run_one_step()
         except:
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
@@ -115,7 +115,7 @@ class ThreadedReactor(threading.Thread):
             self._captured = []
         return captured
 
-    def _protected_run(self):
+    def run_one_step(self):
         """Main loop activated by calling self.start()"""
 
         # Deal with call_asap requests
@@ -185,7 +185,7 @@ class ThreadedReactor(threading.Thread):
 
     def call_asap(self, callback_f, *args, **kwds):
         """Call the given callback with given arguments as soon as possible
-        (next time _protected_run is called).
+        (next time run_one_step is called).
         
         """ 
         self._lock.acquire()
