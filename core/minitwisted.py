@@ -147,7 +147,6 @@ class ThreadedReactor(threading.Thread):
             for datagram in datagrams_to_send:
                 self._sendto(datagram)
 
-        print time.time() >= self._next_main_loop_call_ts
         # Call main_loop
         if time.time() >= self._next_main_loop_call_ts:
             (self._next_main_loop_call_ts,
