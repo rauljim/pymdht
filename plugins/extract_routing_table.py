@@ -29,6 +29,7 @@ class ExperimentalManager:
             exp_obj = ExpObj()
             target = msg.src_node.id.generate_close_id(
                                             exp_obj.next_log_dist())
+            print 'Target %r'  % (target)
             print 'Sending first find_node'
             find_msgs.append(message.OutgoingFindNodeQuery(msg.src_node,
                                                            self.my_id,
