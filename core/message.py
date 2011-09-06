@@ -97,7 +97,7 @@ class MsgFactory(object):
         return msg
     
     def outgoing_find_node_query(self, dst_node, target,
-                                 experimental_obj=None, lookup_obj=None):
+                                 lookup_obj=None, experimental_obj=None):
         msg = OutgoingMsg(self.version_label, dst_node,
                           self.private_dht_name)
         msg.make_query(self.src_id, experimental_obj, lookup_obj)

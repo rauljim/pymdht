@@ -13,8 +13,9 @@ NUM_REPETITIONS = 5
 
 
 class ExperimentalManager:
-    def __init__(self, my_id):
+    def __init__(self, my_id, msg_f):
         self.my_id = my_id
+        self.msg_f = msg_f
         self._send_query = True
         self.num_responses = 0
         
@@ -31,10 +32,9 @@ class ExperimentalManager:
                                             exp_obj.next_log_dist())
             print 'Target %r'  % (target)
             print 'Sending first find_node'
-            find_msgs.append(message.OutgoingFindNodeQuery(msg.src_node,
-                                                           self.my_id,
-                                                           target, None,
-                                                           exp_obj))
+            find_msgs.append(self.msg_f.outgoing_find_node_query(msg.src_node,
+                                                                 target, None,
+                                                                 exp_obj))
             exp_obj.num_pending_queries += 1
             return find_msgs
         
@@ -58,19 +58,17 @@ class ExperimentalManager:
                     print '>>repetition', exp_obj.num_repetitions
                 else:
                     #time.sleep(0.01)
-                    ping_msgs.append(message.OutgoingPingQuery(node_,
-                                                               self.my_id,
-                                                               exp_obj))
+                    ping_msgs.append(self.msg_f.outgoing_ping_query(node_,
+                                                                    exp_obj))
             log_distance_bucket = related_query.target.log_distance(related_query.dst_node.id) 
             exp_obj.save_bucket(log_distance_bucket, msg.all_nodes)
             if exp_obj.num_repetitions < NUM_REPETITIONS:
                 target = msg.src_node.id.generate_close_id(exp_obj.next_log_dist())
                 print 'target:', msg.src_node.id.log_distance(target) 
-                find_msgs.append(message.OutgoingFindNodeQuery(msg.src_node,
-                                                               self.my_id,
-                                                               target,
-                                                               None,
-                                                               exp_obj))
+                find_msgs.append(self.msg_f.outgoing_find_node_query(msg.src_node,
+                                                                     target,
+                                                                     None,
+                                                                     exp_obj))
             
             print 'Sending %d find and %d pings' % (len(find_msgs),
                                                     len(ping_msgs))            
