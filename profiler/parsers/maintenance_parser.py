@@ -7,6 +7,7 @@ Prints the lookup time in seconds (one lookup per line).
 The output is not chronologically sorted.
 
 """
+
 from parser_utils import openf
 import core.message as message
 

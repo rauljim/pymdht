@@ -212,11 +212,14 @@ def main(options, args):
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
+    exp_m_name = '.'.join(os.path.split(options.exp_m_file))[:-3]
+    exp_m_mod = __import__(exp_m_name, fromlist=[''])
 
     global dht
     dht = pymdht.Pymdht(my_addr, logs_path,
                         routing_m_mod,
                         lookup_m_mod,
+                        exp_m_mod,
                         options.private_dht_name,
                         logs_level)
 
@@ -271,6 +274,9 @@ if __name__ == '__main__':
     parser.add_option("-l", "--lookup-plug-in", dest="lookup_m_file",
                       metavar='FILE', default='plugins/lookup_a4.py',
                       help="file containing the lookup_manager code")
+    parser.add_option("-e", "--exp-plug-in", dest="exp_m_file",
+                      metavar='FILE', default='core/exp_plugin_template.py',
+                      help="file containing the experiment_manager code")
     parser.add_option("-z", "--logs-level", dest="logs_level",
                       metavar='INT', default=0,
                       help="logging level")
