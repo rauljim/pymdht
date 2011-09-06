@@ -19,6 +19,7 @@ import minitwisted
 import controller
 import logging, logging_conf
 
+PYMDHT_VERSION = (11, 8, 3)
 
 class Pymdht:
     """Pymdht is the interface for the whole package.
@@ -41,7 +42,8 @@ class Pymdht:
                  debug_level, id_=None):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
-        self.controller = controller.Controller(my_node, state_filename,
+        self.controller = controller.Controller(PYMDHT_VERSION,
+                                                my_node, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 experimental_m_mod,

@@ -175,8 +175,17 @@ if __name__ == '__main__':
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
     messages for a given info_hash")
+    parser.add_option("--version",dest="version",
+                      action='store_true', default=False,
+                      help="Print Pymdhtversion and exit.")
+    
 
     (options, args) = parser.parse_args()
+
+    if options.version:
+        print 'Pymdht %d.%d.%d' % pymdht.PYMDHT_VERSION
+        sys.exit()
+    
     options.port = int(options.port)
 #    options.logs_level = int(options.logs_level)
     options.lookup_delay = int(options.lookup_delay)
