@@ -22,10 +22,11 @@ class RoutingManager(object):
     routing table.
 
     """
-    def __init__(self, my_node, bootstrap_nodes):
+    def __init__(self, my_node, bootstrap_nodes, msg_f):
         self.my_node = my_node
         #Copy the bootstrap list
         self.bootstrap_nodes = iter(bootstrap_nodes)
+        self.msg_f = msg_f
 
         self.table = routing_table.RoutingTable(my_node, [8,]*160)
         # This is just for testing:
@@ -48,8 +49,7 @@ class RoutingManager(object):
         maintenance_delay = MAINTENANCE_DELAY
         if self.maintenance_counter == 1:
             # bootstrap ping
-            queries_to_send = [message.OutgoingPingQuery(tc.SERVER_NODE,
-                                                         self.my_node.id)]
+            queries_to_send = [self.msg_f.outgoing_ping_query(tc.SERVER_NODE)]
             maintenance_lookup_target = None
         elif self.maintenance_counter == 2:
             # maintenance lookup

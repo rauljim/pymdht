@@ -42,9 +42,10 @@ BOOTSTRAP_DELAY = 5
 
 class OverlayBootstrapper(object):
 
-    def __init__(self, my_id, saved_bootstrap_nodes):
+    def __init__(self, my_id, saved_bootstrap_nodes, msg_f):
         self.my_id = my_id
         self.saved_bootstrap_nodes = saved_bootstrap_nodes
+        self.msg_f = msg_f
         (self.main_bootstrap_nodes,
          self.backup_bootstrap_nodes) = _get_bootstrap_nodes()
         self.bootstrap_ips = set() #ips of nodes we used to bootstrap.
@@ -81,9 +82,7 @@ class OverlayBootstrapper(object):
         return node_.ip in self.bootstrap_ips
 
     def _get_bootstrap_query(self, node_):
-        return message.OutgoingFindNodeQuery(node_,
-                                             self.my_id,
-                                             self.my_id, None)
+        return self.msg_f.outgoing_find_node_query(node_, self.my_id, None)
 
     def _pop_bootstrap_nodes(self):
         nodes = []

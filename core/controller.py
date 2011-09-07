@@ -30,7 +30,7 @@ import message
 import token_manager
 import tracker
 from querier import Querier
-from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
+from message import QUERY, RESPONSE, ERROR
 from node import Node
 import pkgutil
 
@@ -45,15 +45,15 @@ STATE_FILENAME = 'pymdht.state'
 
 NUM_NODES = 8
 
+
 class Controller:
 
-    def __init__(self, my_node, state_filename,
+    def __init__(self, pymdht_version,
+                 my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name):
-        #TODO: don't do this evil stuff!!!
-        message.private_dht_name = private_dht_name
-
+        
         if size_estimation:
             self._size_estimation_file = open('size_estimation.dat', 'w')
         
@@ -67,14 +67,17 @@ class Controller:
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
         self._my_node = Node(my_addr, self._my_id)
+        self.msg_f = message.MsgFactory(pymdht_version, self._my_id,
+                                        private_dht_name)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
         self._querier = Querier()
-        self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
-                                                       saved_bootstrap_nodes)
-        self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
-        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_node.id) 
+        self._routing_m = routing_m_mod.RoutingManager(
+            self._my_node, saved_bootstrap_nodes, self.msg_f)
+        self._lookup_m = lookup_m_mod.LookupManager(self._my_id, self.msg_f)
+        self._experimental_m = experimental_m_mod.ExperimentalManager(
+            self._my_node.id, self.msg_f) 
                   
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
@@ -104,7 +107,7 @@ class Controller:
                                                               bt_port))
         queries_to_send =  self._try_do_lookup()
         datagrams_to_send = self._register_queries(queries_to_send)
-        return self._next_main_loop_call_ts, datagrams_to_send
+        return datagrams_to_send
     
     def _try_do_lookup(self):
         queries_to_send = []
@@ -217,7 +220,7 @@ class Controller:
         addr = datagram.addr
         datagrams_to_send = []
         try:
-            msg = message.IncomingMsg(datagram)
+            msg = self.msg_f.incoming_msg(datagram)
             
         except(message.MsgError):
             # ignore message
@@ -345,16 +348,15 @@ class Controller:
     
     def _get_response(self, msg):
         if msg.query == message.PING:
-            return message.OutgoingPingResponse(msg.src_node, self._my_id)
+            return self.msg_f.outgoing_ping_response(msg.src_node)
         elif msg.query == message.FIND_NODE:
             log_distance = msg.target.log_distance(self._my_id)
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                         NUM_NODES, False)
             #TODO: return the closest rnodes to the target instead of the 8
             #first in the bucket.
-            return message.OutgoingFindNodeResponse(msg.src_node,
-                                                    self._my_id,
-                                                    rnodes)
+            return self.msg_f.outgoing_find_node_response(
+                msg.src_node, rnodes)
         elif msg.query == message.GET_PEERS:
             token = self._token_m.get()
             log_distance = msg.info_hash.log_distance(self._my_id)
@@ -365,16 +367,12 @@ class Controller:
             peers = self._tracker.get(msg.info_hash)
             if peers:
                 logger.debug('RESPONDING with PEERS:\n%r' % peers)
-            return message.OutgoingGetPeersResponse(msg.src_node,
-                                                    self._my_id,
-                                                    token,
-                                                    nodes=rnodes,
-                                                    peers=peers)
+            return self.msg_f.outgoing_get_peers_response(
+                msg.src_node, token, nodes=rnodes, peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
             peer_addr = (msg.src_addr[0], msg.bt_port)
             self._tracker.put(msg.info_hash, peer_addr)
-            return message.OutgoingAnnouncePeerResponse(msg.src_node,
-                                                        self._my_id)
+            return self.msg_f.outgoing_announce_peer_response(msg.src_node)
         else:
             logger.debug('Invalid QUERY: %r' % (msg.query))
             #TODO: maybe send an error back?
