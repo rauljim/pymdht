@@ -1,3 +1,4 @@
+from __future__ import with_statement
 # Copyright (C) 2009-2010 Raul Jimenez
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information

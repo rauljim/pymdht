@@ -10,11 +10,10 @@ from optparse import OptionParser
 
 import logging
 import core.logging_conf as logging_conf
-
+import threading
 import core.identifier as identifier
 import core.node as node
 import core.pymdht as pymdht
-
 
 def main(options, args):
     if not os.path.isdir(options.path):
@@ -84,6 +83,12 @@ def main(options, args):
             dht.get_peers(None, target, None, options.announce_port)
             remaining_lookups = remaining_lookups - 1
         time.sleep(options.stop_delay)
+        dht.stop()
+    elif options.ttl:
+        stop_timestamp = time.time() + int(options.ttl)
+        while time.time() < stop_timestamp:
+            time.sleep(1)
+        dht.stop()
     elif options.daemon:
         # Just loop for ever
         while 1:
@@ -138,6 +143,10 @@ if __name__ == '__main__':
     parser.add_option("--daemon", dest="daemon",
                       action='store_true', default=False,
                       help="DAEMON mode (no user interface)")
+    parser.add_option("--ttl", dest="ttl",
+                      default=0,
+                      help="Interactive DHT will run for the specified.\
+    If lookup-delay is used then ttl will be ignored")
 #    parser.add_option("--telnet",dest="telnet",
 #                      action='store_true', default=False,
 #                      help="Telnet interface (only on DAEMON mode)")
@@ -175,6 +184,11 @@ if __name__ == '__main__':
     messages for a given info_hash")
 
     (options, args) = parser.parse_args()
+
+    #if options.ttl:
+    #   t = threading.Timer(float(options.ttl), exit_dht) 
+    #   t.start()
+ 
     options.port = int(options.port)
 #    options.logs_level = int(options.logs_level)
     options.lookup_delay = int(options.lookup_delay)

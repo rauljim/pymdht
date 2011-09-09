@@ -6,8 +6,8 @@ import re
 import operator
 from socket import inet_ntoa
 import string
-import pcap
-import dpkt
+#import pcap
+#import dpkt
 import binascii
 import core.old_message as message
 

@@ -8,8 +8,8 @@ import binascii
 import sys
 #import matchqandr as qr
 from socket import inet_ntoa
-import pcap
-import dpkt
+#import pcap
+#import dpkt
 import keyword
 #import mappings as map
 import decimal
