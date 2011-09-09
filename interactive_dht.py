@@ -76,7 +76,7 @@ def main(options, args):
         while loop_forever or remaining_lookups:
             time.sleep(options.lookup_delay)
             if options.lookup_target:
-                target = options.lookup_target
+                target = identifier.Id(options.lookup_target)
             else:
                 target = identifier.RandomId()
             print 'lookup', target
