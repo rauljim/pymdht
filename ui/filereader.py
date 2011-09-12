@@ -5,8 +5,8 @@
 #import sys
 from socket import inet_ntoa
 #import string
-import pcap
-import dpkt
+#import pcap
+#import dpkt
 #import binascii
 #from StringIO import StringIO
 import core.old_message as message

@@ -77,13 +77,19 @@ def main(options, args):
         while loop_forever or remaining_lookups:
             time.sleep(options.lookup_delay)
             if options.lookup_target:
-                target = options.lookup_target
+                target = identifier.Id(options.lookup_target)
             else:
                 target = identifier.RandomId()
             print 'lookup', target
             dht.get_peers(None, target, None, options.announce_port)
             remaining_lookups = remaining_lookups - 1
         time.sleep(options.stop_delay)
+        dht.stop()
+    elif options.ttl:
+        stop_timestamp = time.time() + int(options.ttl)
+        while time.time() < stop_timestamp:
+            time.sleep(1)
+        dht.stop()
     elif options.daemon:
         # Just loop for ever
         while 1:
@@ -140,6 +146,10 @@ if __name__ == '__main__':
     parser.add_option("--daemon", dest="daemon",
                       action='store_true', default=False,
                       help="DAEMON mode (no user interface)")
+    parser.add_option("--ttl", dest="ttl",
+                      default=0,
+                      help="Interactive DHT will run for the specified time\
+    (in seconds). This option is ignored if lookup-delay is not 0")
 #    parser.add_option("--telnet",dest="telnet",
 #                      action='store_true', default=False,
 #                      help="Telnet interface (only on DAEMON mode)")
