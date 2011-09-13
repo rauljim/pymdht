@@ -74,10 +74,11 @@ NUM_FILLING_LOOKUPS = 0 #FIXME: it was 8
 
 class RoutingManager(object):
     
-    def __init__(self, my_node, bootstrap_nodes):
+    def __init__(self, my_node, bootstrap_nodes, msg_f):
         self.my_node = my_node
         self.bootstrapper = bootstrap.OverlayBootstrapper(my_node.id,
-                                                          bootstrap_nodes)
+                                                          bootstrap_nodes, msg_f)
+        self.msg_f = msg_f
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
         # maintenance variables
         self._next_stale_maintenance_index = 0
@@ -188,16 +189,15 @@ class RoutingManager(object):
                 node_=node_)
             if target_log_distance:
                 target = self.my_node.id.generate_close_id(target_log_distance)
-                msg =  message.OutgoingFindNodeQuery(node_, self.my_node.id,
-                                                     target, None)
+                msg = self.msg_f.outgoing_find_node_query(node_,
+                                                          target, None)
             else:
                 # Every bucket is full. We send a ping instead.
-                msg = message.OutgoingPingQuery(node_, self.my_node.id)
+                msg = self.msg_f.outgoing_ping_query(node_)
         else:
             # 50% chance to send find_node with my id as target
-            msg = message.OutgoingFindNodeQuery(node_,
-                                                self.my_node.id,
-                                                self.my_node.id, None)
+            msg = self.msg_f.outgoing_find_node_query(node_,
+                                                      self.my_node.id, None)
         return msg
         
     def on_query_received(self, node_):

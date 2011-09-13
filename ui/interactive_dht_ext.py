@@ -3,7 +3,8 @@ import os, sys, time
 import urllib
 import threading
 class idht_ext(threading.Thread):
-    def __init__(self,call_b,buttons):
+    def __init__(self,call_b,buttons, data_path):
+        self.data_path = data_path
         threading.Thread.__init__(self)
         print "Intialized"
         self.Counter=0
@@ -33,12 +34,13 @@ class idht_ext(threading.Thread):
 #            '600', '699',
 #            '601', '602', '603', '604',
             ]
+        self.final_path = os.path.join(self.data_path, 'torrent_pages')
         try:
-            os.mkdir('ui/torrent_pages')
+            os.mkdir(self.final_path)
         except (OSError):
             pass # directory already exists
     def get_html(self,page):
-        html_filename = os.path.join('ui/torrent_pages', page+'.html')
+        html_filename = os.path.join(self.final_path, page+'.html')
         print 'Retrieving', page, 'to', html_filename, '...',
         sys.stdout.flush()
         

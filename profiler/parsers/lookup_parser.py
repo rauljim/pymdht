@@ -14,6 +14,7 @@ import cdf
 
 NUM_AUTH_REPLICAS = 3
 
+
 class ValuesR(object):
 
     def __init__(self, time, log_distance, peers):
@@ -21,6 +22,7 @@ class ValuesR(object):
         self.log_distance = log_distance
         self.peers = peers
 
+        
 class LookupInfo(object):
 
     def __init__(self, info_hash, start_ts):

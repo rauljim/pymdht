@@ -26,9 +26,10 @@ import cPickle
 
 class Interactive_GUI(wx.Frame):
     MainList=[]
-    def __init__(self, parent, mytitle, list, Size, dht):
+    def __init__(self, parent, mytitle, list, Size, dht, data_path):
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0), size=Size)
         self.dht = dht
+        self.data_path = data_path
         #self.init_main_of_idht()        
         self.counter1=0
         self.counter2=0
@@ -238,7 +239,13 @@ class Interactive_GUI(wx.Frame):
     def save_infile(self,event):
         if not self.packets==[]:
             file_name=str(time.strftime("%Y%m%d%H%M%S"))
-            file_path_name=os.path.join('ui/data_files', file_name+'.out')
+            final_path = os.path.join(self.data_path, 'data_files')
+            try:
+                os.mkdir(final_path)
+                    
+            except (OSError):
+                pass # directory already exists
+            file_path_name=os.path.join(final_path, file_name+'.out')
             f = open(file_path_name, "wb")
             cPickle.dump(self.packets, f)
             wx.MessageDialog(self, "The file "+file_name+" has been saved !!!", "File Saved!", wx.OK | wx.CENTRE | wx.ICON_EXCLAMATION).ShowModal()
@@ -253,7 +260,10 @@ class Interactive_GUI(wx.Frame):
 #            self.responseslist=r
 #            self.errorslist=e
 #            self.QueResErrList=qre
-            obj=gdisplay.Graphical_display(None,"Graphical display of Interactive DHT",(1440,900)).Show()
+            obj=gdisplay.Graphical_display(None,
+                                           "Graphical display of\
+Interactive DHT",
+                                           (1440,900), self.data_path).Show()
 
     def display(self,information,lock):
         i=information[0]
@@ -273,7 +283,7 @@ class Interactive_GUI(wx.Frame):
         self.lc2.DeleteAllItems()        
         self.button2.Enable()
         self.button1.Disable()
-        self.idhtThread=idht_ext.idht_ext(self.display_values,[self.button1,self.button2])
+        self.idhtThread=idht_ext.idht_ext(self.display_values,[self.button1,self.button2], self.data_path)
         self.idhtThread.start()
         self.lc2.SetItemState(0, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED);
     def stop_collect_values(self,event):

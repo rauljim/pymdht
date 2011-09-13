@@ -18,7 +18,7 @@ class TestPymdht:
         return
     
     def setup(self):
-        self.dht = pymdht.Pymdht(tc.CLIENT_ADDR, 'test_logs',
+        self.dht = pymdht.Pymdht(tc.CLIENT_NODE, 'test_logs',
                                  routing_m_mod,
                                  lookup_m_mod,
                                  exp_m_mod,

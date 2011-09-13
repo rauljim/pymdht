@@ -1,5 +1,24 @@
-== 11.08+
+== 11.8.3
 
+- Message is now a factory. Now 'private_dht_name' is a parameter instead of
+  an evil global variable
+
+== 11.8.2
+
+- Bugfix: there was no error msg handler in exp_plugin_template.py
+
+== 11.8.1
+
+- Moved all user interface code to ui directory
+- Integrated all user interfaces and options in interactive_dht.py
+- pymdht_daemon.py is now deprecated (functionality moved to
+  interactive_dht.py)
+- user can now choose a nodeId (node-id option) or choose a nodeId close to
+  some identifier (node-id + log-distance)
+
+== 11.8.0
+
+- Refined all code related to bootstraping.
 - Added GUI code (from Shariq)
 
 === 11.07
