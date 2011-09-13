@@ -135,7 +135,7 @@ class Controller:
             peers = self._tracker.get(lookup_obj.info_hash)
             callback_f = lookup_obj.callback_f
             if peers and callback_f and callable(callback_f):
-                callback_f(lookup_obj.lookup_id, peers)
+                callback_f(lookup_obj.lookup_id, peers, None)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
         else:
@@ -287,11 +287,9 @@ class Controller:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
             ## zinat: if related_query.experimental_obj:
-            self._experimental_m.on_response_received(msg, related_query)
+            exp_queries_to_send = self._experimental_m.on_response_received(
+                                                        msg, related_query)
             #TODO: you need to get datagrams to be able to send messages (raul)
-            ## .......
-            # datagrams = related_query.experimental_obj.on_response_received(msg.....)
-            # datagrams_to_send.extend(datagrams)
             # lookup related tasks
             if related_query.lookup_obj:
                 (lookup_queries_to_send,
@@ -306,10 +304,10 @@ class Controller:
                 lookup_id = related_query.lookup_obj.lookup_id
                 callback_f = related_query.lookup_obj.callback_f
                 if peers and callable(callback_f):
-                    callback_f(lookup_id, peers)
+                    callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
                     if callable(callback_f):
-                        callback_f(lookup_id, None)
+                        callback_f(lookup_id, None, msg.src_node)
                     queries_to_send = self._announce(
                         related_query.lookup_obj)
                     datagrams = self._register_queries(
@@ -334,9 +332,7 @@ class Controller:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
             #TODO: zinat: same as response
-            
-            
-            
+            exp_queries_to_send = self._experimental_m.on_error_received(msg, related_query)
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
@@ -365,7 +361,7 @@ class Controller:
                 if callback_f and callable(callback_f):
                     lookup_id = related_query.lookup_obj.lookup_id
                     if lookup_done:
-                        callback_f(lookup_id, None)
+                        callback_f(lookup_id, None, msg.src_node)
             # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_error_received(addr)
@@ -428,7 +424,7 @@ class Controller:
     def _on_timeout(self, related_query):
         queries_to_send = []
         #TODO: on_timeout should return queries (raul)
-        self._experimental_m.on_timeout(related_query)
+        exp_queries_to_send = self._experimental_m.on_timeout(related_query)
         if related_query.lookup_obj:
             (lookup_queries_to_send,
              num_parallel_queries,
@@ -449,10 +445,13 @@ class Controller:
                     queries_to_send.extend(self._announce(
                             related_query.lookup_obj))
                     lookup_id = related_query.lookup_obj.lookup_id
-                    related_query.lookup_obj.callback_f(lookup_id, None)
+                    related_query.lookup_obj.callback_f(lookup_id, None, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(related_query.dst_node)
         if maintenance_queries_to_send:
             queries_to_send.extend(maintenance_queries_to_send)
+        if exp_queries_to_send:
+            datagrams = self._register_queries(exp_queries_to_send)
+            datagrams_to_send.extend(datagrams)
         return queries_to_send
 
     def _announce(self, lookup_obj):
