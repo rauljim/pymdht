@@ -13,9 +13,9 @@ class Graphical_display(wx.Frame):
     newResList = []
     stepnumber = 0
     sizeofnodes=10
-    xspacingofnodes = 42
+    xspacingofnodes = 45
     yspacingofnodes = 40
-    startingx = 25
+    startingx = 30
     startingy = 40
     vsb = 1
     povsb = -1
@@ -36,6 +36,7 @@ class Graphical_display(wx.Frame):
     
     def __init__(self, parent, mytitle, Size, data_path):
         self.data_path = data_path
+        self.Resolution = wx.Display().GetGeometry()[2:4]
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0),
                           size=Size)
         self.create_controls()
@@ -129,36 +130,27 @@ class Graphical_display(wx.Frame):
         return ListD
 
     def create_controls(self):
-        
+        a=(self.Resolution[1]*0.15)
+        ################ Sizer
         sizer_v = wx.BoxSizer(wx.VERTICAL)
-        
         sizer_h0= wx.BoxSizer(wx.HORIZONTAL)
+        sizer_h1 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_h2 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_h3 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_h4 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_h5 = wx.BoxSizer(wx.HORIZONTAL)
         
-        self.srclabel = wx.StaticText(self, label="Source Address : Infohash ")
-        sizer_h0.Add(self.srclabel, flag=wx.ALL, border=10)
-        self.combo1 = wx.ComboBox(self,
-                              size=(500,wx.DefaultSize.y),
-                              choices=self.list3)
-        self.combo1.SetEditable(False)
-        sizer_h0.Add(self.combo1, flag=wx.ALL, border=10)
-#        self.srctxt = wx.TextCtrl(self, size=wx.Size(400, -1),
-#                                  value='1.1.1.1')
-#        sizer_h0.Add(self.srctxt,flag=wx.ALL, border=10)
-#        
-#        self.infolabel = wx.StaticText(self, label="Infohash:")
-#        sizer_h0.Add(self.infolabel,flag=wx.ALL, border=10)
-#        self.infotxt = wx.TextCtrl(self, size=wx.Size(400, -1),
-#                                   value='2aedb99b1e79e776433eecbec675c84704677124')     
-#        sizer_h0.Add(self.infotxt,flag=wx.ALL, border=10 ) 
+        # Controls
         self.Button1=wx.Button(self,5,'  Browse   ')
-        sizer_h0.Add(self.Button1,flag=wx.ALL, border=10 )        
-        self.Button1=wx.Button(self,6,'   Load    ')
-        sizer_h0.Add(self.Button1,flag=wx.ALL, border=10 )
-        self.Button1=wx.Button(self,7,'    Exit   ')
-        sizer_h0.Add(self.Button1,flag=wx.ALL, border=10 )
-        sizer_v.Add(sizer_h0, 0)
+        self.srclabel = wx.StaticText(self, label="Source Address : Infohash ")
+        self.combo1 = wx.ComboBox(self,size=(500,wx.DefaultSize.y),choices=self.list3)
+        self.combo1.SetEditable(False)
+        self.combo1.Bind(wx.wx.EVT_COMBOBOX,self.onSelect)
+        self.Button3=wx.Button(self,6,'    Exit   ')
         
-        self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL|wx.TB_TEXT)
+        self.toolbar = wx.ToolBar(self, style=wx.TB_HORIZONTAL | wx.TB_TEXT)
+        color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
+        self.toolbar.SetBackgroundColour(color)
         self.toolbar.AddLabelTool(1, "Play/Pause",
             wx.Bitmap('ui/images/Picture9.png'))
         self.Bind(wx.EVT_TOOL, self.start_processing, id=1)
@@ -171,14 +163,12 @@ class Graphical_display(wx.Frame):
         self.toolbar.AddLabelTool(4, "Next",
             wx.Bitmap('ui/images/Picture11.png'))
         self.Bind(wx.EVT_TOOL, self.next_step, id=4)
+        self.toolbar.EnableTool(2, False)
+        self.toolbar.EnableTool(3, False)
+        self.toolbar.EnableTool(4, True)
         
-        
-        sizer_h1 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_h1.Add(self.toolbar, wx.EXPAND)        
-        sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
-        
-        sizer_h2 = wx.BoxSizer(wx.HORIZONTAL)
         self.panel2 = wx.Panel(self, -1)
+        self.panel2.SetBackgroundColour(color)
         self.rb1 = wx.RadioButton(self.panel2,-1, 'Time Interval (in millseconds) :', (10, 5), style=wx.RB_GROUP)
         self.rb2 = wx.RadioButton(self.panel2,-1, 'Slow Motion  (x times)          :', (10, 40))
         self.TextBox1 = wx.TextCtrl(self.panel2, pos=(250,5),size=wx.Size(200, -1))
@@ -187,13 +177,8 @@ class Graphical_display(wx.Frame):
         self.TextBox2.SetValue("10000")
         for RadioButton in [self.rb1,self.rb2]:
             self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, RadioButton)
-        
-        
-        sizer_h2.Add(self.panel2, 0)
-        sizer_v.Add(sizer_h2, 0, flag=wx.ALL|wx.EXPAND,border=10)
-        
-        sizer_h3 = wx.BoxSizer(wx.HORIZONTAL)
-        self.lc = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER , size=(-1, 110))
+            
+        self.lc = wx.ListCtrl(self, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER , size=(-1, a*0.5))
         self.lc.InsertColumn(0, "No.")
         self.lc.SetColumnWidth(0, 40)
         self.lc.InsertColumn(1, "Query Time")
@@ -210,36 +195,37 @@ class Graphical_display(wx.Frame):
         self.lc.SetColumnWidth(6, 100)
         self.lc.InsertColumn(7, "Nodes Distance")
         self.lc.SetColumnWidth(7, 280)
-        sizer_h3.AddSpacer((5, 0))
-        sizer_h3.Add(self.lc, 1, flag=wx.ALL, border=10)
-        sizer_v.Add(sizer_h3, 0, wx.BOTTOM | wx.EXPAND, 10)
         
-        sizer_h4 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_h4.AddSpacer((10, 0))
-        self.panel1 = wx.Panel(self, -1, size=(1300, 500)) 
-        sizer_h4.Add(self.panel1, 7, wx.ALL | wx.EXPAND, 10)
+        self.panel1 = wx.Panel(self, -1) 
         self.panel1.SetScrollbar(wx.HORIZONTAL, 0, 1, self.hsb)
         self.panel1.SetScrollbar(wx.VERTICAL, 0, 1, self.vsb);
         self.Stbox1 = wx.StaticText(self.panel1, -1, "", (0, 0))
         font1 = wx.Font(12, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Comic Sans MS')
         self.Stbox1.SetFont(font1)
-        sizer_v.Add(sizer_h4, 1, wx.BOTTOM | wx.EXPAND, 10)
         
-        sizer_h5 = wx.BoxSizer(wx.HORIZONTAL)
-        self.TxtBox1=wx.TextCtrl(self, wx.ID_ANY,value="",style=wx.TE_MULTILINE,size=(100,110))
-        sizer_h5.AddSpacer((10, 0))
-        sizer_h5.Add(self.TxtBox1, 6, flag=wx.ALL, border=10)
-        sizer_v.Add(sizer_h5, 0, wx.BOTTOM | wx.EXPAND, 10)       
+        self.TxtBox1=wx.TextCtrl(self, wx.ID_ANY,value="",style=wx.TE_MULTILINE,size=(-1,-1))
+               
+        sizer_h0.Add(self.Button1,flag=wx.ALL, border=10 )
+        sizer_h0.Add(self.srclabel, flag=wx.ALL, border=10)
+        sizer_h0.Add(self.combo1, flag=wx.ALL, border=10)
+        sizer_h0.Add(self.Button3,flag=wx.ALL, border=10 )
+        sizer_v.Add(sizer_h0, 0)
+        sizer_h1.Add(self.toolbar)        
+        sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
+        sizer_h2.Add(self.panel2, 0)
+        sizer_v.Add(sizer_h2, 0, flag=wx.ALL|wx.EXPAND)
+        sizer_h3.Add(self.lc, 1, flag=wx.ALL|wx.EXPAND)
+        sizer_v.Add(sizer_h3, 1, wx.ALL | wx.EXPAND, 10)
+        sizer_h4.Add(self.panel1, 2, wx.ALL | wx.EXPAND)
+        sizer_v.Add(sizer_h4, 2, wx.ALL | wx.EXPAND, 10)
+        sizer_h5.Add(self.TxtBox1, 1, flag=wx.ALL|wx.EXPAND)
+        sizer_v.Add(sizer_h5, 1, wx.ALL | wx.EXPAND, 10)       
         self.SetSizer(sizer_v)
-        
-        self.toolbar.EnableTool(2, False)
-        self.toolbar.EnableTool(3, False)
-        self.toolbar.EnableTool(4, True)
     def on_radio(self, event):
         Selected = event.GetEventObject().GetLabel().find("Time")
         if Selected!=-1:
             print "Time Interval"
-            self.radio_option=True            
+            self.radio_option=True
         else:
             self.radio_option=False
             print "Slow Motion"
@@ -289,7 +275,19 @@ class Graphical_display(wx.Frame):
                 self.lc.SetStringItem(index, 5, str(line[0].hexaTid))
                 self.lc.SetItemBackgroundColour(index, 'red')
                 self.newResList.append(line)
-        
+                
+    def onSelect(self, event):
+        selected=self.combo1.GetCurrentSelection()
+        if not selected==-1:
+            src_addr=self.list3[selected][0]
+            info_hash=self.list3[selected][1]
+            self.list1=[]
+            for i in self.list2:  
+                if str(i[0].src_addr[0])==src_addr:
+                    if repr(i[0].infohash)==info_hash:
+                        self.list1.append(i)
+            self.main_list=self.convert_list(self.list1)
+            self.load_list(self.main_list)
     def create_bindings(self):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -302,8 +300,7 @@ class Graphical_display(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.previous_step, id=3)
         self.Bind(wx.EVT_BUTTON, self.next_step, id=4)
         self.Bind(wx.EVT_BUTTON, self.on_browse, id=5)
-        self.Bind(wx.EVT_BUTTON, self.on_load, id=6)
-        self.Bind(wx.EVT_BUTTON, self.on_exit, id=7)
+        self.Bind(wx.EVT_BUTTON, self.on_exit, id=6)
     
     def handle_enable_disable(self):
         if (self.pp_flag==True):
@@ -463,8 +460,9 @@ class Graphical_display(wx.Frame):
                                         ((self.povsb + 1) * self.yspacingofnodes)
                                     )                                        
                                 ),None)
+        ninfo2=False
         if not ninfo1==False:
-            if not str(ninfo1[0].__class__)=='dslist.ListofNodes':
+            if not str(ninfo1[0].__class__)=='ui.dslist.ListofNodes':
                 ninfo2=ninfo1
                 while not ninfo1==False:
                     ninfo1=process_all_list((
@@ -475,12 +473,12 @@ class Graphical_display(wx.Frame):
                                             )                                        
                                         ),ninfo2)
                     if not ninfo1==False:
-                        if str(ninfo1[0].__class__)=='dslist.ListofNodes':
+                        if str(ninfo1[0].__class__)=='ui.dslist.ListofNodes':
                             ninfo2=ninfo1
                             ninfo1=False
         if not ninfo1==False:
             ninfo2=ninfo1
-        self.TxtBox1.Clear()        
+        self.TxtBox1.Clear()    
         if not(ninfo2==False):
             if(ninfo2[1]==0):
                 display_main_node(ninfo2[0])
@@ -717,9 +715,8 @@ class Graphical_display(wx.Frame):
             else:
                 print index1.color1,index1.color2
         self.wait_time=float(self.main_list[i][2])
-        print self.wait_time
         maxy,maxx=find_max_xy()
-        self.vsb = ((maxy-300) / self.yspacingofnodes)
+        self.vsb = ((maxy) / self.yspacingofnodes)
         self.panel1.SetScrollbar(wx.VERTICAL, self.povsb+1, 1, self.vsb);
         self.hsb = 130 # yet to be calculated (maxy-500)/25
         self.panel1.SetScrollbar(wx.HORIZONTAL, self.pohsb+1, 1, self.hsb);
@@ -762,11 +759,4 @@ class Graphical_display(wx.Frame):
             self.Refresh()
             return            
         dc = wx.PaintDC(self)
-        dc.DrawBitmap(self.buffer, 0, 0)       
-        
-
-if __name__ == '__main__':
-    app = wx.PySimpleApp()
-    frame = Graphical_display(None, "Lookup@KAD Converge Visualization", None, (1400, 900))
-    frame.Show(True)
-    app.MainLoop()
+        dc.DrawBitmap(self.buffer, 0, 0)
