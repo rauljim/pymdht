@@ -171,6 +171,10 @@ class Graphical_display(wx.Frame):
         self.panel2.SetBackgroundColour(color)
         self.rb1 = wx.RadioButton(self.panel2,-1, 'Time Interval (in millseconds) :', (10, 5), style=wx.RB_GROUP)
         self.rb2 = wx.RadioButton(self.panel2,-1, 'Slow Motion  (x times)          :', (10, 40))
+        self.panel3 = wx. Panel(self,-1)
+        self.panel3.SetBackgroundColour(color)
+        self.srclabel2 = wx.StaticText(self.panel3, pos= (30,10),label="Playback position of Lookup       :        ")
+        self.slider = wx.Slider(self.panel3,-1,-1,0,10,pos = (30,40), size = (400,-1),style = wx.SL_AUTOTICKS)
         self.TextBox1 = wx.TextCtrl(self.panel2, pos=(250,5),size=wx.Size(200, -1))
         self.TextBox1.SetValue("0.001")
         self.TextBox2 = wx.TextCtrl(self.panel2, pos=(250,40),size=wx.Size(200, -1))
@@ -213,6 +217,7 @@ class Graphical_display(wx.Frame):
         sizer_h1.Add(self.toolbar)        
         sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
         sizer_h2.Add(self.panel2, 0)
+        sizer_h2.Add(self.panel3, 0)
         sizer_v.Add(sizer_h2, 0, flag=wx.ALL|wx.EXPAND)
         sizer_h3.Add(self.lc, 1, flag=wx.ALL|wx.EXPAND)
         sizer_v.Add(sizer_h3, 1, wx.ALL | wx.EXPAND, 10)
@@ -288,6 +293,7 @@ class Graphical_display(wx.Frame):
                         self.list1.append(i)
             self.main_list=self.convert_list(self.list1)
             self.load_list(self.main_list)
+            self.slider.SetRange(0,len(self.main_list)-1)
     def create_bindings(self):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -343,6 +349,8 @@ class Graphical_display(wx.Frame):
     
     def reinitialize_param(self):
         self.bootstrapnodes=[]
+        self.slider.SetValue(0)
+        self.srclabel2.SetLabel("Playback position of Lookup       :        ")
         self.printing()
         self.ptr=0
         self.handle_enable_disable()
@@ -540,6 +548,21 @@ class Graphical_display(wx.Frame):
     def precalculation_previousstep(self):
         self.previousstepprocessing(self.ptr-1)
         self.ptr=self.ptr-1
+        self.slider.SetValue(self.slider.GetValue()-1)
+        self.ptr=self.ptr-1
+        if not self.ptr == 0:
+            current_location = self.ptr-1
+        else:
+            current_location = self.ptr
+        
+        if self.main_list[current_location][1] == 'bogus':
+            playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
+        else:
+            if self.main_list[current_location][1].ts == '-':
+                playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                playback_position="%.6f"%float(self.main_list[current_location][1].ts)
+        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position)
         self.handle_enable_disable()
         self.printing()
     def previousstepprocessing(self,i):
@@ -579,6 +602,16 @@ class Graphical_display(wx.Frame):
                 
     def precalculation_nextstep(self):
         self.nextstepprocessing(self.ptr)
+        if self.main_list[self.ptr][1] == 'bogus':
+            playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+        else:
+            if self.main_list[self.ptr][1].ts == '-':
+                playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+            else:
+                playback_position="%.6f"%float(self.main_list[self.ptr][1].ts)
+        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position)
+        if not self.ptr == 0:
+            self.slider.SetValue(self.slider.GetValue()+1)
         self.ptr=self.ptr+1
         self.handle_enable_disable()
         self.printing()       
