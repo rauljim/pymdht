@@ -37,6 +37,7 @@ class Graphical_display(wx.Frame):
     def __init__(self, parent, mytitle, Size, data_path):
         self.data_path = data_path
         self.Resolution = wx.Display().GetGeometry()[2:4]
+        self.color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0),
                           size=Size)
         self.create_controls()
@@ -131,6 +132,7 @@ class Graphical_display(wx.Frame):
 
     def create_controls(self):
         a=(self.Resolution[1]*0.15)
+        color = self.color
         ################ Sizer
         sizer_v = wx.BoxSizer(wx.VERTICAL)
         sizer_h0= wx.BoxSizer(wx.HORIZONTAL)
@@ -166,6 +168,8 @@ class Graphical_display(wx.Frame):
         self.toolbar.EnableTool(2, False)
         self.toolbar.EnableTool(3, False)
         self.toolbar.EnableTool(4, True)
+        self.panel4 = wx.Panel(self,-1)
+        self.panel4.SetBackgroundColour(color) 
         
         self.panel2 = wx.Panel(self, -1)
         self.panel2.SetBackgroundColour(color)
@@ -214,7 +218,8 @@ class Graphical_display(wx.Frame):
         sizer_h0.Add(self.combo1, flag=wx.ALL, border=10)
         sizer_h0.Add(self.Button3,flag=wx.ALL, border=10 )
         sizer_v.Add(sizer_h0, 0)
-        sizer_h1.Add(self.toolbar)        
+        sizer_h1.Add(self.toolbar)
+        sizer_h1.Add(self.panel4, 1, wx.ALL | wx.EXPAND,10)         
         sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
         sizer_h2.Add(self.panel2, 0)
         sizer_h2.Add(self.panel3, 0)
@@ -440,7 +445,7 @@ class Graphical_display(wx.Frame):
                 
         def display_main_node(i):
             self.TxtBox1.WriteText("Node Information:\n")
-            self.draw_circle(dc,"White","White",i.MainNode.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.MainNode.y - ((self.povsb + 1) * self.yspacingofnodes), i.MainNode.size/2)
+            self.draw_circle(dc,"White","White",i.MainNode.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.MainNode.y - ((self.povsb + 1) * self.yspacingofnodes), i.MainNode.size/4)
             Str=str(i.MainNode.IPadress)+","+str(i.MainNode.Port)+","+i.MainNode.dn
             self.TxtBox1.WriteText(Str)
             self.TxtBox1.WriteText("\nNodes Information:\n")
@@ -457,7 +462,7 @@ class Graphical_display(wx.Frame):
             else:
                 self.TxtBox1.WriteText("None\n")
         def display_child_node(i):
-            self.draw_circle(dc,"Brown","Brown",i.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.y - ((self.povsb + 1) * self.yspacingofnodes), i.size/2)    
+            self.draw_circle(dc,"Orange","Orange",i.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.y - ((self.povsb + 1) * self.yspacingofnodes), i.size/4)    
             Str=str(i.IPadress)+","+str(i.Port)+","+str(i.d)
             self.TxtBox1.WriteText(Str)
             self.TxtBox1.WriteText("\n")
@@ -586,7 +591,7 @@ class Graphical_display(wx.Frame):
             if color1=="Green" and color2=="Green":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Yellow","Yellow")
-            if color1=="Black" and color2=="Black":
+            if color1=="Black" and color2=="Green":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Yellow","Yellow")
             if color1=="Yellow" and color2=="Yellow":
@@ -759,7 +764,7 @@ class Graphical_display(wx.Frame):
                               str(self.main_list[i][1].src_addr[1]),
                               str(self.main_list[i][1].dist_from_sender),
                               str(index1.dn),
-                          index1.x,index1.y,self.sizeofnodes,"Black","Black")
+                          index1.x,index1.y,self.sizeofnodes,"Black","Green")
                     TempA=add_peer_information(TempA,i)
                 for j in self.bootstrapnodes:
                     j.Add_Special_Node(TempA,index1)
@@ -811,3 +816,22 @@ class Graphical_display(wx.Frame):
             return            
         dc = wx.PaintDC(self)
         dc.DrawBitmap(self.buffer, 0, 0)
+        dc = wx.PaintDC(self.panel4)
+        self.draw_circle(dc,"Green","Green",-5,-25,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(50, 10))
+        version.SetLabel(label="Response")
+        self.draw_circle(dc,"Yellow","Yellow",145,-25,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(205, 10))
+        version.SetLabel(label="Query")
+        self.draw_circle(dc,"Blue","Blue",290,-25,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(360, 10))
+        version.SetLabel(label="Not Queried")
+        self.draw_circle(dc,"Red","Red",-5,5,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(50, 40))
+        version.SetLabel(label="Timeout")
+        self.draw_circle(dc,self.color,"Black",145,5,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(205, 40))
+        version.SetLabel(label="Initial Node")
+        self.draw_circle(dc,"Black",self.color,290,5,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(360, 40))
+        version.SetLabel(label="No Contact Node")
