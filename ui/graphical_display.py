@@ -407,20 +407,8 @@ class Graphical_display(wx.Frame):
         self.lc.DeleteAllItems()
         for i in self.list3:
             self.combo1.Append(i[0]+" : "+i[1])
-        self.combo1.Value="Select * "
-    
-    def on_load(self,event):
-        selected=self.combo1.GetCurrentSelection()
-        if not selected==-1:
-            src_addr=self.list3[selected][0]
-            info_hash=self.list3[selected][1]
-            self.list1=[]
-            for i in self.list2:  
-                if str(i[0].src_addr[0])==src_addr:
-                    if repr(i[0].infohash)==info_hash:
-                        self.list1.append(i)
-            self.main_list=self.convert_list(self.list1)
-            self.load_list(self.main_list)
+        self.combo1.SetSelection(0)
+        self.onSelect(None)
     
     def on_exit(self,event):
         self.Close(True)  
