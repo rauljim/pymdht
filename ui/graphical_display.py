@@ -430,10 +430,11 @@ class Graphical_display(wx.Frame):
         b = event.GetOrientation()
         if b == 8:
             self.povsb = a - 1
-            self.printing()
         if b == 4:
             self.pohsb = a - 1
-            self.printing()
+        dc = wx.PaintDC(self.panel1)
+        self.printing()
+        self.left_click_processing(dc)  
     def left_click_processing(self,dc):
         def process_all_list(pt,ninfo2):
             for i in self.bootstrapnodes:
