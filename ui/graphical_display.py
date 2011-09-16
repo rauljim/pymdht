@@ -174,7 +174,7 @@ class Graphical_display(wx.Frame):
         self.panel3 = wx. Panel(self,-1)
         self.panel3.SetBackgroundColour(color)
         self.srclabel2 = wx.StaticText(self.panel3, pos= (30,10),label="Playback position of Lookup       :        ")
-        self.slider = wx.Slider(self.panel3,-1,-1,0,10,pos = (30,40), size = (400,-1),style = wx.SL_AUTOTICKS)
+        self.ProgressBar = wx.Gauge(self.panel3,-1,1,pos = (30,40), size = (400,-1),style = wx.SL_AUTOTICKS)
         self.TextBox1 = wx.TextCtrl(self.panel2, pos=(250,5),size=wx.Size(200, -1))
         self.TextBox1.SetValue("0.001")
         self.TextBox2 = wx.TextCtrl(self.panel2, pos=(250,40),size=wx.Size(200, -1))
@@ -293,7 +293,7 @@ class Graphical_display(wx.Frame):
                         self.list1.append(i)
             self.main_list=self.convert_list(self.list1)
             self.load_list(self.main_list)
-            self.slider.SetRange(0,len(self.main_list)-1)
+            self.ProgressBar.SetRange(len(self.main_list)-1)
     def create_bindings(self):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -349,7 +349,7 @@ class Graphical_display(wx.Frame):
     
     def reinitialize_param(self):
         self.bootstrapnodes=[]
-        self.slider.SetValue(0)
+        self.ProgressBar.SetValue(0)
         self.srclabel2.SetLabel("Playback position of Lookup       :        ")
         self.printing()
         self.ptr=0
@@ -548,7 +548,7 @@ class Graphical_display(wx.Frame):
     def precalculation_previousstep(self):
         self.previousstepprocessing(self.ptr-1)
         self.ptr=self.ptr-1
-        self.slider.SetValue(self.slider.GetValue()-1)
+        self.ProgressBar.SetValue(self.ProgressBar.GetValue()-1)
         self.ptr=self.ptr-1
         if not self.ptr == 0:
             current_location = self.ptr-1
@@ -611,7 +611,7 @@ class Graphical_display(wx.Frame):
                 playback_position="%.6f"%float(self.main_list[self.ptr][1].ts)
         self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position)
         if not self.ptr == 0:
-            self.slider.SetValue(self.slider.GetValue()+1)
+            self.ProgressBar.SetValue(self.ProgressBar.GetValue()+1)
         self.ptr=self.ptr+1
         self.handle_enable_disable()
         self.printing()       
