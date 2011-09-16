@@ -548,8 +548,8 @@ class Graphical_display(wx.Frame):
     def precalculation_previousstep(self):
         self.previousstepprocessing(self.ptr-1)
         self.ptr=self.ptr-1
-        self.ProgressBar.SetValue(self.ProgressBar.GetValue()-1)
-        self.ptr=self.ptr-1
+        if not self.ptr == 0:
+            self.ProgressBar.SetValue(self.ProgressBar.GetValue()-1)
         if not self.ptr == 0:
             current_location = self.ptr-1
         else:
@@ -562,7 +562,16 @@ class Graphical_display(wx.Frame):
                 playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
             else:
                 playback_position="%.6f"%float(self.main_list[current_location][1].ts)
-        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position)
+        current_location = len(self.main_list)-1
+        if self.main_list[current_location][1] == 'bogus':
+            last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+        else:
+            if self.main_list[current_location][1].ts == '-':
+                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                last_position="%.6f"%float(self.main_list[current_location][1].ts)
+        
+        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
         self.handle_enable_disable()
         self.printing()
     def previousstepprocessing(self,i):
@@ -609,7 +618,16 @@ class Graphical_display(wx.Frame):
                 playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
             else:
                 playback_position="%.6f"%float(self.main_list[self.ptr][1].ts)
-        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position)
+        current_location = len(self.main_list)-1
+        if self.main_list[current_location][1] == 'bogus':
+            last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+        else:
+            if self.main_list[current_location][1].ts == '-':
+                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                last_position="%.6f"%float(self.main_list[current_location][1].ts)
+        
+        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
         if not self.ptr == 0:
             self.ProgressBar.SetValue(self.ProgressBar.GetValue()+1)
         self.ptr=self.ptr+1
