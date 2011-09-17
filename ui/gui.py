@@ -240,7 +240,7 @@ class Interactive_GUI(wx.Frame):
             wx.MessageDialog(self, "The file "+file_name+" has been saved !!!", "File Saved!", wx.OK | wx.CENTRE | wx.ICON_EXCLAMATION).ShowModal()
             self.toolbar.EnableTool(2, False)
     def exit(self,event):
-        self.dht=None
+        self.dht.stop()
         self.Destroy()
     def on_graphical_display(self,event):                  
 #            obj=mainclass.MainClass()        
