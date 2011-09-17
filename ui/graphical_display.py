@@ -518,6 +518,10 @@ class Graphical_display(wx.Frame):
             if(i.MainNode.y - (self.povsb * self.yspacingofnodes) > 0):
                 if(i.MainNode.x - (self.xstartofnodes + self.pohsb * self.xspacingofnodes) > 0):
                     self.draw_circle(dc,i.MainNode.color1,i.MainNode.color2,i.MainNode.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.MainNode.y - ((self.povsb + 1) * self.yspacingofnodes), i.MainNode.size)
+                    if not (i.PeerList == None):
+                        if not i.PeerList == []:
+                            self.draw_circle(dc,"Brown","Brown",i.MainNode.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes)+10, i.MainNode.y - ((self.povsb + 1) * self.yspacingofnodes)-10, i.MainNode.size/4)
+                            self.draw_circle(dc,"Brown","Brown",i.MainNode.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes)-10, i.MainNode.y - ((self.povsb + 1) * self.yspacingofnodes)+10, i.MainNode.size/4)
             display_child_nodes(i)
         def display_child_nodes(i):
             for j in i.NodeList:
@@ -815,6 +819,10 @@ class Graphical_display(wx.Frame):
         self.draw_circle(dc,"Blue","Blue",290,-25,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(360, 10))
         version.SetLabel(label="Not Queried")
+        self.draw_circle(dc,"Brown","Brown",480,-35, self.sizeofnodes/4)
+        self.draw_circle(dc,"Brown","Brown",460,-15, self.sizeofnodes/4)    
+        version = wx.StaticText(self.panel4, pos=(520, 10))
+        version.SetLabel(label="Peers")
         self.draw_circle(dc,"Red","Red",-5,5,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(50, 40))
         version.SetLabel(label="Timeout")
