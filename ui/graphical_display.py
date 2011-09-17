@@ -820,7 +820,7 @@ class Graphical_display(wx.Frame):
         version.SetLabel(label="Timeout")
         self.draw_circle(dc,self.color,"Black",145,5,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(205, 40))
-        version.SetLabel(label="Initial Node")
+        version.SetLabel(label="Neighbour")
         self.draw_circle(dc,"Black",self.color,290,5,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(360, 40))
         version.SetLabel(label="No Contact Node")

@@ -93,7 +93,7 @@ def main(options, args):
         import ui.gui
         app = wx.PySimpleApp()
         frame = ui.gui.Interactive_GUI(
-            None, "Interactive DHT . . .", None,(1440,900),
+            None, "Interactive Look@MDHT", None,(1440,900),
             dht, logs_path)
         frame.Show(True)
         app.MainLoop()

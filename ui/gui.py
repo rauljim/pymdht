@@ -250,8 +250,7 @@ class Interactive_GUI(wx.Frame):
 #            self.errorslist=e
 #            self.QueResErrList=qre
             obj=gdisplay.Graphical_display(None,
-                                           "Graphical display of\
-Interactive DHT",
+                                           "Graphical Visualization : Interactive Look@MDHT",
                                            (1440,900), self.data_path).Show()
 
     def display(self,information,lock):
