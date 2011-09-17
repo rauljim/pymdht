@@ -810,6 +810,8 @@ class Graphical_display(wx.Frame):
         dc = wx.PaintDC(self)
         dc.DrawBitmap(self.buffer, 0, 0)
         dc = wx.PaintDC(self.panel4)
+        font1 = wx.Font(11, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Arial')
+        self.panel4.SetFont(font1)        
         self.draw_circle(dc,"Green","Green",-5,-25,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(50, 10))
         version.SetLabel(label="Response")
