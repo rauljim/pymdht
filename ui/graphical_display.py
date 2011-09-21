@@ -33,11 +33,14 @@ class Graphical_display(wx.Frame):
     list3=[]
     ptr=0
     pp_flag=False
+    timeout_list = []
     
     def __init__(self, parent, mytitle, Size, data_path):
         self.data_path = data_path
         self.Resolution = wx.Display().GetGeometry()[2:4]
         self.color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
+        self.timer = wx.PyTimer(self.on_timer)
+        self.current_red_node = None
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0),
                           size=Size)
         self.create_controls()
@@ -180,9 +183,9 @@ class Graphical_display(wx.Frame):
         self.srclabel2 = wx.StaticText(self.panel3, pos= (30,10),label="Playback position of Lookup       :        ")
         self.ProgressBar = wx.Gauge(self.panel3,-1,1,pos = (30,40), size = (400,-1),style = wx.SL_AUTOTICKS)
         self.TextBox1 = wx.TextCtrl(self.panel2, pos=(250,5),size=wx.Size(200, -1))
-        self.TextBox1.SetValue("0.001")
+        self.TextBox1.SetValue("100")
         self.TextBox2 = wx.TextCtrl(self.panel2, pos=(250,40),size=wx.Size(200, -1))
-        self.TextBox2.SetValue("10000")
+        self.TextBox2.SetValue("100")
         for RadioButton in [self.rb1,self.rb2]:
             self.Bind(wx.EVT_RADIOBUTTON, self.on_radio, RadioButton)
             
@@ -234,12 +237,9 @@ class Graphical_display(wx.Frame):
     def on_radio(self, event):
         Selected = event.GetEventObject().GetLabel().find("Time")
         if Selected!=-1:
-            print "Time Interval"
             self.radio_option=True
         else:
-            self.radio_option=False
-            print "Slow Motion"
-            
+            self.radio_option=False            
     
     def load_list(self,LIST):
         self.lc.DeleteAllItems()
@@ -351,9 +351,12 @@ class Graphical_display(wx.Frame):
             self.pp_flag=True
             self.precalculation_nextstep()
         self.handle_enable_disable()
+        if not self.timeout_list:
+            self.toolbar.EnableTool(3, False)
     
     def reinitialize_param(self):
         self.bootstrapnodes=[]
+        self.timeout_list = []
         self.ProgressBar.SetValue(0)
         self.srclabel2.SetLabel("Playback position of Lookup       :        ")
         self.printing()
@@ -633,9 +636,38 @@ class Graphical_display(wx.Frame):
         self.printing()       
         if(self.pp_flag==True):
             if self.radio_option==True:
-                wx.CallLater(float(self.TextBox1.GetValue())*1000,self.precalculation_nextstep)
+                wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
             else:
                  wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time,self.precalculation_nextstep)
+    def on_timer(self):
+        def update_for_timeout_node(flag):
+            if not self.current_red_node == None:
+                for k in self.bootstrapnodes:
+                    index=k.Return_Node_of_IPandPort(str(self.current_red_node[0].MainNode.IPadress),str(self.current_red_node[0].MainNode.Port),None)
+                    if(index!=None):
+                        TempA = iDSlist.ListofNodes()
+                        TempA.SetMainNode(index.IPadress,
+                                          index.Port,
+                                          index.d,
+                                          index.dn,
+                                          index.x,index.y,index.size,"red","red")
+                        k.Add_Special_Node(TempA,index)
+            if flag == 0:
+                self.current_red_node = self.timeout_list.pop(0)
+                if self.radio_option==True:
+                    adjustable_time = float(self.TextBox1.GetValue())
+                else:
+                    adjustable_time = float(self.current_red_node[1]) * float(self.TextBox2.GetValue())
+                self.timer.Start(adjustable_time)
+            else:
+                self.current_red_node = None
+                self.timer.Stop()
+            self.printing()
+        if not self.timeout_list:
+                update_for_timeout_node(1)
+        else:
+            update_for_timeout_node(0)
+            self.toolbar.EnableTool(3, True)
     def nextstepprocessing(self,i):
         def Find_Vertical_Number(i,distance):
             tempb=0
@@ -695,8 +727,14 @@ class Graphical_display(wx.Frame):
                                       index.Port,
                                       index.d,
                                       index.dn,
-                                      index.x,index.y,index.size,"red","red")
+                                      index.x,index.y,index.size,"yellow","yellow")
                     k.Add_Special_Node(TempA,index)
+                    if not self.timeout_list:
+                        self.check_timeoutlist = 2000
+                        self.timer.Start(self.check_timeoutlist)
+                    else:
+                        self.check_timeoutlist = (float(self.main_list[i][0].ts) - float(self.timeout_list[len(self.timeout_list)-1][2]))
+                    self.timeout_list.append([TempA,"%.6f"%self.check_timeoutlist,"%.6f"%self.main_list[i][0].ts]) 
         elif(self.main_list[i][1].ts=="-"):
             index1=self.find_information_of_existing_node(str(self.main_list[i][1].src_addr[0]),
                                                         str(self.main_list[i][1].src_addr[1]))
