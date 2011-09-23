@@ -157,16 +157,16 @@ class Graphical_display(wx.Frame):
         color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
         self.toolbar.SetBackgroundColour(color)
         self.toolbar.AddLabelTool(1, "Play/Pause",
-            wx.Bitmap('ui/images/Picture9.png'))
+            wx.Bitmap('ui/images/playpause.png'))
         self.Bind(wx.EVT_TOOL, self.start_processing, id=1)
         self.toolbar.AddLabelTool(2, "Stop",
-            wx.Bitmap('ui/images/Picture12.png'))
+            wx.Bitmap('ui/images/stop.png'))
         self.Bind(wx.EVT_TOOL, self.stop_processing, id=2)
         self.toolbar.AddLabelTool(3, "Previous",
-            wx.Bitmap('ui/images/Picture10.png'))
+            wx.Bitmap('ui/images/rewind.png'))
         self.Bind(wx.EVT_TOOL, self.previous_step, id=3)
         self.toolbar.AddLabelTool(4, "Next",
-            wx.Bitmap('ui/images/Picture11.png'))
+            wx.Bitmap('ui/images/forward.png'))
         self.Bind(wx.EVT_TOOL, self.next_step, id=4)
         self.toolbar.EnableTool(2, False)
         self.toolbar.EnableTool(3, False)
