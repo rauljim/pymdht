@@ -730,11 +730,11 @@ class Graphical_display(wx.Frame):
                                       index.x,index.y,index.size,"yellow","yellow")
                     k.Add_Special_Node(TempA,index)
                     if not self.timeout_list:
-                        self.check_timeoutlist = 2000
-                        self.timer.Start(self.check_timeoutlist)
+                        self.timeout_time = 2000
+                        self.timer.Start(self.timeout_time)
                     else:
-                        self.check_timeoutlist = (float(self.main_list[i][0].ts) - float(self.timeout_list[len(self.timeout_list)-1][2]))
-                    self.timeout_list.append([TempA,"%.6f"%self.check_timeoutlist,"%.6f"%self.main_list[i][0].ts]) 
+                        self.timeout_time = (float(self.main_list[i][0].ts) - float(self.timeout_list[len(self.timeout_list)-1][2]))
+                    self.timeout_list.append([TempA,"%.6f"%self.timeout_time,"%.6f"%self.main_list[i][0].ts]) 
         elif(self.main_list[i][1].ts=="-"):
             index1=self.find_information_of_existing_node(str(self.main_list[i][1].src_addr[0]),
                                                         str(self.main_list[i][1].src_addr[1]))
@@ -801,7 +801,26 @@ class Graphical_display(wx.Frame):
                     j.Add_Special_Node(TempA,index1)
             else:
                 print index1.color1,index1.color2
-        self.wait_time=float(self.main_list[i][2])
+        current_location = i
+        if self.main_list[current_location][1] == 'bogus':
+            current_time = "%.6f"%float(self.main_list[current_location][0].ts)
+        else:
+            if self.main_list[current_location][1].ts == '-':
+                current_time = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                current_time="%.6f"%float(self.main_list[current_location][1].ts)
+        if not i == 0:
+            current_location = i-1
+            if self.main_list[current_location][1] == 'bogus':
+                previous_time = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                if self.main_list[current_location][1].ts == '-':
+                    previous_time = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    previous_time="%.6f"%float(self.main_list[current_location][1].ts)
+            self.wait_time = (float(current_time) - float(previous_time))*1000
+        else:
+            self.wait_time = float(current_time)*1000
         maxy,maxx=find_max_xy()
         self.vsb = ((maxy) / self.yspacingofnodes)
         self.panel1.SetScrollbar(wx.VERTICAL, self.povsb+1, 1, self.vsb);

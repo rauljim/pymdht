@@ -204,6 +204,7 @@ class Interactive_GUI(wx.Frame):
         sizer_v1_h1_v1_h2.Add(self.textbox2, wx.EXPAND)
         sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h2, 0, flag=wx.ALL | wx.EXPAND)
         sizer_v1_h1.Add(sizer_v1_h1_v1, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h1.AddSpacer((10, 0))
         sizer_v1_h1_v2.Add(self.toolbar, wx.EXPAND)
         sizer_v1_h1.Add(sizer_v1_h1_v2, 0, flag=wx.ALL | wx.EXPAND)
         sizer_v1.Add(sizer_v1_h1, 0, flag=wx.ALL | wx.GROW)        
