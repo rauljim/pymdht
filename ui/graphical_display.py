@@ -33,14 +33,11 @@ class Graphical_display(wx.Frame):
     list3=[]
     ptr=0
     pp_flag=False
-    timeout_list = []
     
     def __init__(self, parent, mytitle, Size, data_path):
         self.data_path = data_path
         self.Resolution = wx.Display().GetGeometry()[2:4]
         self.color = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BACKGROUND)
-        self.timer = wx.PyTimer(self.on_timer)
-        self.current_red_node = None
         wx.Frame.__init__(self, parent, wx.ID_ANY, mytitle, pos=(0, 0),
                           size=Size)
         self.create_controls()
@@ -60,78 +57,43 @@ class Graphical_display(wx.Frame):
         for i in list:
             if i[1]!='bogus':
                 TempA.append(cmc(i))
+                a = cmc(i)
+                a[1].ts = "-"
+                a[1].nodes_distances = "-"
+                TempA.append(a)
             else:
-                ListC.append(i)
+                a = cmc(i)
+                a[2] = str(float(a[0].ts)+2)
+                TempA.append(i)
+                TempA.append(a)
         ListA = cmc(TempA)
         for i in range(len(ListA)):
             for j in range(i+1,len(ListA)):
-                if float(ListA[i][0].ts) > float(ListA[j][0].ts):
+                if ListA[i][1] != 'bogus':
+                    if ListA[i][1].ts == '-':
+                        Comparator1 = ListA[i][0].ts
+                    else:
+                        Comparator1 = ListA[i][1].ts
+                else:
+                    if ListA[i][2]==0:
+                        Comparator1= ListA[i][0].ts
+                    else:
+                        Comparator1= ListA[i][2]
+                if ListA[j][1] != 'bogus':
+                    if ListA[j][1].ts == '-':
+                        Comparator2 = ListA[j][0].ts
+                    else:
+                        Comparator2 = ListA[j][1].ts
+                else:
+                    if ListA[j][2]==0:
+                        Comparator2= ListA[j][0].ts
+                    else:
+                        Comparator2= ListA[j][2]
+                if float(Comparator1) > float(Comparator2):
                     a=ListA[j]
                     ListA[j]=ListA[i]
                     ListA[i]=a
-        ListB = cmc(TempA)
-        for i in range(len(ListB)):
-                for j in range(i+1,len(ListB)):
-                        if float(ListB[i][1].ts) > float(ListB[j][1].ts):
-                            a=ListB[j]
-                            ListB[j]=ListB[i]
-                            ListB[i]=a
-        i=0
-        j=0
-        k=0
-        ListD=[]
-        while(i<len(ListA)):
-            if(ListA[i][0].ts<ListB[j][1].ts):
-                if(k<len(ListC)):
-                    if(ListC[k][0].ts<ListA[i][0].ts):
-                        a=cmc(ListC[k])
-                        ListD.append(a)
-                        k=k+1
-                    else:
-                        a=cmc(ListA[i])
-                        a[1].ts="-"
-                        a[1].nodes_distances="-"
-                        ListD.append(a)
-                        i=i+1
-                else:
-                    a=cmc(ListA[i])
-                    a[1].ts="-"
-                    a[1].nodes_distances="-"
-                    ListD.append(a)
-                    i=i+1
-            else:
-                if(k<len(ListC)):
-                    if(ListC[k][0].ts<ListB[j][1].ts):
-                        a=cmc(ListC[k])
-                        ListD.append(a)
-                        k=k+1
-                    else:
-                        a=cmc(ListB[j])
-                        ListD.append(a)
-                        j=j+1
-                else:
-                    a=cmc(ListB[j])
-                    ListD.append(a)
-                    j=j+1
-        while(j<len(ListB)):
-            if(k<len(ListC)):
-                if(ListC[k][0].ts<ListB[j][1].ts):
-                        a=cmc(ListC[k])
-                        ListD.append(a)
-                        k=k+1
-                else:
-                    a=cmc(ListB[j])
-                    ListD.append(a)
-                    j=j+1
-            else:
-                a=cmc(ListB[j])
-                ListD.append(a)
-                j=j+1
-        while(k<len(ListC)):
-            a=cmc(ListC[k])
-            ListD.append(a)
-            k=k+1
-        return ListD
+        return ListA
 
     def create_controls(self):
         a=(self.Resolution[1]*0.15)
@@ -255,8 +217,11 @@ class Graphical_display(wx.Frame):
             index = self.lc.InsertStringItem(max_rows, str(counter))
             counter = counter + 1
             if not(line[1] == 'bogus'):
-                self.lc.SetStringItem(index, 1, str(line[0].ts))
-                self.lc.SetStringItem(index, 2, str(line[1].ts))
+                self.lc.SetStringItem(index, 1, str('%f' % line[0].ts))
+                if line[1].ts=="-":
+                    self.lc.SetStringItem(index, 2, str(line[1].ts))
+                else:
+                    self.lc.SetStringItem(index, 2, str('%f' % line[1].ts))
                 d = str(line[2])
                 decimal.getcontext().prec = 4
                 self.lc.SetStringItem(index, 3, str(d * 1))
@@ -351,12 +316,9 @@ class Graphical_display(wx.Frame):
             self.pp_flag=True
             self.precalculation_nextstep()
         self.handle_enable_disable()
-        if not self.timeout_list:
-            self.toolbar.EnableTool(3, False)
     
     def reinitialize_param(self):
         self.bootstrapnodes=[]
-        self.timeout_list = []
         self.ProgressBar.SetValue(0)
         self.srclabel2.SetLabel("Playback position of Lookup       :        ")
         self.printing()
@@ -557,7 +519,10 @@ class Graphical_display(wx.Frame):
             current_location = self.ptr
         
         if self.main_list[current_location][1] == 'bogus':
-            playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            if self.main_list[self.ptr][2]==0:
+                playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+            else:
+                playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
         else:
             if self.main_list[current_location][1].ts == '-':
                 playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
@@ -565,7 +530,10 @@ class Graphical_display(wx.Frame):
                 playback_position="%.6f"%float(self.main_list[current_location][1].ts)
         current_location = len(self.main_list)-1
         if self.main_list[current_location][1] == 'bogus':
-            last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            if self.main_list[current_location][2]==0:
+                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                last_position = "%.6f"%float(self.main_list[current_location][2])       
         else:
             if self.main_list[current_location][1].ts == '-':
                 last_position = "%.6f"%float(self.main_list[current_location][0].ts)
@@ -612,16 +580,23 @@ class Graphical_display(wx.Frame):
                 
     def precalculation_nextstep(self):
         self.nextstepprocessing(self.ptr)
-        if self.main_list[self.ptr][1] == 'bogus':
-            playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
-        else:
-            if self.main_list[self.ptr][1].ts == '-':
+        current_location = self.ptr
+        if self.main_list[current_location][1] == 'bogus':
+            if self.main_list[self.ptr][2]==0:
                 playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
             else:
-                playback_position="%.6f"%float(self.main_list[self.ptr][1].ts)
+                playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
+        else:
+            if self.main_list[current_location][1].ts == '-':
+                playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                playback_position="%.6f"%float(self.main_list[current_location][1].ts)
         current_location = len(self.main_list)-1
         if self.main_list[current_location][1] == 'bogus':
-            last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            if self.main_list[current_location][2]==0:
+                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                last_position = "%.6f"%float(self.main_list[current_location][2])       
         else:
             if self.main_list[current_location][1].ts == '-':
                 last_position = "%.6f"%float(self.main_list[current_location][0].ts)
@@ -638,36 +613,8 @@ class Graphical_display(wx.Frame):
             if self.radio_option==True:
                 wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
             else:
-                 wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time,self.precalculation_nextstep)
-    def on_timer(self):
-        def update_for_timeout_node(flag):
-            if not self.current_red_node == None:
-                for k in self.bootstrapnodes:
-                    index=k.Return_Node_of_IPandPort(str(self.current_red_node[0].MainNode.IPadress),str(self.current_red_node[0].MainNode.Port),None)
-                    if(index!=None):
-                        TempA = iDSlist.ListofNodes()
-                        TempA.SetMainNode(index.IPadress,
-                                          index.Port,
-                                          index.d,
-                                          index.dn,
-                                          index.x,index.y,index.size,"red","red")
-                        k.Add_Special_Node(TempA,index)
-            if flag == 0:
-                self.current_red_node = self.timeout_list.pop(0)
-                if self.radio_option==True:
-                    adjustable_time = float(self.TextBox1.GetValue())
-                else:
-                    adjustable_time = float(self.current_red_node[1]) * float(self.TextBox2.GetValue())
-                self.timer.Start(adjustable_time)
-            else:
-                self.current_red_node = None
-                self.timer.Stop()
-            self.printing()
-        if not self.timeout_list:
-                update_for_timeout_node(1)
-        else:
-            update_for_timeout_node(0)
-            self.toolbar.EnableTool(3, True)
+                 wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time*1000,self.precalculation_nextstep)
+                 
     def nextstepprocessing(self,i):
         def Find_Vertical_Number(i,distance):
             tempb=0
@@ -722,19 +669,17 @@ class Graphical_display(wx.Frame):
             for k in self.bootstrapnodes:
                 index=k.Return_Node_of_IPandPort(self.main_list[i][0].dst_addr[0],str(self.main_list[i][0].dst_addr[1]),None)
                 if(index!=None):
+                    if index.color1 == "blue":
+                        color = "yellow"
+                    else:
+                        color = "red"
                     TempA = iDSlist.ListofNodes()
                     TempA.SetMainNode(index.IPadress,
                                       index.Port,
                                       index.d,
                                       index.dn,
-                                      index.x,index.y,index.size,"yellow","yellow")
+                                      index.x,index.y,index.size,color,color)
                     k.Add_Special_Node(TempA,index)
-                    if not self.timeout_list:
-                        self.timeout_time = 2000
-                        self.timer.Start(self.timeout_time)
-                    else:
-                        self.timeout_time = (float(self.main_list[i][0].ts) - float(self.timeout_list[len(self.timeout_list)-1][2]))
-                    self.timeout_list.append([TempA,"%.6f"%self.timeout_time,"%.6f"%self.main_list[i][0].ts]) 
         elif(self.main_list[i][1].ts=="-"):
             index1=self.find_information_of_existing_node(str(self.main_list[i][1].src_addr[0]),
                                                         str(self.main_list[i][1].src_addr[1]))
@@ -803,24 +748,31 @@ class Graphical_display(wx.Frame):
                 print index1.color1,index1.color2
         current_location = i
         if self.main_list[current_location][1] == 'bogus':
-            current_time = "%.6f"%float(self.main_list[current_location][0].ts)
+            if self.main_list[current_location][2]==0:
+                current_time = "%.6f"%float(self.main_list[current_location][0].ts)
+            else:
+                current_time = "%.6f"%float(self.main_list[current_location][2])
         else:
             if self.main_list[current_location][1].ts == '-':
                 current_time = "%.6f"%float(self.main_list[current_location][0].ts)
             else:
                 current_time="%.6f"%float(self.main_list[current_location][1].ts)
-        if not i == 0:
-            current_location = i-1
+        if not i+1 == len(self.main_list):
+            current_location = i+1
             if self.main_list[current_location][1] == 'bogus':
-                previous_time = "%.6f"%float(self.main_list[current_location][0].ts)
+                if self.main_list[current_location][2]==0:
+                    previous_time = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    previous_time = "%.6f"%float(self.main_list[current_location][2])
             else:
                 if self.main_list[current_location][1].ts == '-':
                     previous_time = "%.6f"%float(self.main_list[current_location][0].ts)
                 else:
                     previous_time="%.6f"%float(self.main_list[current_location][1].ts)
-            self.wait_time = (float(current_time) - float(previous_time))*1000
+            self.wait_time = (float(previous_time) - float(current_time))
+            print previous_time,current_time,self.wait_time
         else:
-            self.wait_time = float(current_time)*1000
+            self.wait_time = 0 
         maxy,maxx=find_max_xy()
         self.vsb = ((maxy) / self.yspacingofnodes)
         self.panel1.SetScrollbar(wx.VERTICAL, self.povsb+1, 1, self.vsb);
