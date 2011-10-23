@@ -243,12 +243,16 @@ class Graphical_display(wx.Frame):
                 self.newResList.append(line)
             else:
                 self.lc.SetStringItem(index, 1, str(line[0].ts))
-                self.lc.SetStringItem(index, 2, '-')
                 self.lc.SetStringItem(index, 3, '-')
                 self.lc.SetStringItem(index, 4, str(str(line[0].dst_addr[0])
                                       + ':' + str(line[0].dst_addr[1]))) 
                 self.lc.SetStringItem(index, 5, str(line[0].hexaTid))
-                self.lc.SetItemBackgroundColour(index, 'red')
+                if line[2]==0:
+                    self.lc.SetStringItem(index, 2, '-')
+                    self.lc.SetItemBackgroundColour(index, 'yellow')
+                else:
+                    self.lc.SetStringItem(index, 2, line[2])
+                    self.lc.SetItemBackgroundColour(index, 'red')
                 self.newResList.append(line)
                 
     def onSelect(self, event):
@@ -519,10 +523,10 @@ class Graphical_display(wx.Frame):
             current_location = self.ptr
         
         if self.main_list[current_location][1] == 'bogus':
-            if self.main_list[self.ptr][2]==0:
-                playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+            if self.main_list[current_location][2]==0:
+                playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
             else:
-                playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
+                playback_position = "%.6f"%float(self.main_list[current_location][2])       
         else:
             if self.main_list[current_location][1].ts == '-':
                 playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
