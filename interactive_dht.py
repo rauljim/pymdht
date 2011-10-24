@@ -88,7 +88,7 @@ def main(options, args):
         # Just loop for ever
         while 1:
             time.sleep(10)
-    elif options.cli:
+    elif options.gui:
         import wx
         import ui.gui
         app = wx.PySimpleApp()
@@ -97,7 +97,7 @@ def main(options, args):
             dht, logs_path)
         frame.Show(True)
         app.MainLoop()
-    elif options.gui:
+    elif options.cli:
         import ui.cli
         ui.cli.command_user_interface(dht)
         
