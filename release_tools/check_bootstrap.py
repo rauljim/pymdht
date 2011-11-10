@@ -9,9 +9,10 @@ import sys
 sys.path.append('..')
 import logging
 
+from core.pymdht import PYMDHT_VERSION
 import core.logging_conf as logging_conf
 from core.node import Node
-from core.message import OutgoingPingQuery, IncomingMsg, Datagram
+from core.message import MsgFactory, Datagram
 from core.identifier import RandomId
 from core.minitwisted import ThreadedReactor
 import core.ptime as time
@@ -26,6 +27,20 @@ TIMEOUT = .25 # seconds
 
 class BootstrapChecker(object):
 
+    def __init__(self, filename):
+        self.msg_f = MsgFactory(PYMDHT_VERSION, MY_ID)
+        self._lock = threading.Lock()
+        self._is_done = False
+        self._pinged_ips = set()
+        self._pinged_addrs = set()
+        self._ok_addrs = set()
+        self._file = open(filename)
+        self.reactor = ThreadedReactor(
+            self._main_loop,
+            PORT, self._on_datagram_received)
+        self.reactor.start()
+
+
     def _get_ping_datagram(self):
         try:
             line = self._file.next()
@@ -33,15 +48,15 @@ class BootstrapChecker(object):
             with self._lock:
                 self._is_done = True
                 return
+        print '>>>>', line
         ip, str_port = line.split()
         if ip in self._pinged_ips:
             #duplicated IP, ignore
             return
         addr = (ip, int(str_port))
-        msg = OutgoingPingQuery(Node(addr), MY_ID)
+        msg = self.msg_f.outgoing_ping_query(Node(addr))
         return Datagram(msg.stamp(TID), addr)
         
-
     def _main_loop(self):
         datagrams_to_send = []
         datagram = self._get_ping_datagram()
@@ -58,20 +73,7 @@ class BootstrapChecker(object):
             self._ok_addrs.add(addr)
         return TIMEOUT, []
         
-        
-    
-    def __init__(self, filename):
-        self._lock = threading.Lock()
-        self._is_done = False
-        self._pinged_ips = set()
-        self._pinged_addrs = set()
-        self._ok_addrs = set()
-        self._file = open(filename)
-        self.reactor = ThreadedReactor(
-            self._main_loop,
-            PORT, self._on_datagram_received)
-        self.reactor.start()
-
+            
     def is_done(self):
         with self._lock:
             done = self._is_done
