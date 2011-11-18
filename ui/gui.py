@@ -145,11 +145,11 @@ class Interactive_GUI(wx.Frame):
         self.toolbar.AddLabelTool(1, "Run", wx.Bitmap('ui/images/run.png'))
         self.toolbar.AddSeparator()
         self.Bind(wx.EVT_TOOL, self.run, id=1)
-        self.toolbar.AddLabelTool(2, "Save", wx.Bitmap('ui/images/exit.png'))
+        self.toolbar.AddLabelTool(2, "Save", wx.Bitmap('ui/images/save.png'))
         self.toolbar.AddSeparator()
         self.Bind(wx.EVT_TOOL, self.save_infile, id=2)
         self.toolbar.EnableTool(2, False)
-        self.toolbar.AddLabelTool(3, "Graphical Display", wx.Bitmap('ui/images/Graph.png'))
+        self.toolbar.AddLabelTool(3, "Graphical Display", wx.Bitmap('ui/images/visualization.png'))
         self.toolbar.AddSeparator()
         self.Bind(wx.EVT_TOOL, self.on_graphical_display, id=3)
         self.toolbar.AddLabelTool(4, "Exit", wx.Bitmap('ui/images/exit.png'))
@@ -204,6 +204,7 @@ class Interactive_GUI(wx.Frame):
         sizer_v1_h1_v1_h2.Add(self.textbox2, wx.EXPAND)
         sizer_v1_h1_v1.Add(sizer_v1_h1_v1_h2, 0, flag=wx.ALL | wx.EXPAND)
         sizer_v1_h1.Add(sizer_v1_h1_v1, 0, flag=wx.ALL | wx.EXPAND)
+        sizer_v1_h1.AddSpacer((10, 0))
         sizer_v1_h1_v2.Add(self.toolbar, wx.EXPAND)
         sizer_v1_h1.Add(sizer_v1_h1_v2, 0, flag=wx.ALL | wx.EXPAND)
         sizer_v1.Add(sizer_v1_h1, 0, flag=wx.ALL | wx.GROW)        
@@ -240,7 +241,7 @@ class Interactive_GUI(wx.Frame):
             wx.MessageDialog(self, "The file "+file_name+" has been saved !!!", "File Saved!", wx.OK | wx.CENTRE | wx.ICON_EXCLAMATION).ShowModal()
             self.toolbar.EnableTool(2, False)
     def exit(self,event):
-        self.dht=None
+        self.dht.stop()
         self.Destroy()
     def on_graphical_display(self,event):                  
 #            obj=mainclass.MainClass()        
@@ -250,8 +251,7 @@ class Interactive_GUI(wx.Frame):
 #            self.errorslist=e
 #            self.QueResErrList=qre
             obj=gdisplay.Graphical_display(None,
-                                           "Graphical display of\
-Interactive DHT",
+                                           "Graphical Visualization : Interactive Look@MDHT",
                                            (1440,900), self.data_path).Show()
 
     def display(self,information,lock):
