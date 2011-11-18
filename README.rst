@@ -19,7 +19,7 @@ Examples:
 
 
 AUTHORS
-=======
+-------
 
  - Raul Jimenez
  - Flutra Osmani
