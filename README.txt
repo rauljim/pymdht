@@ -13,6 +13,17 @@ Examples:
 - 11.8.1 Development code right after 11.8.0 release (unstable)
 - 11.8.2 Bugfix release (stable release)
 
+AUTHORS
+
+Raul Jimenez
+Flutra Osmani
+Ismael Saad Garcia (lookup experiments)
+Sara Dar (MDHT visualization)
+Shariq Mobeen (GUI + lookup visualization)
+S.M. Sarwarul Islam Rizvi (lookup experiments)
+Zinat Sultana (routing table extraction experiments)
+
+
 ORGANIZATION
 
 The code is organized as follows:
@@ -32,6 +43,8 @@ The code is organized as follows:
     Toolkit capable to launch several MDHT nodes (conductor.py), parse
     network captures (parser.py), and plot graphs from parsing results
     (plotter.py). More information in profiler/README.txt
+  - ui
+    User interface (text and graphical)
 
 * Files:
   - CHANGES.txt, LGPL-2.1.txt, LICENSE.txt, README.txt
@@ -41,13 +54,11 @@ The code is organized as follows:
   - MDHT_SPEC.txt
     Mainline DHT specification
   - interactive_dht.py
-    Simple  example of how the Pymdht can be used. Type 'help' in the
-    interactive console to get a list of available commands.
-  - pymdht_daemon.py
-    This application is designed to provide a socket API to the Pymdht
-    package.
+    Simple  example of how the Pymdht can be used. Use '--help' to get a list
+    of available command line options.
   - pymdht_daemon_api.txt
     Specification of the socket API.
+
 
 INSTALLATION
 
@@ -57,6 +68,7 @@ installed.
 A Makefile is provided to run the tests. The tests require the nose test
 framework to work.
 
+
 API
 
 The API is located in core/pymdht.py. This is the only module necessary
@@ -64,15 +76,20 @@ to use the package.
 
 Users should ONLY use the methods provided in core/pymdht.py.
 
-Users can additionally use the Id and Node classes as they wish. These classes are
+Users can additionally use the Id and Node classes as they wish. These classes aqre
 located in core/identifier.py and core/node.py
+
+ipython is useful to try out functionality and/or debug.
 
 
 TESTS
 
+Just run 'make'. see core/Makefile for details.
+
 In order to run the tests you need the following packages (ubuntu):
 python-nose 
 python-coverage (optional but very recommended)
+
 
 PROFILING
 
@@ -86,7 +103,7 @@ profilestats (produces input for both RunSnakeRun and KCachegrind)
 runsnakerun (simple and nice profile viewer)
 
 
-PYMDHT DAEMON
+PYMDHT DAEMON (unsupported)
 
 This daemon serves as a simple interface between swift transport
 protocol and pymdht.  It takes takes inhohashes from swift as input,
@@ -98,7 +115,8 @@ To run pymdht daemon:
 - pymdht_daemon.py
 - refer to pymdht_daemon_api.txt for technical details
 
-GEO SCORING API
+
+GEO SCORING API (unsupported)
 
 Module geo.py contains a set of functions that can be used to retrieve peer's
 location-related information, such as: city, country, latitude,
@@ -128,9 +146,7 @@ pylint (e.g. pylint --errors-only *.py >errors)
 
 EDITING
 
-In case it's useful to you. I use this Emacs configuration (with minor
-modifications):
+In case it's useful to you. I use this Emacs configuration:
+https://github.com/rauljim/emacs
 
-http://09-f9-11-02-9d-74-e3-5b-d8-41-56-c5-63-56-88-c0.com/2009/01/19/my-emacs-config-on-github/
 
-ipython is also useful to try out functionality or debug.
