@@ -15,9 +15,9 @@ Examples:
 - 11.8.1 Development code right after 11.8.0 release (unstable)
 - 11.8.2 Bugfix release (stable release)
 
-*******
+
 AUTHORS
-*******
+=
 
 Raul Jimenez
 Flutra Osmani
