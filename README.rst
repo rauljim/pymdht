@@ -8,7 +8,7 @@ We use the following version format:
  - first number: release year (two digits)
  - second number: release month number
  - third number: sub-release number, even numbers indicate stable release, odd
-numbers indicate development (unstable)
+   numbers indicate development (unstable)
 
 Examples:
  - 11.8.0 Code released in Aug 2011 (stable release)
