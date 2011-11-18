@@ -1,4 +1,6 @@
+*************
 pymdht 11.8.3
+*************
 aka "NS\8\3" (message label)
 
 NOTE on version number.
@@ -13,7 +15,9 @@ Examples:
 - 11.8.1 Development code right after 11.8.0 release (unstable)
 - 11.8.2 Bugfix release (stable release)
 
+*******
 AUTHORS
+*******
 
 Raul Jimenez
 Flutra Osmani
@@ -51,13 +55,9 @@ The code is organized as follows:
     Standard (auto explicative) names.
   - MANIFEST.in, setup.py
     Standard Python distribution files
-  - MDHT_SPEC.txt
-    Mainline DHT specification
   - interactive_dht.py
     Simple  example of how the Pymdht can be used. Use '--help' to get a list
     of available command line options.
-  - pymdht_daemon_api.txt
-    Specification of the socket API.
 
 
 INSTALLATION
