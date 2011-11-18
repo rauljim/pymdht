@@ -11,9 +11,9 @@ We use the following version format:
    numbers indicate development (unstable)
 
 Examples:
- - 11.8.0 Code released in Aug 2011 (stable release)
- - 11.8.1 Development code right after 11.8.0 release (unstable)
- - 11.8.2 Bugfix release (stable release)
+ * 11.8.0 Code released in Aug 2011 (stable release)
+ * 11.8.1 Development code right after 11.8.0 release (unstable)
+ * 11.8.2 Bugfix release (stable release)
 
 
 AUTHORS
