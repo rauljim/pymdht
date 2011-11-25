@@ -60,7 +60,7 @@ class Pymdht:
         # No need to call_asap because the minitwisted thread is dead by now
         self.controller.on_stop()
     
-    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0, use_cache=False):
         """ Start a get peers lookup. Return a Lookup object.
         
         The info_hash must be an identifier.Id object.
@@ -77,9 +77,12 @@ class Pymdht:
         callback needs to be ready to get peers BEFORE calling this fuction.
         
         """
+        use_cache = True
+        print 'use_cache ON, only for debugging'
         self.reactor.call_asap(self.controller.get_peers,
                                lookup_id, info_hash,
-                               callback_f, bt_port)
+                               callback_f, bt_port,
+                               use_cache)
 
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()
