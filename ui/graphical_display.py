@@ -33,7 +33,8 @@ class Graphical_display(wx.Frame):
     list3=[]
     ptr=0
     pp_flag=False
-    
+    limitofprogress=1000000
+
     def __init__(self, parent, mytitle, Size, data_path):
         self.data_path = data_path
         self.Resolution = wx.Display().GetGeometry()[2:4]
@@ -186,8 +187,8 @@ class Graphical_display(wx.Frame):
         sizer_h1.Add(self.toolbar)
         sizer_h1.Add(self.panel4, 1, wx.ALL | wx.EXPAND,10)         
         sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
-        sizer_h2.Add(self.panel2, 0)
-        sizer_h2.Add(self.panel3, 0)
+        sizer_h2.Add(self.panel2, 0,wx.ALL|wx.EXPAND)
+        sizer_h2.Add(self.panel3, 2,wx.ALL|wx.EXPAND)
         sizer_v.Add(sizer_h2, 0, flag=wx.ALL|wx.EXPAND)
         sizer_h3.Add(self.lc, 1, flag=wx.ALL|wx.EXPAND)
         sizer_v.Add(sizer_h3, 1, wx.ALL | wx.EXPAND, 10)
@@ -267,7 +268,7 @@ class Graphical_display(wx.Frame):
                         self.list1.append(i)
             self.main_list=self.convert_list(self.list1)
             self.load_list(self.main_list)
-            self.ProgressBar.SetRange(len(self.main_list)-1)
+            self.ProgressBar.SetRange(self.limitofprogress)
     def create_bindings(self):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -515,8 +516,7 @@ class Graphical_display(wx.Frame):
     def precalculation_previousstep(self):
         self.previousstepprocessing(self.ptr-1)
         self.ptr=self.ptr-1
-        if not self.ptr == 0:
-            self.ProgressBar.SetValue(self.ProgressBar.GetValue()-1)
+
         if not self.ptr == 0:
             current_location = self.ptr-1
         else:
@@ -545,6 +545,10 @@ class Graphical_display(wx.Frame):
                 last_position="%.6f"%float(self.main_list[current_location][1].ts)
         
         self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
+        if not self.ptr == 0:
+            percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
+            self.ProgressBar.SetValue(int(percentage))
+            print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
         self.handle_enable_disable()
         self.printing()
     def previousstepprocessing(self,i):
@@ -609,7 +613,9 @@ class Graphical_display(wx.Frame):
         
         self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
         if not self.ptr == 0:
-            self.ProgressBar.SetValue(self.ProgressBar.GetValue()+1)
+           percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
+           self.ProgressBar.SetValue(int(percentage))
+           print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
         self.ptr=self.ptr+1
         self.handle_enable_disable()
         self.printing()       
