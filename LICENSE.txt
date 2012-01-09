@@ -1,5 +1,5 @@
 
-Copyright (C) 2009-2011 Raul Jimenez, Flutra Osmani
+Copyright (C) 2009-2011 Raul Jimenez and others
 Written at the Royal Institute of Technology (KTH), Stockholm (Sweden)
 This work has received funding from FP7 under grant agreement No. 216217
 (P2P-Next).
