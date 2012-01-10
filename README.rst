@@ -87,10 +87,9 @@ API
 The API is located in core/pymdht.py. This is the only module necessary
 to use the package.
 
-Users should ONLY use the methods provided in core/pymdht.py.
-
-Users can additionally use the Id and Node classes as they wish. These classes aqre
-located in core/identifier.py and core/node.py
+Users should only use the methods provided in core/pymdht.py.  Users can
+additionally use the Id and Node classes as needed. These classes are located
+in core/identifier.py and core/node.py
 
 ipython is useful to try out functionality and/or debug.
 
@@ -176,12 +175,14 @@ NOTE on version number
 ----------------------
 
 We use the following version format:
+
 - first number: release year (two digits)
 - second number: release month number
 - third number: sub-release number, even numbers indicate stable release, odd
-numbers indicate development (unstable)
+  numbers indicate development (unstable)
 
 Examples:
+
 - 11.8.0 Code released in Aug 2011 (stable release)
 - 11.8.1 Development code right after 11.8.0 release (unstable)
 - 11.8.2 Bugfix release (stable release)
