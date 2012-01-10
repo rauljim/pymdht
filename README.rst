@@ -2,8 +2,8 @@
 pymdht 11.8.3
 ******************
 
-Copyright (C) 2009-2012 Raul Jimenez and contributors
-Released under GNU LGPL 2.1 (see LICENSE.txt)
+| Copyright (C) 2009-2012 Raul Jimenez and contributors
+| Released under GNU LGPL 2.1 (see LICENSE.txt)
 
 CONTRIBUTORS
 ------------
@@ -24,32 +24,51 @@ The code is organized as follows:
 
 * Directories:
 
-  - core
-    Core modules of the Pymdht package. The 'pymdht.py' file contains the
-    package's API.
-  - doc
-    Documentation.
-  - geo
-    Modules related to geo-location services (not used by default).
-  - plugins
-    Modules providing lookup implementation (lookup_*.py files) and
-    routing table management (routing_*.py files).
-  - profiler
-    Toolkit capable to launch several MDHT nodes (conductor.py), parse
-    network captures (parser.py), and plot graphs from parsing results
-    (plotter.py). More information in profiler/README.txt
-  - ui
-    User interface (text and graphical)
+  - | core 
+    | Core modules of the Pymdht package. The 'pymdht.py' file contains the
+      package's API.
+
+  - | doc
+    | Documentation.
+
+  - | geo
+    | Modules related to geo-location services (not used by default).
+
+  - | plugins
+    | Modules providing lookup implementation (lookup_*.py files) and
+      routing table management (routing_*.py files).
+
+  - | profiler
+    | Toolkit capable to launch several MDHT nodes (conductor.py), parse
+      network captures (parser.py), and plot graphs from parsing results
+      (plotter.py). More information in profiler/README.txt
+
+  - | release_tools
+    | Useful tools to prepare a release (e.g. clean up bootstrap nodes)
+
+  - | ui
+    | User interface (text and graphical)
+
+  - | ut2mdht
+    | Should be moved into profiler.
 
 * Files:
 
-  - CHANGES.txt, LGPL-2.1.txt, LICENSE.txt, README.txt
-    Standard (auto explicative) names.
-  - MANIFEST.in, setup.py
-    Standard Python distribution files
-  - interactive_dht.py
-    Simple  example of how the Pymdht can be used. Use '--help' to get a list
-    of available command line options.
+  - | interactive_dht.py
+    | Simple  example of how the Pymdht can be used. Use '--help' to get a list
+      of available command line options.
+
+  - | README.rst, CHANGES.txt, LGPL-2.1.txt, LICENSE.txt
+    | Standard files.
+
+  - | MANIFEST.in, setup.py, __init__.py
+    | Standard Python distribution files
+
+  - | .gitignore
+    | List of files to be ignored by git
+
+  - | table_extractor.py (experimental)
+    | Extract routing table from a given node.
 
 
 INSTALLATION
@@ -82,8 +101,9 @@ TESTS
 Just run 'make'. see core/Makefile for details.
 
 In order to run the tests you need the following packages (ubuntu):
-python-nose 
-python-coverage (optional but very recommended)
+
+- python-nose 
+- python-coverage (optional but very recommended)
 
 
 PROFILING
@@ -91,12 +111,13 @@ PROFILING
 
 In order to do profiling you need the following packages (ubuntu):
 
-python-profiler
-kcachegrind (profile viewer)
+- python-profiler
+- kcachegrind (profile viewer)
 
-and from easy_install (comes with the python-setuptools package in Ubuntu):
-profilestats (produces input for both RunSnakeRun and KCachegrind)
-runsnakerun (simple and nice profile viewer)
+- and from easy_install (comes with the python-setuptools package in Ubuntu):
+
+  - profilestats (produces input for both RunSnakeRun and KCachegrind)
+  - runsnakerun (simple and nice profile viewer)
 
 
 PYMDHT DAEMON (unsupported)
