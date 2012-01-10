@@ -5,27 +5,29 @@ aka "NS\8\3" (message label)
 
 NOTE on version number.
 We use the following version format:
-- first number: release year (two digits)
-- second number: release month number
-- third number: sub-release number, even numbers indicate stable release, odd
-numbers indicate development (unstable)
+
+ - first number: release year (two digits)
+ - second number: release month number
+ - third number: sub-release number, even numbers indicate stable release, odd
+   numbers indicate development (unstable)
 
 Examples:
-- 11.8.0 Code released in Aug 2011 (stable release)
-- 11.8.1 Development code right after 11.8.0 release (unstable)
-- 11.8.2 Bugfix release (stable release)
 
-*******
+ - 11.8.0 Code released in Aug 2011 (stable release)
+ - 11.8.1 Development code right after 11.8.0 release (unstable)
+ - 11.8.2 Bugfix release (stable release)
+
+
 AUTHORS
-*******
+-------
 
-Raul Jimenez
-Flutra Osmani
-Ismael Saad Garcia (lookup experiments)
-Sara Dar (MDHT visualization)
-Shariq Mobeen (GUI + lookup visualization)
-S.M. Sarwarul Islam Rizvi (lookup experiments)
-Zinat Sultana (routing table extraction experiments)
+ - Raul Jimenez
+ - Flutra Osmani
+ - Ismael Saad Garcia (lookup experiments)
+ - Sara Dar (MDHT visualization)
+ - Shariq Mobeen (GUI + lookup visualization)
+ - S.M. Sarwarul Islam Rizvi (lookup experiments)
+ - Zinat Sultana (routing table extraction experiments)
 
 
 ORGANIZATION
