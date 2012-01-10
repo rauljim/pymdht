@@ -1,5 +1,5 @@
 ******************
-pym     dht 11.8.3
+pymdht 11.8.3
 ******************
 
 Copyright (C) 2009-2012 Raul Jimenez and contributors
@@ -23,6 +23,7 @@ ORGANIZATION
 The code is organized as follows:
 
 * Directories:
+
   - core
     Core modules of the Pymdht package. The 'pymdht.py' file contains the
     package's API.
@@ -41,6 +42,7 @@ The code is organized as follows:
     User interface (text and graphical)
 
 * Files:
+
   - CHANGES.txt, LGPL-2.1.txt, LICENSE.txt, README.txt
     Standard (auto explicative) names.
   - MANIFEST.in, setup.py
@@ -128,18 +130,20 @@ be switched on this way:
 
 For geo module to work (only if running geo scoring), you need to
 install the following libraries (Ubuntu):
-1. python-geoip
-2. geoip-database
-3. libgeoip1
-4. Run geolitecityupdate.sh script to get the latest version of the
-city database. The data, otherwise, is located here: "/usr/share/GeoIP/GeoIPCity.dat"
+
+- python-geoip
+- geoip-database
+- libgeoip1
+- Run geolitecityupdate.sh script to get the latest version of the city
+  database. The data, otherwise, is located here:
+  "/usr/share/GeoIP/GeoIPCity.dat"
 
 
 CLEAN CODE
 ----------
 
 In order to check "code quality" you need the following packages:
-pylint (e.g. pylint --errors-only *.py >errors)
+pylint (e.g. pylint --errors-only \*.py >errors)
 
 EDITING
 -------
