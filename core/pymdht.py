@@ -20,6 +20,12 @@ import controller
 import logging, logging_conf
 
 PYMDHT_VERSION = (11, 8, 3)
+VERSION_LABEL = ''.join(
+    ['NS',
+     chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
+     chr(PYMDHT_VERSION[2])
+     ])
+                         
 
 class Pymdht:
     """Pymdht is the interface for the whole package.
@@ -42,7 +48,7 @@ class Pymdht:
                  debug_level, id_=None):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
-        self.controller = controller.Controller(PYMDHT_VERSION,
+        self.controller = controller.Controller(VERSION_LABEL,
                                                 my_node, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
