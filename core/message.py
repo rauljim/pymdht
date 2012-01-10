@@ -75,7 +75,10 @@ MAX_BT_PORT = 2**16
 
 
 def version_repr(v):
-    return v[:2] + ''.join(['%02x' % (ord(n)) for n in v[2:]])
+    if v:
+        return v[:2] + ''.join(['%02x' % (ord(n)) for n in v[2:]])
+    else:
+        return 'None'
 
 
 class MsgError(Exception):
