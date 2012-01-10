@@ -61,7 +61,7 @@ def load(filename):
         return None, []
     except:
         logger.exception("Error when loading state, loading default.")
-        raise
+        #raise # debug only
         return None, []
     f.close
     return my_id, nodes
