@@ -245,7 +245,7 @@ class Graphical_display(wx.Frame):
                     self.lc.SetItemBackgroundColour(index, 'Green')
                 self.newResList.append(line)
             else:
-                self.lc.SetStringItem(index, 1, str(line[0].ts))
+                self.lc.SetStringItem(index, 1, str('%f' % line[0].ts))
                 self.lc.SetStringItem(index, 3, '-')
                 self.lc.SetStringItem(index, 4, str(str(line[0].dst_addr[0])
                                       + ':' + str(line[0].dst_addr[1]))) 
