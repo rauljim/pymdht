@@ -8,13 +8,13 @@ pymdht 11.8.3
 CONTRIBUTORS
 ------------
 
- - Raul Jimenez (maintainer)
- - Flutra Osmani
- - Ismael Saad Garcia (lookup experiments)
- - Sara Dar (MDHT visualization)
- - Shariq Mobeen (GUI + lookup visualization)
- - S.M. Sarwarul Islam Rizvi (lookup experiments)
- - Zinat Sultana (routing table extraction experiments)
+- Raul Jimenez (maintainer)
+- Flutra Osmani
+- Ismael Saad Garcia (lookup experiments)
+- Sara Dar (MDHT visualization)
+- Shariq Mobeen (GUI + lookup visualization)
+- S.M. Sarwarul Islam Rizvi (lookup experiments)
+- Zinat Sultana (routing table extraction experiments)
 
 
 ORGANIZATION
