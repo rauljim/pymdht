@@ -23,7 +23,7 @@ class TestBucket:
 
 
     def test_(self):
-        self.b = Bucket(NODES_PER_BUCKET)
+        self.b = Bucket(NODES_PER_BUCKET, set())
         # The bucket is empty
         eq_(len(self.b) , 0)
         ok_(not self.b)
@@ -78,7 +78,7 @@ class TestBucket:
 
     
     def test(self):
-        b1 = Bucket(2)
+        b1 = Bucket(2, set())
         ok_(b1.get_rnode(tc.CLIENT_NODE) is None)
         eq_(len(b1), 0)
         assert_false(b1)
@@ -126,21 +126,21 @@ class TestBucket:
         eq_(b1.get_stalest_rnode(), tc.SERVER_NODE)
         eq_(b1.sorted_by_rtt(), [tc.SERVER_NODE])
 
-        b2 = Bucket(2)
+        b2 = Bucket(2, set())
         assert_not_equal(b1,b2)
         ok_(b1 != b2)
 
-        b3 = Bucket(2)
+        b3 = Bucket(2, set())
         b3.add(tc.CLIENT_NODE)
         assert_not_equal(b1, b3)
         ok_(b1 != b3)
         
-        b4 = Bucket(2)
+        b4 = Bucket(2, set())
         b4.add(tc.SERVER_NODE)
         eq_(b1, b4)
         assert_false(b1 != b4)
         
-        b5 = Bucket(3)
+        b5 = Bucket(3, set())
         b3.add(tc.SERVER_NODE)
         assert_not_equal(b1, b5)
         ok_(b1 != b5)
@@ -156,7 +156,7 @@ class TestRoutingTable:
                                nodes_per_bucket)
 
     def test_basics(self):
-        empty_b = Bucket(MAX_RNODES)
+        empty_b = Bucket(MAX_RNODES, set())
 
         # Get empty superbucket
         log_distance = self.my_node.log_distance(tc.SERVER_NODE)
@@ -322,15 +322,15 @@ class TestRoutingTable:
         assert_raises(IndexError, self.rt.get_sbucket, 161)
 
     def test_complete_coverage(self):
-
+        #TODO: ips_in_table
         eq_(self.rt.get_closest_rnodes(76, 8, False), [tc.CLIENT_NODE])
         log_distance = self.my_node.log_distance(tc.SERVER_NODE)
         str(self.rt.get_sbucket(log_distance).main)
         repr(self.rt)
         
-        ok_(Bucket(1) != Bucket(2))
+        ok_(Bucket(1, set()) != Bucket(2, set()))
 
-        buckets = [Bucket(2), Bucket(2)]
+        buckets = [Bucket(2, set()), Bucket(2, set())]
         buckets[0].add(tc.CLIENT_NODE.get_rnode(1))
         buckets[1].add(tc.CLIENT_NODE.get_rnode(1))
         buckets[0].add(tc.NODES[0].get_rnode(1))

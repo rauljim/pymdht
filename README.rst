@@ -1,27 +1,14 @@
-*************
+***
 pymdht 11.8.3
-*************
-aka "NS\8\3" (message label)
+***
 
-NOTE on version number.
-We use the following version format:
+Copyright (C) 2009-2012 Raul Jimenez and contributors
+Released under GNU LGPL 2.1 (see LICENSE.txt)
 
- - first number: release year (two digits)
- - second number: release month number
- - third number: sub-release number, even numbers indicate stable release, odd
-   numbers indicate development (unstable)
+CONTRIBUTORS
+---
 
-Examples:
-
- - 11.8.0 Code released in Aug 2011 (stable release)
- - 11.8.1 Development code right after 11.8.0 release (unstable)
- - 11.8.2 Bugfix release (stable release)
-
-
-AUTHORS
--------
-
- - Raul Jimenez
+ - Raul Jimenez (maintainer)
  - Flutra Osmani
  - Ismael Saad Garcia (lookup experiments)
  - Sara Dar (MDHT visualization)
@@ -31,6 +18,7 @@ AUTHORS
 
 
 ORGANIZATION
+---
 
 The code is organized as follows:
 
@@ -63,6 +51,7 @@ The code is organized as follows:
 
 
 INSTALLATION
+---
 
 This package uses Python 2.5 standard library. No extra modules need to be
 installed.
@@ -72,6 +61,7 @@ framework to work.
 
 
 API
+---
 
 The API is located in core/pymdht.py. This is the only module necessary
 to use the package.
@@ -85,6 +75,7 @@ ipython is useful to try out functionality and/or debug.
 
 
 TESTS
+---
 
 Just run 'make'. see core/Makefile for details.
 
@@ -94,6 +85,7 @@ python-coverage (optional but very recommended)
 
 
 PROFILING
+---
 
 In order to do profiling you need the following packages (ubuntu):
 
@@ -106,6 +98,7 @@ runsnakerun (simple and nice profile viewer)
 
 
 PYMDHT DAEMON (unsupported)
+---
 
 This daemon serves as a simple interface between swift transport
 protocol and pymdht.  It takes takes inhohashes from swift as input,
@@ -119,6 +112,7 @@ To run pymdht daemon:
 
 
 GEO SCORING API (unsupported)
+---
 
 Module geo.py contains a set of functions that can be used to retrieve peer's
 location-related information, such as: city, country, latitude,
@@ -142,13 +136,29 @@ city database. The data, otherwise, is located here: "/usr/share/GeoIP/GeoIPCity
 
 
 CLEAN CODE
+---
 
 In order to check "code quality" you need the following packages:
 pylint (e.g. pylint --errors-only *.py >errors)
 
 EDITING
+---
 
 In case it's useful to you. I use this Emacs configuration:
 https://github.com/rauljim/emacs
+
+NOTE on version number
+---
+
+We use the following version format:
+- first number: release year (two digits)
+- second number: release month number
+- third number: sub-release number, even numbers indicate stable release, odd
+numbers indicate development (unstable)
+
+Examples:
+- 11.8.0 Code released in Aug 2011 (stable release)
+- 11.8.1 Development code right after 11.8.0 release (unstable)
+- 11.8.2 Bugfix release (stable release)
 
 

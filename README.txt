@@ -3,23 +3,19 @@ pymdht 11.8.3
 *************
 aka "NS\8\3" (message label)
 
-NOTE on version number.
-We use the following version format:
-- first number: release year (two digits)
-- second number: release month number
-- third number: sub-release number, even numbers indicate stable release, odd
-numbers indicate development (unstable)
+Copyright (C) 2009-2012 Raul Jimenez and contributors
+Released under GNU LGPL 2.1 (see LICENSE.txt)
 
-Examples:
-- 11.8.0 Code released in Aug 2011 (stable release)
-- 11.8.1 Development code right after 11.8.0 release (unstable)
-- 11.8.2 Bugfix release (stable release)
 
+<<<<<<< HEAD
 *******
 AUTHORS
 *******
+=======
+CONTRIBUTORS
+>>>>>>> feature/security-routing-table
 
-Raul Jimenez
+Raul Jimenez (maintainer)
 Flutra Osmani
 Ismael Saad Garcia (lookup experiments)
 Sara Dar (MDHT visualization)
@@ -148,5 +144,17 @@ EDITING
 
 In case it's useful to you. I use this Emacs configuration:
 https://github.com/rauljim/emacs
+
+NOTE on version number.
+We use the following version format:
+- first number: release year (two digits)
+- second number: release month number
+- third number: sub-release number, even numbers indicate stable release, odd
+numbers indicate development (unstable)
+
+Examples:
+- 11.8.0 Code released in Aug 2011 (stable release)
+- 11.8.1 Development code right after 11.8.0 release (unstable)
+- 11.8.2 Bugfix release (stable release)
 
 

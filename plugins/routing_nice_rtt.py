@@ -217,13 +217,16 @@ class RoutingManager(object):
 
         m_bucket = sbucket.main
         r_bucket = sbucket.replacement
-        rnode = m_bucket.get_rnode(node_)
-        if rnode:
-            # node in routing table: inform rnode
-            self._update_rnode_on_query_received(rnode)
+        if node_.ip in m_bucket.ips_in_table:
+            rnode = m_bucket.get_rnode(node_)
+            if rnode:
+                # node in routing table: update rnode
+                self._update_rnode_on_query_received(rnode)
+            # This IP is in the table. Stop here to avoid multiple entries
+            # with the same IP
             return
         
-        # node is not in the routing table
+        # Now, consider adding this node to the routing table
         if m_bucket.there_is_room():
             # There is room in the bucket: queue it
             self._query_received_queue.add(node_, log_distance)
@@ -256,11 +259,16 @@ class RoutingManager(object):
         m_bucket = sbucket.main
         r_bucket = sbucket.replacement
         rnode = m_bucket.get_rnode(node_)
-        if rnode:
-            # node in routing table: update
-            self._update_rnode_on_response_received(rnode, rtt)
+        if node_.ip in m_bucket.ips_in_table:
+            rnode = m_bucket.get_rnode(node_)
+            if rnode:
+                # node in routing table: update rnode
+                self._update_rnode_on_response_received(rnode, rtt)
+            # This IP is in the table. Stop here to avoid multiple entries
+            # with the same IP
             return
-        # The node is not in main
+        
+        # Now, consider adding this node to the routing table
         rnode = r_bucket.get_rnode(node_)
         if rnode:
             # node in replacement table
@@ -513,9 +521,8 @@ class _FoundNodesQueue(object):
             except(IndexError):
                 continue # this node is myself (index == -1)
             m_bucket = sbucket.main
-            rnode = m_bucket.get_rnode(node_)
-            if not rnode and m_bucket.there_is_room():
-                # Not in the main: add to the queue if there is room in main
+            if node_.ip not in m_bucket.ips_in_table and m_bucket.there_is_room():
+                # IP not in table: add to the queue if there is room in main
                 self._nodes_queued_per_bucket[log_distance] = (
                     num_nodes_queued + 1)
                 self._queued_nodes_set.add(node_)
