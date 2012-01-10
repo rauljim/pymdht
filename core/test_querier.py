@@ -33,9 +33,14 @@ TIMEOUT_DELAY = 3
 LOOKUP_OBJ = 1
 
 PYMDHT_VERSION = (11, 2, 3)
-
-clients_msg_f = message.MsgFactory(PYMDHT_VERSION, tc.CLIENT_ID)
-servers_msg_f = message.MsgFactory(PYMDHT_VERSION, tc.SERVER_ID)
+VERSION_LABEL = ''.join(
+    ['NS',
+     chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
+     chr(PYMDHT_VERSION[2])
+     ])
+  
+clients_msg_f = message.MsgFactory(VERSION_LABEL, tc.CLIENT_ID)
+servers_msg_f = message.MsgFactory(VERSION_LABEL, tc.SERVER_ID)
 
 class TestQuerier:
 

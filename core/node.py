@@ -10,7 +10,7 @@ import identifier
 class Node(object):
 
     def __init__(self, addr, node_id=None, version=1, ns_node=False):
-        assert version != 1
+        #assert version != 1 # debug only
         self._addr = addr
         self._id = node_id
         self.version = version

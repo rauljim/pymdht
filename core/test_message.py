@@ -16,10 +16,15 @@ import message_tools as mt
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (11,2,3)
+PYMDHT_VERSION = (11, 2, 3)
+VERSION_LABEL = ''.join(
+    ['NS',
+     chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
+     chr(PYMDHT_VERSION[2])
+     ])
 
-clients_msg_f = m.MsgFactory(PYMDHT_VERSION, tc.CLIENT_ID, None)
-servers_msg_f = m.MsgFactory(PYMDHT_VERSION, tc.SERVER_ID, None)
+clients_msg_f = m.MsgFactory(VERSION_LABEL, tc.CLIENT_ID, None)
+servers_msg_f = m.MsgFactory(VERSION_LABEL, tc.SERVER_ID, None)
 
 
 def _test_matching_tid():
@@ -567,10 +572,10 @@ class TestPrinting:
 class TestPrivateDHT:
 
     def test(self):
-        private_client1 = m.MsgFactory(PYMDHT_VERSION, tc.CLIENT_ID, 'private1')
-        private_server1 = m.MsgFactory(PYMDHT_VERSION, tc.SERVER_ID, 'private1')
-        private_client2 = m.MsgFactory(PYMDHT_VERSION, tc.CLIENT_ID, 'private2')
-        private_server2 = m.MsgFactory(PYMDHT_VERSION, tc.SERVER_ID, 'private2')
+        private_client1 = m.MsgFactory(VERSION_LABEL, tc.CLIENT_ID, 'private1')
+        private_server1 = m.MsgFactory(VERSION_LABEL, tc.SERVER_ID, 'private1')
+        private_client2 = m.MsgFactory(VERSION_LABEL, tc.CLIENT_ID, 'private2')
+        private_server2 = m.MsgFactory(VERSION_LABEL, tc.SERVER_ID, 'private2')
         # Sender doesn't use private flag
         ping_public = clients_msg_f.outgoing_ping_query(tc.SERVER_NODE)
         bencoded_public = ping_public.stamp(tc.TID)
