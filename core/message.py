@@ -27,7 +27,7 @@ import message_tools as mt
 logger = logging.getLogger('dht')
 
 
-NEXTSHARE_VERSION = 'NS\8\3' # 11.8.3
+#NEXTSHARE_VERSION = 'NS\8\3' # 11.8.3
 
 # High level keys
 TYPE = 'y'     # Message's type
@@ -74,6 +74,10 @@ MIN_BT_PORT = 1 #TODO: lower it to 1024? Let tracker decide.
 MAX_BT_PORT = 2**16
 
 
+def version_repr(v):
+    return v[:2] + ''.join(['%02x' % (ord(n)) for n in v[2:]])
+
+
 class MsgError(Exception):
     """Raised anytime something goes wrong (specially when
     decoding/sanitizing).
@@ -82,10 +86,8 @@ class MsgError(Exception):
 
 class MsgFactory(object):
 
-    def __init__(self, pymdht_version, src_id, private_dht_name=None):
-        major_version_label = (pymdht_version[0] - 11) * 24 + pymdht_version[1]
-        self.version_label = ('NS' + chr(major_version_label) + 
-            chr(pymdht_version[2]))
+    def __init__(self, version_label, src_id, private_dht_name=None):
+        self.version_label = version_label
         self.src_id = src_id
         self.private_dht_name = private_dht_name
 
@@ -165,7 +167,7 @@ class OutgoingMsg(object):
 
     def __init__(self, version_label, dst_node, private_dht_name):
         self.dst_node = dst_node
-        self._dict = {VERSION: NEXTSHARE_VERSION}
+        self._dict = {VERSION: version_label}
         if private_dht_name:
             self._dict['d'] = private_dht_name
         self._already_encoded = False
@@ -303,7 +305,7 @@ class IncomingMsg(object):
             raise
         except:
             logger.warning(
-                'This bencoded message is broken:\n%s' % repr(bencoded_msg)) 
+                'This bencoded message is broken:\n%s' % repr(bencoded_msg))
             raise MsgError, 'Invalid message'
 
     def __repr__(self):
@@ -379,12 +381,12 @@ class IncomingMsg(object):
         # version (optional)
         self.version = self._get_str(VERSION, optional=True)
         self.ns_node = self.version \
-            and self.version.startswith(NEXTSHARE_VERSION[:2])
+            and self.version.startswith('NS')
     
     def _sanitize_query(self):
         # src_id
         self.src_id = self._get_id(ARGS, ID)
-        self.src_node = Node(self.src_addr, self.src_id)
+        self.src_node = Node(self.src_addr, self.src_id, self.version)
         # query
         self.query = self._get_str(QUERY)
         if self.query in [GET_PEERS, ANNOUNCE_PEER]:
@@ -404,7 +406,7 @@ class IncomingMsg(object):
     def _sanitize_response(self):
         # src_id
         self.src_id = self._get_id(RESPONSE, ID)
-        self.src_node = Node(self.src_addr, self.src_id)
+        self.src_node = Node(self.src_addr, self.src_id, self.version)
         # all nodes
         self.all_nodes = []
         # nodes

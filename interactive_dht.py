@@ -40,7 +40,7 @@ def main(options, args):
     if options.node_id:
         base_id = identifier.Id(options.node_id)
         my_id = base_id.generate_close_id(options.log_distance)
-    my_node = node.Node(my_addr, my_id)
+    my_node = node.Node(my_addr, my_id, version=pymdht.VERSION_LABEL)
 
     if options.debug:
         logs_level = logging.DEBUG # This generates HUGE (and useful) logs

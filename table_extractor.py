@@ -31,7 +31,7 @@ import core.logging_conf as logging_conf
 from core.identifier import Id, RandomId
 import core.message as message
 from core.querier import Querier
-from core.message import QUERY, RESPONSE, ERROR
+from core.message import QUERY, RESPONSE, ERROR, version_repr
 from core.node import Node
 import core.minitwisted as minitwisted
 
@@ -93,7 +93,7 @@ class TableExtractor:
         if msg.type == message.RESPONSE:
             related_query = self.querier.get_related_query(msg)
             if related_query and related_query.query == message.FIND_NODE:
-                print 'level', msg.version
+                print 'level', version_repr(msg.version)
                 for node_ in msg.nodes:
                     print node_
             else:

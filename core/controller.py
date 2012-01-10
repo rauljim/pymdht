@@ -49,7 +49,7 @@ CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
 
 class Controller:
 
-    def __init__(self, pymdht_version,
+    def __init__(self, version_label,
                  my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
@@ -67,8 +67,8 @@ class Controller:
             self._my_id = saved_id # id loaded from file
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
-        self._my_node = Node(my_addr, self._my_id)
-        self.msg_f = message.MsgFactory(pymdht_version, self._my_id,
+        self._my_node = Node(my_addr, self._my_id, version=version_label)
+        self.msg_f = message.MsgFactory(version_label, self._my_id,
                                         private_dht_name)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
