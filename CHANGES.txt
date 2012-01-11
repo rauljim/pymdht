@@ -6,7 +6,7 @@
 - Security: avoid multiple routing table entries with the same IP
 - README.txt replaced by README.rst
 - Added support for experiment plugin
-
+- Improved graphical visualization
 
 == 11.8.2
 
