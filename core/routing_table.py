@@ -42,7 +42,9 @@ class Bucket(object):
         #self.last_changed_ts = time.time()
 
     def remove(self, node_):
-        del self.rnodes[self._find(node_)]
+        i = self._find(node_)
+        assert 0 <= i < len(self.rnodes)
+        del self.rnodes[i]
         self.ips_in_table.remove(node_.ip)
         
     def __repr__(self):
