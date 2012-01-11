@@ -15,15 +15,19 @@ NUM_NODES = 8
 
 class Responder(object):
 
-    def __init__(self, my_id, routing_m, msg_f):
+    def __init__(self, my_id, routing_m, msg_f,
+                 bootstrap_mode=False):
         self._my_id = my_id
         self._routing_m = routing_m
         self.msg_f = msg_f
+        self.bootstrap_mode = bootstrap_mode
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
 
     def get_response(self, msg):
         if msg.query == message.PING:
+            if self.bootstrap_mode:
+                return
             return self.msg_f.outgoing_ping_response(msg.src_node)
         elif msg.query == message.FIND_NODE:
             log_distance = msg.target.log_distance(self._my_id)
