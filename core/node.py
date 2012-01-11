@@ -49,7 +49,9 @@ class Node(object):
         return not self == other
 
     def __repr__(self):
-        return '<node: %r %r>' % (self.addr, self.id)
+        return '<node: %r %r (%r)>' % (self.addr,
+                                       self.id,
+                                       self.version)
 
     def log_distance(self, other):
         return self.id.log_distance(other.id)
@@ -90,8 +92,8 @@ class RoutingNode(Node):
         self.last_seen = current_time
         self.bucket_insertion_ts = None
         
-    def __repr__(self):
-        return '<rnode: %r %r>' % (self.addr, self.id)
+    #def __repr__(self):
+    #    return '<rnode: %r %r>' % (self.addr, self.id)
 
     def get_rnode(self):
         return self
