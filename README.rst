@@ -1,5 +1,5 @@
 ******************
-pymdht 11.8.3
+pymdht 12.1.0
 ******************
 
 | Copyright (C) 2009-2012 Raul Jimenez and contributors
