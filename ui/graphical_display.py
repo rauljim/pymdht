@@ -15,7 +15,7 @@ class Graphical_display(wx.Frame):
     sizeofnodes=10
     xspacingofnodes = 45
     yspacingofnodes = 40
-    startingx = 30
+    startingx = -15
     startingy = 40
     vsb = 1
     povsb = -1
@@ -33,6 +33,7 @@ class Graphical_display(wx.Frame):
     list3=[]
     ptr=0
     pp_flag=False
+    limitofprogress=1000000
     
     def __init__(self, parent, mytitle, Size, data_path):
         self.data_path = data_path
@@ -169,7 +170,9 @@ class Graphical_display(wx.Frame):
         self.lc.InsertColumn(7, "Nodes Distance")
         self.lc.SetColumnWidth(7, 280)
         
-        self.panel1 = wx.Panel(self, -1) 
+        self.panel1 = wx.Panel(self, -1)
+        font1 = wx.Font(12, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Comic Sans MS')
+        self.panel1.SetFont(font1)
         self.panel1.SetScrollbar(wx.HORIZONTAL, 0, 1, self.hsb)
         self.panel1.SetScrollbar(wx.VERTICAL, 0, 1, self.vsb);
         self.Stbox1 = wx.StaticText(self.panel1, -1, "", (0, 0))
@@ -186,8 +189,8 @@ class Graphical_display(wx.Frame):
         sizer_h1.Add(self.toolbar)
         sizer_h1.Add(self.panel4, 1, wx.ALL | wx.EXPAND,10)         
         sizer_v.Add(sizer_h1, 0, flag=wx.ALL|wx.EXPAND)
-        sizer_h2.Add(self.panel2, 0)
-        sizer_h2.Add(self.panel3, 0)
+        sizer_h2.Add(self.panel2, 0,wx.ALL|wx.EXPAND)
+        sizer_h2.Add(self.panel3, 2,wx.ALL|wx.EXPAND)
         sizer_v.Add(sizer_h2, 0, flag=wx.ALL|wx.EXPAND)
         sizer_h3.Add(self.lc, 1, flag=wx.ALL|wx.EXPAND)
         sizer_v.Add(sizer_h3, 1, wx.ALL | wx.EXPAND, 10)
@@ -242,7 +245,7 @@ class Graphical_display(wx.Frame):
                     self.lc.SetItemBackgroundColour(index, 'Green')
                 self.newResList.append(line)
             else:
-                self.lc.SetStringItem(index, 1, str(line[0].ts))
+                self.lc.SetStringItem(index, 1, str('%f' % line[0].ts))
                 self.lc.SetStringItem(index, 3, '-')
                 self.lc.SetStringItem(index, 4, str(str(line[0].dst_addr[0])
                                       + ':' + str(line[0].dst_addr[1]))) 
@@ -267,7 +270,7 @@ class Graphical_display(wx.Frame):
                         self.list1.append(i)
             self.main_list=self.convert_list(self.list1)
             self.load_list(self.main_list)
-            self.ProgressBar.SetRange(len(self.main_list)-1)
+            self.ProgressBar.SetRange(self.limitofprogress)
     def create_bindings(self):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -473,16 +476,19 @@ class Graphical_display(wx.Frame):
         dc.Clear()
         self.Refresh(eraseBackground=True, rect=None)
         TempA = ""
-        for i in range(self.pohsb + 1, 35 + self.pohsb):
-            a = str(160 - i)
-            if len(a) == 3:
-                a = "   " + a
-            elif len(a) == 2:
-                a = "   0" + a
-            else:
-                a=  "   00" + a
-            TempA = TempA + a
-        self.Stbox1.SetLabel(TempA)
+        for child in self.panel1.GetChildren():
+                child.Destroy() 
+        for i in range(self.pohsb+1, 35 + self.pohsb):
+            wx.StaticText(self.panel1, label=str(159 - i), pos=(15+self.xspacingofnodes*(i-self.pohsb-1), 0))
+#            a = str(160 - i)
+#            if len(a) == 3:
+#                a = "   " + a
+#            elif len(a) == 2:
+#                a = "   0" + a
+#            else:
+#                a=  "   00" + a
+#            TempA = TempA + a
+#        self.Stbox1.SetLabel(TempA)
         def display_main_node(i):
             if(i.MainNode.y - (self.povsb * self.yspacingofnodes) > 0):
                 if(i.MainNode.x - (self.xstartofnodes + self.pohsb * self.xspacingofnodes) > 0):
@@ -515,8 +521,7 @@ class Graphical_display(wx.Frame):
     def precalculation_previousstep(self):
         self.previousstepprocessing(self.ptr-1)
         self.ptr=self.ptr-1
-        if not self.ptr == 0:
-            self.ProgressBar.SetValue(self.ProgressBar.GetValue()-1)
+
         if not self.ptr == 0:
             current_location = self.ptr-1
         else:
@@ -545,6 +550,10 @@ class Graphical_display(wx.Frame):
                 last_position="%.6f"%float(self.main_list[current_location][1].ts)
         
         self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
+        if not self.ptr == 0:
+            percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
+            self.ProgressBar.SetValue(int(percentage))
+            print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
         self.handle_enable_disable()
         self.printing()
     def previousstepprocessing(self,i):
@@ -609,7 +618,9 @@ class Graphical_display(wx.Frame):
         
         self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
         if not self.ptr == 0:
-            self.ProgressBar.SetValue(self.ProgressBar.GetValue()+1)
+            percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
+            self.ProgressBar.SetValue(int(percentage))
+            print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
         self.ptr=self.ptr+1
         self.handle_enable_disable()
         self.printing()       
@@ -618,7 +629,7 @@ class Graphical_display(wx.Frame):
                 wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
             else:
                  wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time*1000,self.precalculation_nextstep)
-                 
+
     def nextstepprocessing(self,i):
         def Find_Vertical_Number(i,distance):
             tempb=0
@@ -774,7 +785,6 @@ class Graphical_display(wx.Frame):
                 else:
                     previous_time="%.6f"%float(self.main_list[current_location][1].ts)
             self.wait_time = (float(previous_time) - float(current_time))
-            print previous_time,current_time,self.wait_time
         else:
             self.wait_time = 0 
         maxy,maxx=find_max_xy()
@@ -825,25 +835,25 @@ class Graphical_display(wx.Frame):
         dc = wx.PaintDC(self.panel4)
         font1 = wx.Font(11, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Arial')
         self.panel4.SetFont(font1)        
-        self.draw_circle(dc,"Green","Green",-5,-25,self.sizeofnodes)
-        version = wx.StaticText(self.panel4, pos=(50, 10))
+        self.draw_circle(dc,"Green","Green",30,-25,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(35, 10))
         version.SetLabel(label="Response")
-        self.draw_circle(dc,"Yellow","Yellow",145,-25,self.sizeofnodes)
-        version = wx.StaticText(self.panel4, pos=(205, 10))
+        self.draw_circle(dc,"Yellow","Yellow",185,-25,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(190, 10))
         version.SetLabel(label="Query")
-        self.draw_circle(dc,"Blue","Blue",290,-25,self.sizeofnodes)
-        version = wx.StaticText(self.panel4, pos=(360, 10))
+        self.draw_circle(dc,"Blue","Blue",340,-25,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(345, 10))
         version.SetLabel(label="Not Queried")
-        self.draw_circle(dc,"Brown","Brown",480,-35, self.sizeofnodes/4)
-        self.draw_circle(dc,"Brown","Brown",460,-15, self.sizeofnodes/4)    
-        version = wx.StaticText(self.panel4, pos=(520, 10))
+        self.draw_circle(dc,"Brown","Brown",505,-35, self.sizeofnodes/4)
+        self.draw_circle(dc,"Brown","Brown",485,-15, self.sizeofnodes/4)    
+        version = wx.StaticText(self.panel4, pos=(500, 10))
         version.SetLabel(label="Peers")
-        self.draw_circle(dc,"Red","Red",-5,5,self.sizeofnodes)
-        version = wx.StaticText(self.panel4, pos=(50, 40))
+        self.draw_circle(dc,"Red","Red",30,5,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(35, 40))
         version.SetLabel(label="Timeout")
-        self.draw_circle(dc,self.color,"Black",145,5,self.sizeofnodes)
-        version = wx.StaticText(self.panel4, pos=(205, 40))
+        self.draw_circle(dc,self.color,"Black",185,5,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(190, 40))
         version.SetLabel(label="Neighbour")
-        self.draw_circle(dc,"Black",self.color,290,5,self.sizeofnodes)
-        version = wx.StaticText(self.panel4, pos=(360, 40))
+        self.draw_circle(dc,"Black",self.color,340,5,self.sizeofnodes)
+        version = wx.StaticText(self.panel4, pos=(345, 40))
         version.SetLabel(label="No Contact Node")
