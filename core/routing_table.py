@@ -14,11 +14,13 @@ class PutError(Exception):
     pass
 
 class SuperBucket(object):
-    def __init__(self, index, max_nodes, ips_in_table):
+    def __init__(self, index, max_nodes, ips_in_main, 
+                 ips_in_replacement):
         self.index = index
-        self.main = Bucket(max_nodes, ips_in_table)
-        self.replacement = Bucket(max_nodes, set())
-        self.ips_in_table = ips_in_table
+        self.main = Bucket(max_nodes, ips_in_main)
+        self.replacement = Bucket(max_nodes, ips_in_replacement)
+        self.ips_in_main = ips_in_main
+        self.ips_in_replacement = ips_in_replacement
 
 class Bucket(object):
     def __init__(self, max_rnodes, ips_in_table):
@@ -127,7 +129,8 @@ class RoutingTable(object):
         self.nodes_per_bucket = nodes_per_bucket
         self.sbuckets = [None] * NUM_SBUCKETS
         self.num_rnodes = 0
-        self._ips_in_table = set()
+        self._ips_in_main = set()
+        self._ips_in_replacement = set()
         return
 
     def get_sbucket(self, log_distance):
@@ -137,7 +140,8 @@ class RoutingTable(object):
         sbucket = self.sbuckets[index]
         if not sbucket:
             sbucket = SuperBucket(index, self.nodes_per_bucket[index],
-                                  self._ips_in_table)
+                                  self._ips_in_main,
+                                  self._ips_in_replacement)
             self.sbuckets[index] = sbucket
         return sbucket
         
@@ -195,5 +199,3 @@ class RoutingTable(object):
         
         end = ['==============RoutingTable============= END']
         return '\n'.join(begin + data + end)
-
-    
