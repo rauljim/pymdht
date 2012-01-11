@@ -2,8 +2,9 @@
 pymdht 11.8.3
 ******************
 
- | Copyright (C) 2009-2012 Raul Jimenez and contributors
- | Released under GNU LGPL 2.1 (see LICENSE.txt)
+Copyright (C) 2009-2012 Raul Jimenez and contributors
+
+Released under GNU LGPL 2.1 (see LICENSE.txt)
 
 CONTRIBUTORS
 ------------
