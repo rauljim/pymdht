@@ -9,9 +9,11 @@ import identifier
 
 class Node(object):
 
-    def __init__(self, addr, node_id=None, ns_node=False):
+    def __init__(self, addr, node_id=None, version=1, ns_node=False):
+        #assert version != 1 # debug only
         self._addr = addr
         self._id = node_id
+        self.version = version
         self.is_ns = ns_node
         self._compact_addr = utils.compact_addr(addr)
 
@@ -68,7 +70,8 @@ MAX_LAST_EVENTS = 10
 class RoutingNode(Node):
 
     def __init__(self, node_, log_distance):
-        Node.__init__(self, node_.addr, node_.id, node_.is_ns)
+        Node.__init__(self, node_.addr, node_.id, node_.version,
+                      node_.is_ns)
         self.log_distance_to_me = log_distance
         self.rtt = 99
         self.real_rtt = 99

@@ -23,7 +23,13 @@ import logging_conf
 logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (11,2,3)
+PYMDHT_VERSION = (11, 2, 3)
+VERSION_LABEL = ''.join(
+    ['NS',
+     chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
+     chr(PYMDHT_VERSION[2])
+     ])
+
 
 def assert_almost_equal(result, expected, tolerance=.05):
     if not expected-tolerance < result < expected+tolerance:
@@ -35,7 +41,7 @@ class TestController:
     def setup(self):
         time.mock_mode()
         
-        self.controller = controller.Controller(PYMDHT_VERSION,
+        self.controller = controller.Controller(VERSION_LABEL,
                                                 tc.CLIENT_NODE,
                                                 'test_logs/state.dat',
                                                 routing_m_mod,
@@ -44,7 +50,7 @@ class TestController:
                                                 None)
         self.my_id = self.controller._my_id
         self.querier2 = querier.Querier()#self.my_id)
-        self.servers_msg_f = message.MsgFactory(PYMDHT_VERSION, tc.SERVER_ID)
+        self.servers_msg_f = message.MsgFactory(VERSION_LABEL, tc.SERVER_ID)
         
     def _test_start_stop(self):
         self.controller.main_loop()
@@ -58,7 +64,7 @@ class TestController:
         eq_(datagrams[0], expected_datagrams[0])
 
     def test_with_unexistent_state_file(self):
-        controller.Controller(PYMDHT_VERSION,
+        controller.Controller(VERSION_LABEL ,
                               tc.CLIENT_NODE, 'test_logs/state.dat.no',
                               routing_m_mod, lookup_m_mod, exp_m_mod,
                               None)
@@ -124,7 +130,8 @@ class TestController:
         #The lookup starts with a single node
         lookup_result = []
         datagrams = self.controller.get_peers(lookup_result, tc.INFO_HASH,
-                                              lambda x,y: x.append(y), 0)
+                                              lambda x,y: x.append(y), 0,
+                                              False)
         #FIXME: assert_almost_equal(ts, ping_timeout_ts)#time.time()+2)
         #FIXME: eq_(len(datagrams), 1)
 
@@ -133,7 +140,7 @@ class TestController:
         self.controller._tracker.put(info_hash, tc.CLIENT_ADDR)
         lookup_result = []
         self.controller.get_peers(lookup_result, info_hash,
-                                  lambda x,y: x.append(y), 0)
+                                  lambda x,y: x.append(y), 0, False)
         #FIXME: eq_(len(lookup_result), 1) # the node is tracking this info_hash
         #FIXME: eq_(lookup_result[0][0], tc.CLIENT_ADDR)
 
@@ -145,7 +152,7 @@ class TestController:
         ping = datagrams[0].data
         addr = datagrams[0].addr
         #this get_peers fails because there are no nodes in the routing table
-        datagrams = self.controller.get_peers(None, tc.INFO_HASH, None, 0)
+        datagrams = self.controller.get_peers(None, tc.INFO_HASH, None, 0, False)
         eq_(len(datagrams), 0)
         #fabricate response
         ping = self.servers_msg_f.incoming_msg(Datagram(ping, addr))

@@ -43,11 +43,12 @@ STATE_FILENAME = 'pymdht.state'
 #TIMEOUT_DELAY = 2
 
 NUM_NODES = 8
+CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
 
 
 class Controller:
 
-    def __init__(self, pymdht_version,
+    def __init__(self, version_label,
                  my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
@@ -79,8 +80,8 @@ class Controller:
             self._my_id = saved_id # id loaded from file
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
-        self._my_node = Node(my_addr, self._my_id)
-        self.msg_f = message.MsgFactory(pymdht_version, self._my_id,
+        self._my_node = Node(my_addr, self._my_id, version=version_label)
+        self.msg_f = message.MsgFactory(version_label, self._my_id,
                                         private_dht_name)
         self._tracker = tracker.Tracker()
         self._token_m = token_manager.TokenManager()
@@ -98,11 +99,12 @@ class Controller:
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
+        self._cached_lookups = []
                 
     def on_stop(self):
         self._experimental_m.on_stop()
 
-    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+    def get_peers(self, lookup_id, info_hash, callback_f, bt_port, use_cache):
         """
         Start a get\_peers lookup whose target is 'info\_hash'. The handler
         'callback\_f' will be called with two arguments ('lookup\_id' and a
@@ -113,7 +115,14 @@ class Controller:
         This method is designed to be used as minitwisted's external handler.
 
         """
+        datagrams_to_send = []
         logger.debug('get_peers %d %r' % (bt_port, info_hash))
+        if use_cache:
+            peers = self._get_cached_peers(info_hash)
+            if peers and callable(callback_f):
+                callback_f(lookup_id, peers, None)
+                callback_f(lookup_id, None, None)
+                return datagrams_to_send
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
                                                               info_hash,
                                                               callback_f,
@@ -122,6 +131,22 @@ class Controller:
         datagrams_to_send = self._register_queries(queries_to_send)
         return datagrams_to_send
     
+    def _get_cached_peers(self, info_hash):
+        oldest_valid_ts = time.time() - CACHE_VALID_PERIOD
+        for ts, cached_info_hash, peers in self._cached_lookups:
+            if ts > oldest_valid_ts and info_hash == cached_info_hash:
+                return peers
+
+    def _add_cache_peers(self, info_hash, peers):
+        oldest_valid_ts = time.time() - CACHE_VALID_PERIOD
+        while self._cached_lookups and self._cached_lookups[0][0] < oldest_valid_ts:
+            # clean up old entries
+            del self._cached_lookups[0]
+        if self._cached_lookups and self._cached_lookups[-1][1] == info_hash:
+            self._cached_lookups[-1][2].extend(peers)
+        else:
+            self._cached_lookups.append((time.time(), info_hash, peers))
+
     def _try_do_lookup(self):
         queries_to_send = []
         if self._pending_lookups:
@@ -138,8 +163,10 @@ class Controller:
             # look if I'm tracking this info_hash
             peers = self._tracker.get(lookup_obj.info_hash)
             callback_f = lookup_obj.callback_f
-            if peers and callback_f and callable(callback_f):
-                callback_f(lookup_obj.lookup_id, peers, None)
+            if peers:
+                self._add_cache_peers(lookup_obj.info_hash, peers)
+                if callable(callback_f):
+                    callback_f(lookup_obj.lookup_id, peers, None)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
         else:
@@ -306,10 +333,13 @@ class Controller:
                 datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
-                lookup_id = related_query.lookup_obj.lookup_id
-                callback_f = related_query.lookup_obj.callback_f
-                if peers and callable(callback_f):
-                    callback_f(lookup_id, peers, msg.src_node)
+                lookup_obj = related_query.lookup_obj
+                lookup_id = lookup_obj.lookup_id
+                callback_f = lookup_obj.callback_f
+                if peers:
+                    self._add_cache_peers(lookup_obj.info_hash, peers)
+                    if callable(callback_f):
+                        callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
                     if callable(callback_f):
                         callback_f(lookup_id, None, msg.src_node)

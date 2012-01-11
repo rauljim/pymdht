@@ -103,7 +103,7 @@ def _sanitize_bootstrap_node(line):
     # no need to catch exceptions, get_bootstrap_nodes takes care of them
     ip, port_str = line.split()
     addr = ip, int(port_str)
-    return node.Node(addr)
+    return node.Node(addr, version=None)
 
 def _get_bootstrap_nodes():
     data_path = os.path.dirname(message.__file__)

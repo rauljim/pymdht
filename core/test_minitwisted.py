@@ -76,18 +76,6 @@ class TestMinitwisted:
         self.reactor.s = _SocketMock()
         #self.reactor.start() >> instead of usint start(), we use run_one_step()
 
-
-    def test_start_and_stop(self):
-        '''
-        NOTE:
-        This is the only test using real threading
-        '''
-        ok_(not self.reactor.running)
-        self.reactor.start()
-        ok_(self.reactor.running)
-        self.reactor.stop()
-        ok_(not self.reactor.running)
-
     def test_call_main_loop(self):
         eq_(self.main_loop_call_counter, 0)
         self.reactor.run_one_step()
@@ -169,8 +157,33 @@ class TestMinitwisted:
         time.normal_mode()
 
 
-class TestSend:
+class TestMinitwistedRealThreading:
 
+    def _main_loop(self):
+        return time.time() + 1, []
+
+    def _on_datagram_received(self, datagram):
+        return time.time() + 1, []
+        
+    def test_start_and_stop(self):
+        '''
+        NOTE:
+        This is the only test using real threading
+        '''
+        self.reactor = ThreadedReactor(self._main_loop,
+                                       tc.CLIENT_PORT,
+                                       self._on_datagram_received,
+                                       task_interval=tc.TASK_INTERVAL)
+        ok_(not self.reactor.running)
+        self.reactor.start()
+        time.sleep(.1)
+        ok_(self.reactor.running)
+        self.reactor.stop()
+        ok_(not self.reactor.running)
+
+
+
+class TestSend:
     
     def _main_loop(self):
         return time.time() + MAIN_LOOP_DELAY, [DATAGRAM1]
