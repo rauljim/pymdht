@@ -4,6 +4,8 @@
   an evil global variable
 - Lookup cache
 - Security: avoid multiple routing table entries with the same IP
+- README.txt replaced by README.rst
+- Added support for experiment plugin
 
 
 == 11.8.2
