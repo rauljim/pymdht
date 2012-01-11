@@ -187,7 +187,7 @@ if __name__ == '__main__':
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
     messages for a given info_hash")
-    parser.add_option("--bootstrap-mode",dest="bootstrap-mode",
+    parser.add_option("--bootstrap-mode",dest="bootstrap_mode",
                       action='store_true', default=False,
                       help="Print Pymdhtversion and exit.")
     parser.add_option("--version",dest="version",

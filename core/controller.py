@@ -74,7 +74,7 @@ class Controller:
             self._my_node, saved_bootstrap_nodes, self.msg_f)
 
         self._responder = responder.Responder(self._my_id, self._routing_m,
-                                              self.msg_f, boostrap_mode)
+                                              self.msg_f, bootstrap_mode)
         self._tracker = self._responder._tracker
         
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id, self.msg_f)
