@@ -2,8 +2,9 @@
 pymdht 11.8.3
 ******************
 
-| Copyright (C) 2009-2012 Raul Jimenez and contributors
-| Released under GNU LGPL 2.1 (see LICENSE.txt)
+Copyright (C) 2009-2012 Raul Jimenez and contributors
+
+Released under GNU LGPL 2.1 (see LICENSE.txt)
 
 CONTRIBUTORS
 ------------
@@ -54,7 +55,7 @@ The code is organized as follows:
 
 * Files:
 
-  - | interactive_dht.py
+  - | run_pymdht_node.py
     | Simple  example of how the Pymdht can be used. Use '--help' to get a list
       of available command line options.
 

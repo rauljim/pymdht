@@ -16,6 +16,7 @@ from core.message import MsgFactory, Datagram
 from core.identifier import RandomId
 from core.minitwisted import ThreadedReactor
 import core.ptime as time
+from core.pymdht import PYMDHT_VERSION
 
 MY_ID = RandomId()
 TID = '11'
@@ -85,10 +86,17 @@ class BootstrapChecker(object):
 
 if __name__ == '__main__':
     logging_conf.setup('.', logging.DEBUG)
-    bc = BootstrapChecker(sys.argv[1])
+    if len(sys.argv) > 1:
+        input_filename = sys.argv[1]
+    else:
+        input_filename = INPUT_FILE
+    output_filename = 'bootstrap.backup.release-%d.%d.%d' % (
+        PYMDHT_VERSION)
+    bc = BootstrapChecker(input_filename)
     while not bc.is_done():
         time.sleep(1)
     time.sleep(3)
     result = bc.stop_and_get_result()
+    output_file = open(output_filename, 'w')
     for addr in result:
-        print addr[0], addr[1]
+        print >>output_file, addr[0], addr[1]
