@@ -51,7 +51,8 @@ class Controller:
                  my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
-                 private_dht_name):
+                 private_dht_name,
+                 bootstrap_mode):
         
         if size_estimation:
             self._size_estimation_file = open('size_estimation.dat', 'w')
@@ -73,7 +74,7 @@ class Controller:
             self._my_node, saved_bootstrap_nodes, self.msg_f)
 
         self._responder = responder.Responder(self._my_id, self._routing_m,
-                                              self.msg_f)
+                                              self.msg_f, boostrap_mode)
         self._tracker = self._responder._tracker
         
         self._lookup_m = lookup_m_mod.LookupManager(self._my_id, self.msg_f)

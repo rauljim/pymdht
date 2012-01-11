@@ -45,7 +45,8 @@ class Pymdht:
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
-                 debug_level, id_=None):
+                 debug_level, id_=None,
+                 bootsrap_mode=False):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(VERSION_LABEL,
@@ -53,7 +54,8 @@ class Pymdht:
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 experimental_m_mod,
-                                                private_dht_name)
+                                                private_dht_name,
+                                                bootsrap_mode)
         self.reactor = minitwisted.ThreadedReactor(
             self.controller.main_loop,
             my_node.addr[1], self.controller.on_datagram_received)
@@ -66,7 +68,8 @@ class Pymdht:
         # No need to call_asap because the minitwisted thread is dead by now
         self.controller.on_stop()
     
-    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0, use_cache=False):
+    def get_peers(self, lookup_id, info_hash, callback_f,
+                  bt_port=0, use_cache=False):
         """ Start a get peers lookup. Return a Lookup object.
         
         The info_hash must be an identifier.Id object.
