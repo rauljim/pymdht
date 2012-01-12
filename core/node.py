@@ -48,6 +48,12 @@ class Node(object):
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        if self.id:
+            return self.addr.__hash__() ^ self.id.__hash__()
+        else:
+            return self.addr.__hash__()
+
     def __repr__(self):
         return '<node: %r %r (%r)>' % (self.addr,
                                        self.id,
