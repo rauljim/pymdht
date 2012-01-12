@@ -42,6 +42,7 @@ class Bucket(object):
     def remove(self, node_):
         i = self._find(node_)
         assert 0 <= i < len(self.rnodes)
+        assert self.rnodes[i].ip == node_.ip
         del self.rnodes[i]
         self.ips_in_table.remove(node_.ip)
         
