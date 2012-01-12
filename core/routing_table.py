@@ -36,7 +36,8 @@ class Bucket(object):
         assert len(self.rnodes) < self.max_rnodes
         rnode.bucket_insertion_ts = time.time()
         self.rnodes.append(rnode)
-        self.ips_in_table.add(rnode.ip)
+        if self.ips_in_table is not None:
+            self.ips_in_table.add(rnode.ip)
         #self.last_changed_ts = time.time()
 
     def remove(self, node_):
@@ -44,7 +45,8 @@ class Bucket(object):
         assert 0 <= i < len(self.rnodes)
         assert self.rnodes[i].ip == node_.ip
         del self.rnodes[i]
-        self.ips_in_table.remove(node_.ip)
+        if self.ips_in_table is not None:
+            self.ips_in_table.remove(node_.ip)
         
     def __repr__(self):
         return '\n'.join(['b>'] + [repr(rnode) for rnode in self.rnodes])
@@ -127,7 +129,7 @@ class RoutingTable(object):
         self.sbuckets = [None] * NUM_SBUCKETS
         self.num_rnodes = 0
         self._ips_in_main = set()
-        self._ips_in_replacement = set()
+        self._ips_in_replacement = None #set() #bugfix
         return
 
     def get_sbucket(self, log_distance):
