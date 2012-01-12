@@ -7,11 +7,6 @@ import logging
 
 logger = logging.getLogger('dht')
 
-class PopError(Exception):
-    pass
-
-class PutError(Exception):
-    pass
 
 class SuperBucket(object):
     def __init__(self, index, max_nodes, ips_in_main, 
@@ -21,6 +16,7 @@ class SuperBucket(object):
         self.replacement = Bucket(max_nodes, ips_in_replacement)
         self.ips_in_main = ips_in_main
         self.ips_in_replacement = ips_in_replacement
+
 
 class Bucket(object):
     def __init__(self, max_rnodes, ips_in_table):
