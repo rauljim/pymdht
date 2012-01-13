@@ -1,3 +1,8 @@
+== 12.1.1
+
+- bootstrap_mode available to run a node as bootstrap node. It ignores some
+  queries to avoid being added to too many routing tables.
+
 == 12.1.0
 
 - Message is now a factory. Now 'private_dht_name' is a parameter instead of
