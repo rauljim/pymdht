@@ -1,21 +1,5 @@
 #! /usr/bin/env python
 
-# Copyright (C) 2009-2010 Raul Jimenez
-# Released under GNU LGPL 2.1
-# See LICENSE.txt for more information
-
-"""
-The controller module is designed to be the central point where most modules
-are connected. This module delegates most of the implementation details to
-other modules. This delegation model creates separated responsibility areas
-where implementation can be changed in isolation.
-
-The extreme cases are the plug-ins which allow us to develop/run different
-implementations of routing and lookup managers in parallel.
-
-"""
-
-size_estimation = False
 
 import sys
 import core.ptime as time
@@ -37,7 +21,7 @@ import core.minitwisted as minitwisted
 
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (11, 12, 1)
+PYMDHT_VERSION = (12, 1, 1)
 
 PING = False
 
