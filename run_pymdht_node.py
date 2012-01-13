@@ -57,6 +57,7 @@ def main(options, args):
     print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     print 'debug mode:', options.debug
+    print 'bootstrap mode:', options.bootstrap_mode
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
@@ -70,7 +71,8 @@ def main(options, args):
                         lookup_m_mod,
                         experimental_m_mod,
                         options.private_dht_name,
-                        logs_level)
+                        logs_level,
+                        options.bootstrap_mode)
     if options.lookup_delay:
         loop_forever = not options.num_lookups
         remaining_lookups = options.num_lookups
@@ -185,6 +187,9 @@ if __name__ == '__main__':
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
     messages for a given info_hash")
+    parser.add_option("--bootstrap-mode",dest="bootstrap_mode",
+                      action='store_true', default=False,
+                      help="Print Pymdhtversion and exit.")
     parser.add_option("--version",dest="version",
                       action='store_true', default=False,
                       help="Print Pymdhtversion and exit.")
