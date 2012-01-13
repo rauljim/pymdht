@@ -252,10 +252,10 @@ class Graphical_display(wx.Frame):
                 self.lc.SetStringItem(index, 5, str(line[0].hexaTid))
                 if line[2]==0:
                     self.lc.SetStringItem(index, 2, '-')
-                    self.lc.SetItemBackgroundColour(index, 'yellow')
+                    self.lc.SetItemBackgroundColour(index, 'Yellow')
                 else:
                     self.lc.SetStringItem(index, 2, line[2])
-                    self.lc.SetItemBackgroundColour(index, 'red')
+                    self.lc.SetItemBackgroundColour(index, 'Red')
                 self.newResList.append(line)
                 
     def onSelect(self, event):
@@ -553,7 +553,7 @@ class Graphical_display(wx.Frame):
         if not self.ptr == 0:
             percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
             self.ProgressBar.SetValue(int(percentage))
-            print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
+            #print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
         self.handle_enable_disable()
         self.printing()
     def previousstepprocessing(self,i):
@@ -574,13 +574,13 @@ class Graphical_display(wx.Frame):
             if color1=="Yellow" and color2=="Yellow":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Blue","Blue")
-            if color1=="red" and color2=="red":
+            if color1=="Red" and color2=="Red":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Yellow","Yellow")
                             
         if(self.main_list[i][1]=='bogus'):
-            color1="red"
-            color2="red"
+            color1="Red"
+            color2="Red"
             index=self.find_information_of_existing_node(str(self.main_list[i][0].dst_addr[0]),
                                                             str(self.main_list[i][0].dst_addr[1]))
             revert_changes()
@@ -620,7 +620,7 @@ class Graphical_display(wx.Frame):
         if not self.ptr == 0:
             percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
             self.ProgressBar.SetValue(int(percentage))
-            print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
+            #print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
         self.ptr=self.ptr+1
         self.handle_enable_disable()
         self.printing()       
@@ -684,10 +684,11 @@ class Graphical_display(wx.Frame):
             for k in self.bootstrapnodes:
                 index=k.Return_Node_of_IPandPort(self.main_list[i][0].dst_addr[0],str(self.main_list[i][0].dst_addr[1]),None)
                 if(index!=None):
-                    if index.color1 == "blue":
-                        color = "yellow"
+                    if index.color1 == "Blue":
+                        color = "Yellow"
                     else:
-                        color = "red"
+                        color = "Red"
+                       #print index.color1,index.color2,color
                     TempA = iDSlist.ListofNodes()
                     TempA.SetMainNode(index.IPadress,
                                       index.Port,
