@@ -105,9 +105,13 @@ def main(options, args):
             dht, logs_path)
         frame.Show(True)
         app.MainLoop()
+    elif options.telnet_port:
+        import ui.telnet
+        telnet_ui = ui.telnet.Telnet(dht, options.telnet_port)
+        telnet_ui.start()
     elif options.cli:
         import ui.cli
-        ui.cli.command_user_interface(dht)
+        ui.cli.command_user_inerface(dht)
         
 if __name__ == '__main__':
     default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
@@ -145,6 +149,9 @@ if __name__ == '__main__':
     parser.add_option("--cli",dest="cli",
                       action='store_true', default=True,
                       help="Command line interface (no GUI) <- default")
+    parser.add_option("--telnet-port",dest="telnet_port",
+                      metavar='INT', default=0,
+                      help="Telnet interface on given TCP port (see ui/telnet_api.txt).")
     parser.add_option("--daemon", dest="daemon",
                       action='store_true', default=False,
                       help="DAEMON mode (no user interface)")
@@ -189,7 +196,8 @@ if __name__ == '__main__':
     messages for a given info_hash")
     parser.add_option("--bootstrap-mode",dest="bootstrap_mode",
                       action='store_true', default=False,
-                      help="Print Pymdhtversion and exit.")
+                      help="Only for well-known bootsrap nodes. It will ignore\
+    some incoming queries to avoid being added to too many routing tables.")
     parser.add_option("--version",dest="version",
                       action='store_true', default=False,
                       help="Print Pymdhtversion and exit.")
@@ -203,6 +211,7 @@ if __name__ == '__main__':
     
     options.port = int(options.port)
 #    options.logs_level = int(options.logs_level)
+    options.telnet_port = int(options.telnet_port)
     options.lookup_delay = int(options.lookup_delay)
     options.num_lookups = int(options.num_lookups)
     options.stop_delay = int(options.stop_delay)
