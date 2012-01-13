@@ -2,7 +2,7 @@
 
 class ExperimentalManager:
     
-    def __init__(self, my_id):
+    def __init__(self, my_id, msg_f):
         pass
          
     def on_query_received(self, msg):

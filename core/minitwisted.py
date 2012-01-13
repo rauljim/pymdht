@@ -7,7 +7,7 @@ Minitwisted is inspired by the Twisted framework. Although, it is much
 simpler.
 - It can only handle one UDP connection per reactor.
 - Reactor runs in a thread
-- You can use call_later and call_now to run your code in thread-safe mode
+- You can use call_asap to run your code in thread-safe mode
 
 '''
 
@@ -46,6 +46,9 @@ class ThreadedReactor(threading.Thread):
         self._call_asap_queue = []
         self._next_main_loop_call_ts = 0 # call immediately
 
+        self._capturing = False
+        self._captured = []
+
         self._main_loop_f = main_loop_f
         self._port = port
         self._on_datagram_received_f = on_datagram_received_f
@@ -76,12 +79,28 @@ class ThreadedReactor(threading.Thread):
             self._lock.release()
     running = property(_get_running, _set_running)
 
+    def _add_capture(self, capture):
+        self._lock.acquire()
+        try:
+            if self._capturing:
+                self._captured.append(capture)
+        finally:
+            self._lock.release()
+     
     def run(self):
+        self.run2()
+    
+    def run2(self):
+        """
+        The reason for this weird split between run and run2 is that nosetests
+        doesn't count run as being executed (it doesn't count as 'covered').
+        
+        """
         self.running = True
         logger.critical('run')
         try:
             while self.running:
-                self._protected_run()
+                self.run_one_step()
         except:
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
@@ -91,7 +110,26 @@ class ThreadedReactor(threading.Thread):
         self.running = False
         logger.debug('Reactor stopped')
 
-    def _protected_run(self):
+    def start_capture(self):
+        self._lock.acquire()
+        try:
+            assert not self._capturing
+            self._capturing = True
+        finally:
+            self._lock.release()
+
+    def stop_and_get_capture(self):
+        self._lock.acquire()
+        try:
+            assert self._capturing
+            self._capturing = False
+            captured = self._captured
+            self._captured = []
+        finally:
+            self._lock.release()
+        return captured
+
+    def run_one_step(self):
         """Main loop activated by calling self.start()"""
 
         # Deal with call_asap requests
@@ -105,13 +143,12 @@ class ThreadedReactor(threading.Thread):
             self._lock.release()
         if call_asap_tuple:
             callback_f, args, kwds = call_asap_tuple
-            (self._next_main_loop_call_ts,
-             datagrams_to_send) = callback_f(*args, **kwds)
+            datagrams_to_send = callback_f(*args, **kwds)
             for datagram in datagrams_to_send:
                 self._sendto(datagram)
-                    
+
         # Call main_loop
-        if time.time() > self._next_main_loop_call_ts:
+        if time.time() >= self._next_main_loop_call_ts:
             (self._next_main_loop_call_ts,
              datagrams_to_send) = self._main_loop_f()
             for datagram in datagrams_to_send:
@@ -126,6 +163,7 @@ class ThreadedReactor(threading.Thread):
             logger.warning(
                 'Got socket.error when receiving data:\n%s' % e)
         else:
+            self._add_capture((time.time(), addr, False, data))
             ip_is_blocked = self.floodbarrier_active and \
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
@@ -148,13 +186,16 @@ class ThreadedReactor(threading.Thread):
         self.running = False
         self.join(self.task_interval*20)
         if self.isAlive():
-            #FIXME; test_pymdht:30 raises this exeception sometimes!!!!
+            logger.info('minitwisted thread still alive. Wait a little more')
+            time.sleep(self.task_interval*20)
+            self.join(self.task_interval*20)
+        if self.isAlive():
             raise Exception, 'Minitwisted thread is still alive!'
-        #TODO: stop_callback()
+        #TODO: conductor.stop_callback()?
 
     def call_asap(self, callback_f, *args, **kwds):
         """Call the given callback with given arguments as soon as possible
-        (next time _protected_run is called).
+        (next time run_one_step is called).
         
         """ 
         self._lock.acquire()
@@ -179,7 +220,7 @@ class ThreadedReactor(threading.Thread):
                 'Got socket.error when sending data to %r\n%r' % (
                     datagram.addr, datagram.data))
         except:
-            print 'datagram >>>>>>>>>>>', datagram
-            print 'data,addr', datagram.data, datagram.addr
+            logging.error('datagram >>>>>>>>>>>', datagram)
+            logging.error('data,addr: %s %s' % (datagram.data, datagram.addr))
             raise
-            
+        self._add_capture((time.time(), datagram.addr, True, datagram.data))

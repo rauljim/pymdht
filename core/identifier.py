@@ -130,14 +130,14 @@ class Id(object):
                                                      other.bin_id)]
         return Id(''.join(byte_list))
 
-
+    '''
     def lineal_distance(self, other, num_bytes=4):
         result = 0
         for i in xrange(num_bytes):
             byte_dist_int = abs(ord(self._bin_id[i]) - ord(other._bin_id[i])) 
             result = result * 256 + byte_dist_int
         return result
-            
+    '''            
 
                                
     

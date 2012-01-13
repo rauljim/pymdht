@@ -24,12 +24,10 @@ from identifier import Id, ID_SIZE_BYTES, IdError
 from node import Node
 import message_tools as mt
 
-private_dht_name = None
-
 logger = logging.getLogger('dht')
 
 
-NEXTSHARE_VERSION = 'NS\8\2' # 11.8.2
+#NEXTSHARE_VERSION = 'NS\8\3' # 11.8.3
 
 # High level keys
 TYPE = 'y'     # Message's type
@@ -76,21 +74,103 @@ MIN_BT_PORT = 1 #TODO: lower it to 1024? Let tracker decide.
 MAX_BT_PORT = 2**16
 
 
+def version_repr(v):
+    if v:
+        return v[:2] + ''.join(['%02x' % (ord(n)) for n in v[2:]])
+    else:
+        return 'None'
+
+
 class MsgError(Exception):
     """Raised anytime something goes wrong (specially when
     decoding/sanitizing).
 
     """
 
+class MsgFactory(object):
 
-class OutgoingMsgBase(object):
-    """Base class for outgoing messages. You shouldn't have instances of it.
+    def __init__(self, version_label, src_id, private_dht_name=None):
+        self.version_label = version_label
+        self.src_id = src_id
+        self.private_dht_name = private_dht_name
 
+    def outgoing_ping_query(self, dst_node, experimental_obj=None):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_query(self.src_id, experimental_obj)
+        msg.ping_query()
+        return msg
+    
+    def outgoing_find_node_query(self, dst_node, target,
+                                 lookup_obj=None, experimental_obj=None):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_query(self.src_id, experimental_obj, lookup_obj)
+        msg.find_node_query(target)
+        return msg
+    
+    def outgoing_get_peers_query(self, dst_node, info_hash, lookup_obj=None,
+                                experimental_obj=None):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_query(self.src_id, experimental_obj, lookup_obj)
+        msg.get_peers_query(info_hash)
+        return msg
+    
+    def outgoing_announce_peer_query(self, dst_node, info_hash, port, token,
+                                     experimental_obj=None):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_query(self.src_id, experimental_obj)
+        msg.announce_peer_query(info_hash, port, token)
+        return msg
+    
+    def outgoing_ping_response(self, dst_node):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_response(self.src_id)
+        msg.ping_response()
+        return msg
+    
+    def outgoing_find_node_response(self, dst_node, nodes):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_response(self.src_id)
+        msg.find_node_response(nodes)
+        return msg
+    
+    def outgoing_get_peers_response(self, dst_node, token=None,
+                                    nodes=None, peers=None):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_response(self.src_id)
+        msg.get_peers_response(token, nodes, peers)
+        return msg
+    
+    def outgoing_announce_peer_response(self, dst_node):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.make_response(self.src_id)
+        msg.announce_peer_response()
+        return msg
+
+    def outgoing_error(self, dst_node, error):
+        msg = OutgoingMsg(self.version_label, dst_node,
+                          self.private_dht_name)
+        msg.outgoing_error(error)
+        return msg
+    
+    def incoming_msg(self, datagram):
+        msg = IncomingMsg(self.private_dht_name, datagram)
+        return msg
+
+class OutgoingMsg(object):
+    """
     """
 
-    def __init__(self, dst_node):
+    def __init__(self, version_label, dst_node, private_dht_name):
         self.dst_node = dst_node
-        self._dict = {VERSION: NEXTSHARE_VERSION}
+        self._dict = {VERSION: version_label}
         if private_dht_name:
             self._dict['d'] = private_dht_name
         self._already_encoded = False
@@ -116,16 +196,7 @@ class OutgoingMsgBase(object):
         self.sending_ts = time.time()
         return bencode.encode(self._dict)
       
-class OutgoingQueryBase(OutgoingMsgBase):
-
-    def __init__(self, dst_node, src_id):
-        OutgoingMsgBase.__init__(self, dst_node)
-        self._dict[TYPE] = QUERY
-        self._dict[ARGS] = {ID: src_id.bin_id}
-        self.lookup_obj = None
-        self.experimental_obj = None
-        self.got_response = False
-
+        
     @property
     def query(self):
         return self._dict[QUERY]
@@ -150,39 +221,27 @@ class OutgoingQueryBase(OutgoingMsgBase):
               self.dst_node.id = response_msg.src_id
       return matched
 
-        
-class OutgoingPingQuery(OutgoingQueryBase):
-    
-    def __init__(self, dst_node, src_id, experimental_obj=None):
-        OutgoingQueryBase.__init__(self, dst_node, src_id)
-        self._dict[QUERY] = PING
+    def make_query(self, src_id, experimental_obj=None,
+                   lookup_obj=None):
+        self._dict[TYPE] = QUERY
+        self._dict[ARGS] = {ID: src_id.bin_id}
+        self.lookup_obj = lookup_obj
         self.experimental_obj = experimental_obj
+        self.got_response = False
 
-        
-class OutgoingFindNodeQuery(OutgoingQueryBase):
+    def ping_query(self):
+        self._dict[QUERY] = PING
 
-    def __init__(self, dst_node, src_id, target, lookup_obj, experimental_obj=None):
-        OutgoingQueryBase.__init__(self, dst_node, src_id)
+    def find_node_query(self, target):
         self._dict[QUERY] = FIND_NODE
         self._dict[ARGS][TARGET] = str(target)
-        self.lookup_obj = lookup_obj
-        self.experimental_obj = experimental_obj
+        self.target = target
 
-
-class OutgoingGetPeersQuery(OutgoingQueryBase):
-
-    def __init__(self, dst_node, src_id, info_hash, lookup_obj, experimental_obj=None):
-        OutgoingQueryBase.__init__(self, dst_node, src_id)
+    def get_peers_query(self, info_hash):
         self._dict[QUERY] = GET_PEERS
         self._dict[ARGS][INFO_HASH] = str(info_hash)
-        self.lookup_obj = lookup_obj
-        self.experimental_obj = experimental_obj
 
-        
-class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
-    
-    def __init__(self, dst_node, src_id, info_hash, port, token):
-        OutgoingQueryBase.__init__(self, dst_node, src_id)
+    def announce_peer_query(self, info_hash, port, token):
         self._dict[QUERY] = ANNOUNCE_PEER
         self._dict[ARGS][INFO_HASH] = str(info_hash)
         self._dict[ARGS][PORT] = port
@@ -190,32 +249,18 @@ class OutgoingAnnouncePeerQuery(OutgoingQueryBase):
 
 ####################
 
-class OutgoingResponseBase(OutgoingMsgBase):
-
-    def __init__(self, dst_node, src_id):
-        OutgoingMsgBase.__init__(self, dst_node)
+    def make_response(self, src_id):
         self._dict[TYPE] = RESPONSE
         self._dict[RESPONSE] = {ID: str(src_id)}
         
-        
-class OutgoingPingResponse(OutgoingResponseBase):
+    def ping_response(self):
+        pass
 
-    def __init__(self, dst_node, src_id):
-        OutgoingResponseBase.__init__(self, dst_node, src_id)
-
-
-class OutgoingFindNodeResponse(OutgoingResponseBase):
-
-    def __init__(self, dst_node, src_id, nodes):
-        OutgoingResponseBase.__init__(self, dst_node, src_id)
+    def find_node_response(self, nodes):
         self._dict[RESPONSE][NODES] = mt.compact_nodes(nodes)
 
-                          
-class OutgoingGetPeersResponse(OutgoingResponseBase):
-
-    def __init__(self, dst_node, src_id, token=None, nodes=None, peers=None):
+    def get_peers_response(self, token, nodes, peers):
         assert nodes or peers
-        OutgoingResponseBase.__init__(self, dst_node, src_id)
         if token:
             self._dict[RESPONSE][TOKEN] = token
         if nodes:
@@ -223,18 +268,12 @@ class OutgoingGetPeersResponse(OutgoingResponseBase):
         if peers:
             self._dict[RESPONSE][VALUES] = mt.compact_peers(peers)
 
-            
-class OutgoingAnnouncePeerResponse(OutgoingResponseBase):
-    
-    def __init__(self, dst_node, src_id):
-        OutgoingResponseBase.__init__(self, dst_node, src_id)
+    def announce_peer_response(self):
+        pass
 
 ###################################
 
-class OutgoingErrorMsg(OutgoingMsgBase):
-
-    def __init__(self, dst_node, error):
-        OutgoingMsgBase.__init__(self, dst_node)
+    def outgoing_error(self, error):
         self._dict[TYPE] = ERROR
         self._dict[ERROR] = error
 
@@ -248,7 +287,8 @@ class IncomingMsg(object):
 
     ?TODO: List attributes.
     """
-    def __init__(self, datagram):
+    def __init__(self, private_dht_name, datagram):
+        self.private_dht_name = private_dht_name
         bencoded_msg = datagram.data
         src_addr = datagram.addr
         self.src_addr = src_addr
@@ -268,7 +308,7 @@ class IncomingMsg(object):
             raise
         except:
             logger.warning(
-                'This bencoded message is broken:\n%s' % repr(bencoded_msg)) 
+                'This bencoded message is broken:\n%s' % repr(bencoded_msg))
             raise MsgError, 'Invalid message'
 
     def __repr__(self):
@@ -334,21 +374,22 @@ class IncomingMsg(object):
         except (KeyError):
             raise MsgError, 'key TYPE not found'
         # private dht name
-        if private_dht_name:
+        if self.private_dht_name:
             try:
-                if self._msg_dict['d'] != private_dht_name:
-                    raise MsgError, 'invalid private DHT name'
+                if self._msg_dict['d'] != self.private_dht_name:
+                    raise MsgError, 'invalid private DHT name %r!=%r' % (
+                        self._msg_dict['d'], self.private_dht_name)
             except (KeyError, TypeError):
                 raise MsgError, 'invalid private DHT name'
         # version (optional)
         self.version = self._get_str(VERSION, optional=True)
         self.ns_node = self.version \
-            and self.version.startswith(NEXTSHARE_VERSION[:2])
+            and self.version.startswith('NS')
     
     def _sanitize_query(self):
         # src_id
         self.src_id = self._get_id(ARGS, ID)
-        self.src_node = Node(self.src_addr, self.src_id)
+        self.src_node = Node(self.src_addr, self.src_id, self.version)
         # query
         self.query = self._get_str(QUERY)
         if self.query in [GET_PEERS, ANNOUNCE_PEER]:
@@ -368,7 +409,7 @@ class IncomingMsg(object):
     def _sanitize_response(self):
         # src_id
         self.src_id = self._get_id(RESPONSE, ID)
-        self.src_node = Node(self.src_addr, self.src_id)
+        self.src_node = Node(self.src_addr, self.src_id, self.version)
         # all nodes
         self.all_nodes = []
         # nodes
