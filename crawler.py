@@ -29,8 +29,8 @@ PING = False
 NUM_BITS = 160
 PREFIX_BITS = 18
 
-NUM_PARALLEL_EXTRACTIONS = 20
-EXTRACTION_DELAY = .1
+NUM_PARALLEL_EXTRACTIONS = 50
+EXTRACTION_DELAY = .01
 
 class ExtractingNode(object):
     def __init__(self, node_, target):
@@ -72,6 +72,7 @@ class ExtractingQueue(object):
         self.to_extract = []
         self.extracting_nodes = []
         self.extracted_nodes = []
+        self.inrange_extracted_nodes = []
         self.unreachable_nodes = []
         self.added_nodes = set()
         self.other_nodes = []
@@ -85,7 +86,7 @@ class ExtractingQueue(object):
         #print 'NEW',
         self.added_nodes.add(node_)
         extracting_node = ExtractingNode(node_, self.target)
-        if len(self.extracted_nodes) < 10 or self.in_range(node_, 1):
+        if not self.inrange_extracted_nodes or self.in_range(node_, 1):
             self.to_extract.append(extracting_node)
             #print 'OK'
         else:
@@ -94,7 +95,8 @@ class ExtractingQueue(object):
 
     def next_node_target(self):
         #print 'next_target'
-        while len(self.extracting_nodes) < NUM_PARALLEL_EXTRACTIONS and self.to_extract:
+        while (len(self.extracting_nodes) < NUM_PARALLEL_EXTRACTIONS
+               and self.to_extract):
             #print 'pop'
             self.extracting_nodes.append(self.to_extract.pop(0))
         if not self.extracting_nodes:
@@ -102,13 +104,19 @@ class ExtractingQueue(object):
         i = (self.last_index + 1) % len(self.extracting_nodes)
         #print len(self.extracted_nodes), len(self.to_extract), len(self.extracting_nodes), i
         extracting_node = self.extracting_nodes[i]
-        target = extracting_node.next_target()
+        if (self.in_range(extracting_node.node) or
+            len(self.inrange_extracted_nodes) < 2):
+            target = extracting_node.next_target()
+        else:
+            target = None
         if target:
             self.last_index = i
         else:
             # done with this node
             if extracting_node.reachable:
                 self.extracted_nodes.append(extracting_node)
+                if self.in_range(extracting_node.node):
+                    self.inrange_extracted_nodes.append(extracting_node)
             else:
                 self.unreachable_nodes.append(extracting_node)
             del self.extracting_nodes[i]
@@ -214,6 +222,10 @@ class Crawler(object):
                 msgs_to_send)
         else:
             datagrams_to_send = []
+        if datagrams_to_send:
+            import sys
+            sys.stdout.write('.')
+            sys.stdout.flush()
         return current_time + EXTRACTION_DELAY, datagrams_to_send
 
     def on_datagram_received(self, datagram):
@@ -231,8 +243,13 @@ class Crawler(object):
             #print 'got reply',
             if related_query and related_query.experimental_obj:
                 #print 'related >>>>>>>>>>>>>>>>>>>>>>', len(msg.nodes)
-                related_query.experimental_obj.add_found_nodes(msg.nodes)
-                for node_ in msg.nodes:
+                try:
+                    nodes = msg.nodes
+                except AttributeError:
+                    print '\nno nodes>>>>>>>', msg._msg_dict
+                    nodes = []
+                related_query.experimental_obj.add_found_nodes(nodes)
+                for node_ in nodes:
                     self.extracting_queue.add_node(node_)
             #else:
                 #print 'not related'
@@ -256,6 +273,7 @@ class MultiCrawler(object):
     def main_loop(self):
         main_loop_result = self.current_crawler.main_loop()
         if not main_loop_result:
+            print
             self.current_crawler.print_summary()
             bootstrap_nodes = self.current_crawler.get_bootstrap_nodes()
             self.current_crawler = Crawler(bootstrap_nodes)
@@ -276,7 +294,8 @@ def main(options, args):
     logging_conf.setup(logs_path, logging.DEBUG)
     reactor = minitwisted.ThreadedReactor(
         mcrawler.main_loop, 7005, 
-        mcrawler.on_datagram_received)
+        mcrawler.on_datagram_received,
+        task_interval=EXTRACTION_DELAY/2)
     reactor.start()
     try:
         time.sleep(2000)
