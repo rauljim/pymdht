@@ -478,9 +478,13 @@ class Graphical_display(wx.Frame):
         TempA = ""
         for child in self.panel1.GetChildren():
                 child.Destroy() 
-        wx.StaticText(self.panel1, label=" ? ", pos=(65+self.xspacingofnodes*(-1), 0))
-        for i in range(self.pohsb+1, 35 + self.pohsb):
-            wx.StaticText(self.panel1, label=str(159 - i), pos=(60+self.xspacingofnodes*(i-self.pohsb-1), 0))
+        for i in range(self.pohsb+1, 50 + self.pohsb):
+            if self.pohsb==-1:
+                if i==self.pohsb+1:
+                    wx.StaticText(self.panel1, label=" ? ", pos=(65+self.xspacingofnodes*(-1), 0))
+                wx.StaticText(self.panel1, label=str(159 - i), pos=(60+self.xspacingofnodes*(i-self.pohsb-1), 0))
+            else:
+                wx.StaticText(self.panel1, label=str(159 - i), pos=(15+self.xspacingofnodes*(i-self.pohsb-1), 0))
 #            a = str(160 - i)
 #            if len(a) == 3:
 #                a = "   " + a
