@@ -41,6 +41,9 @@ class ListofNodes:
         self.NodeList.append(tempa)
     def SetPeerList(self,pPeerList):
         self.PeerList=pPeerList
+    def SetMainNodeColor(self,pcolor1,pcolor2):
+        self.MainNode.color1=pcolor1
+        self.MainNode.color2=pcolor2
 #    def DeletePeerNode(self,px,py):
 #        for i in self.NodeList:
 #            if(i.x==px and i.y==py):
