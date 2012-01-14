@@ -19,6 +19,13 @@ import minitwisted
 import controller
 import logging, logging_conf
 
+PYMDHT_VERSION = (12, 1, 1)
+VERSION_LABEL = ''.join(
+    ['NS',
+     chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
+     chr(PYMDHT_VERSION[2])
+     ])
+                         
 
 class Pymdht:
     """Pymdht is the interface for the whole package.
@@ -38,14 +45,17 @@ class Pymdht:
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
-                 debug_level, id_=None):
+                 debug_level, id_=None,
+                 bootsrap_mode=False):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
-        self.controller = controller.Controller(my_node, state_filename,
+        self.controller = controller.Controller(VERSION_LABEL,
+                                                my_node, state_filename,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 experimental_m_mod,
-                                                private_dht_name)
+                                                private_dht_name,
+                                                bootsrap_mode)
         self.reactor = minitwisted.ThreadedReactor(
             self.controller.main_loop,
             my_node.addr[1], self.controller.on_datagram_received)
@@ -58,7 +68,8 @@ class Pymdht:
         # No need to call_asap because the minitwisted thread is dead by now
         self.controller.on_stop()
     
-    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+    def get_peers(self, lookup_id, info_hash, callback_f,
+                  bt_port=0, use_cache=False):
         """ Start a get peers lookup. Return a Lookup object.
         
         The info_hash must be an identifier.Id object.
@@ -75,9 +86,12 @@ class Pymdht:
         callback needs to be ready to get peers BEFORE calling this fuction.
         
         """
+        use_cache = True
+        print 'use_cache ON, only for debugging'
         self.reactor.call_asap(self.controller.get_peers,
                                lookup_id, info_hash,
-                               callback_f, bt_port)
+                               callback_f, bt_port,
+                               use_cache)
 
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()

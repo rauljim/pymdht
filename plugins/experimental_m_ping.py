@@ -22,17 +22,11 @@ class ExperimentalManager:
         
          
     def on_query_received(self, msg):
-        
-                
-            
         if not self._stop and msg.query =='ping':
-            #self._stop = True
-            #self.pinged_ips[msg.src_node.ip] = msg.src_node.ip
-            print '\nExperimentalModule got query (%s) from  node  %r =' % (msg.query ,  msg.src_node)
-            
-            if msg.src_node.ip not in self.pinged_ips:
-                
-                
+           self._stop = True
+           self.pinged_ips[msg.src_node.ip] = msg.src_node.ip
+           print '\nExperimentalModule got query (%s) from  node  %r =' % (msg.query ,  msg.src_node)
+           if msg.src_node.ip not in self.pinged_ips:
                 # prepare to ping to the node from which it got ping
                 probe_query = message.OutgoingPingQuery(msg.src_node,
                                                     self.my_id,
@@ -40,8 +34,8 @@ class ExperimentalManager:
                 #self.pinged_ips[msg.src_node.ip] = True
                 self.pinged_ips[msg.src_node.ip] = STATUS_PINGED
 #                print 'ping send to ip address :  ' , self.pinged_ips['ip_address']
-                
                 return [probe_query]
+            
     #return []
                                
                  
@@ -61,7 +55,8 @@ class ExperimentalManager:
             elapsed_time = time.time() - related_query.experimental_obj.query_ts 
             print 'prove FAILED Due to Time-Out' ,related_query.experimental_obj.value
             print 'RTT = ',elapsed_time
-            self.pinged_ips[related_query.dst_node.ip] = STATUS_FAIL
+            self.pinged_ips[related_query.dst_node.ip] = STATUS_FAIL 
+#            
             
                
     def on_stop(self):

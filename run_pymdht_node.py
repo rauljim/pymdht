@@ -40,7 +40,7 @@ def main(options, args):
     if options.node_id:
         base_id = identifier.Id(options.node_id)
         my_id = base_id.generate_close_id(options.log_distance)
-    my_node = node.Node(my_addr, my_id)
+    my_node = node.Node(my_addr, my_id, version=pymdht.VERSION_LABEL)
 
     if options.debug:
         logs_level = logging.DEBUG # This generates HUGE (and useful) logs
@@ -57,6 +57,7 @@ def main(options, args):
     print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     print 'debug mode:', options.debug
+    print 'bootstrap mode:', options.bootstrap_mode
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
@@ -70,20 +71,27 @@ def main(options, args):
                         lookup_m_mod,
                         experimental_m_mod,
                         options.private_dht_name,
-                        logs_level)
+                        logs_level,
+                        options.bootstrap_mode)
     if options.lookup_delay:
         loop_forever = not options.num_lookups
         remaining_lookups = options.num_lookups
         while loop_forever or remaining_lookups:
             time.sleep(options.lookup_delay)
             if options.lookup_target:
-                target = options.lookup_target
+                target = identifier.Id(options.lookup_target)
             else:
                 target = identifier.RandomId()
             print 'lookup', target
             dht.get_peers(None, target, None, options.announce_port)
             remaining_lookups = remaining_lookups - 1
         time.sleep(options.stop_delay)
+        dht.stop()
+    elif options.ttl:
+        stop_timestamp = time.time() + int(options.ttl)
+        while time.time() < stop_timestamp:
+            time.sleep(1)
+        dht.stop()
     elif options.daemon:
         # Just loop for ever
         while 1:
@@ -97,9 +105,13 @@ def main(options, args):
             dht, logs_path)
         frame.Show(True)
         app.MainLoop()
+    elif options.telnet_port:
+        import ui.telnet
+        telnet_ui = ui.telnet.Telnet(dht, options.telnet_port)
+        telnet_ui.start()
     elif options.cli:
         import ui.cli
-        ui.cli.command_user_interface(dht)
+        ui.cli.command_user_inerface(dht)
         
 if __name__ == '__main__':
     default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
@@ -137,9 +149,16 @@ if __name__ == '__main__':
     parser.add_option("--cli",dest="cli",
                       action='store_true', default=True,
                       help="Command line interface (no GUI) <- default")
+    parser.add_option("--telnet-port",dest="telnet_port",
+                      metavar='INT', default=0,
+                      help="Telnet interface on given TCP port (see ui/telnet_api.txt).")
     parser.add_option("--daemon", dest="daemon",
                       action='store_true', default=False,
                       help="DAEMON mode (no user interface)")
+    parser.add_option("--ttl", dest="ttl",
+                      default=0,
+                      help="Interactive DHT will run for the specified time\
+    (in seconds). This option is ignored if lookup-delay is not 0")
 #    parser.add_option("--telnet",dest="telnet",
 #                      action='store_true', default=False,
 #                      help="Telnet interface (only on DAEMON mode)")
@@ -175,10 +194,24 @@ if __name__ == '__main__':
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
     messages for a given info_hash")
+    parser.add_option("--bootstrap-mode",dest="bootstrap_mode",
+                      action='store_true', default=False,
+                      help="Only for well-known bootsrap nodes. It will ignore\
+    some incoming queries to avoid being added to too many routing tables.")
+    parser.add_option("--version",dest="version",
+                      action='store_true', default=False,
+                      help="Print Pymdhtversion and exit.")
+    
 
     (options, args) = parser.parse_args()
+
+    if options.version:
+        print 'Pymdht %d.%d.%d' % pymdht.PYMDHT_VERSION
+        sys.exit()
+    
     options.port = int(options.port)
 #    options.logs_level = int(options.logs_level)
+    options.telnet_port = int(options.telnet_port)
     options.lookup_delay = int(options.lookup_delay)
     options.num_lookups = int(options.num_lookups)
     options.stop_delay = int(options.stop_delay)

@@ -27,12 +27,11 @@ import state
 import identifier
 from identifier import Id
 import message
-import token_manager
-import tracker
 from querier import Querier
-from message import QUERY, RESPONSE, ERROR, OutgoingGetPeersQuery
+from message import QUERY, RESPONSE, ERROR
 from node import Node
-import pkgutil
+import responder
+#import pkgutil
 
 #from profilestats import profile
 
@@ -43,17 +42,18 @@ STATE_FILENAME = 'pymdht.state'
 
 #TIMEOUT_DELAY = 2
 
-NUM_NODES = 8
+CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
+
 
 class Controller:
 
-    def __init__(self, my_node, state_filename,
+    def __init__(self, version_label,
+                 my_node, state_filename,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
-                 private_dht_name):
-        #TODO: don't do this evil stuff!!!
-        message.private_dht_name = private_dht_name
-
+                 private_dht_name,
+                 bootstrap_mode):
+        
         if size_estimation:
             self._size_estimation_file = open('size_estimation.dat', 'w')
         
@@ -66,15 +66,20 @@ class Controller:
             self._my_id = saved_id # id loaded from file
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
-        self._my_node = Node(my_addr, self._my_id)
-        self._tracker = tracker.Tracker()
-        self._token_m = token_manager.TokenManager()
-
+        self._my_node = Node(my_addr, self._my_id, version=version_label)
+        self.msg_f = message.MsgFactory(version_label, self._my_id,
+                                        private_dht_name)
         self._querier = Querier()
-        self._routing_m = routing_m_mod.RoutingManager(self._my_node, 
-                                                       saved_bootstrap_nodes)
-        self._lookup_m = lookup_m_mod.LookupManager(self._my_id)
-        self._experimental_m = experimental_m_mod.ExperimentalManager(self._my_node.id) 
+        self._routing_m = routing_m_mod.RoutingManager(
+            self._my_node, saved_bootstrap_nodes, self.msg_f)
+
+        self._responder = responder.Responder(self._my_id, self._routing_m,
+                                              self.msg_f, bootstrap_mode)
+        self._tracker = self._responder._tracker
+        
+        self._lookup_m = lookup_m_mod.LookupManager(self._my_id, self.msg_f)
+        self._experimental_m = experimental_m_mod.ExperimentalManager(
+            self._my_node.id, self.msg_f) 
                   
         current_ts = time.time()
         self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
@@ -82,11 +87,12 @@ class Controller:
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
         self._pending_lookups = []
+        self._cached_lookups = []
                 
     def on_stop(self):
         self._experimental_m.on_stop()
 
-    def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
+    def get_peers(self, lookup_id, info_hash, callback_f, bt_port, use_cache):
         """
         Start a get\_peers lookup whose target is 'info\_hash'. The handler
         'callback\_f' will be called with two arguments ('lookup\_id' and a
@@ -97,15 +103,38 @@ class Controller:
         This method is designed to be used as minitwisted's external handler.
 
         """
+        datagrams_to_send = []
         logger.debug('get_peers %d %r' % (bt_port, info_hash))
+        if use_cache:
+            peers = self._get_cached_peers(info_hash)
+            if peers and callable(callback_f):
+                callback_f(lookup_id, peers, None)
+                callback_f(lookup_id, None, None)
+                return datagrams_to_send
         self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
                                                               info_hash,
                                                               callback_f,
                                                               bt_port))
         queries_to_send =  self._try_do_lookup()
         datagrams_to_send = self._register_queries(queries_to_send)
-        return self._next_main_loop_call_ts, datagrams_to_send
+        return datagrams_to_send
     
+    def _get_cached_peers(self, info_hash):
+        oldest_valid_ts = time.time() - CACHE_VALID_PERIOD
+        for ts, cached_info_hash, peers in self._cached_lookups:
+            if ts > oldest_valid_ts and info_hash == cached_info_hash:
+                return peers
+
+    def _add_cache_peers(self, info_hash, peers):
+        oldest_valid_ts = time.time() - CACHE_VALID_PERIOD
+        while self._cached_lookups and self._cached_lookups[0][0] < oldest_valid_ts:
+            # clean up old entries
+            del self._cached_lookups[0]
+        if self._cached_lookups and self._cached_lookups[-1][1] == info_hash:
+            self._cached_lookups[-1][2].extend(peers)
+        else:
+            self._cached_lookups.append((time.time(), info_hash, peers))
+
     def _try_do_lookup(self):
         queries_to_send = []
         if self._pending_lookups:
@@ -122,8 +151,10 @@ class Controller:
             # look if I'm tracking this info_hash
             peers = self._tracker.get(lookup_obj.info_hash)
             callback_f = lookup_obj.callback_f
-            if peers and callback_f and callable(callback_f):
-                callback_f(lookup_obj.lookup_id, peers, None)
+            if peers:
+                self._add_cache_peers(lookup_obj.info_hash, peers)
+                if callable(callback_f):
+                    callback_f(lookup_obj.lookup_id, peers, None)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
         else:
@@ -217,7 +248,7 @@ class Controller:
         addr = datagram.addr
         datagrams_to_send = []
         try:
-            msg = message.IncomingMsg(datagram)
+            msg = self.msg_f.incoming_msg(datagram)
             
         except(message.MsgError):
             # ignore message
@@ -231,7 +262,7 @@ class Controller:
             #zinat: inform experimental_module
             exp_queries_to_send = self._experimental_m.on_query_received(msg)
             
-            response_msg = self._get_response(msg)
+            response_msg = self._responder.get_response(msg)
             if response_msg:
                 bencoded_response = response_msg.stamp(msg.tid)
                 datagrams_to_send.append(
@@ -259,10 +290,13 @@ class Controller:
                 datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
-                lookup_id = related_query.lookup_obj.lookup_id
-                callback_f = related_query.lookup_obj.callback_f
-                if peers and callable(callback_f):
-                    callback_f(lookup_id, peers, msg.src_node)
+                lookup_obj = related_query.lookup_obj
+                lookup_id = lookup_obj.lookup_id
+                callback_f = lookup_obj.callback_f
+                if peers:
+                    self._add_cache_peers(lookup_obj.info_hash, peers)
+                    if callable(callback_f):
+                        callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
                     if callable(callback_f):
                         callback_f(lookup_id, None, msg.src_node)
@@ -290,7 +324,8 @@ class Controller:
                 # Query timed out or unrequested response
                 return self._next_main_loop_call_ts, datagrams_to_send
             #TODO: zinat: same as response
-            exp_queries_to_send = self._experimental_m.on_error_received(msg, related_query)
+            exp_queries_to_send = self._experimental_m.on_error_received(
+                msg, related_query)
             # lookup related tasks
             if related_query.lookup_obj:
                 peers = None # an error msg doesn't have peers
@@ -341,44 +376,7 @@ class Controller:
         return
     def _on_error_received(self):
         return
-    
-    
-    def _get_response(self, msg):
-        if msg.query == message.PING:
-            return message.OutgoingPingResponse(msg.src_node, self._my_id)
-        elif msg.query == message.FIND_NODE:
-            log_distance = msg.target.log_distance(self._my_id)
-            rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                        NUM_NODES, False)
-            #TODO: return the closest rnodes to the target instead of the 8
-            #first in the bucket.
-            return message.OutgoingFindNodeResponse(msg.src_node,
-                                                    self._my_id,
-                                                    rnodes)
-        elif msg.query == message.GET_PEERS:
-            token = self._token_m.get()
-            log_distance = msg.info_hash.log_distance(self._my_id)
-            rnodes = self._routing_m.get_closest_rnodes(log_distance,
-                                                        NUM_NODES, False)
-            #TODO: return the closest rnodes to the target instead of the 8
-            #first in the bucket.
-            peers = self._tracker.get(msg.info_hash)
-            if peers:
-                logger.debug('RESPONDING with PEERS:\n%r' % peers)
-            return message.OutgoingGetPeersResponse(msg.src_node,
-                                                    self._my_id,
-                                                    token,
-                                                    nodes=rnodes,
-                                                    peers=peers)
-        elif msg.query == message.ANNOUNCE_PEER:
-            peer_addr = (msg.src_addr[0], msg.bt_port)
-            self._tracker.put(msg.info_hash, peer_addr)
-            return message.OutgoingAnnouncePeerResponse(msg.src_node,
-                                                        self._my_id)
-        else:
-            logger.debug('Invalid QUERY: %r' % (msg.query))
-            #TODO: maybe send an error back?
-        
+
     def _on_timeout(self, related_query):
         queries_to_send = []
         #TODO: on_timeout should return queries (raul)
@@ -404,7 +402,8 @@ class Controller:
                             related_query.lookup_obj))
                     lookup_id = related_query.lookup_obj.lookup_id
                     related_query.lookup_obj.callback_f(lookup_id, None, None)
-        maintenance_queries_to_send = self._routing_m.on_timeout(related_query.dst_node)
+        maintenance_queries_to_send = self._routing_m.on_timeout(
+            related_query.dst_node)
         if maintenance_queries_to_send:
             queries_to_send.extend(maintenance_queries_to_send)
         if exp_queries_to_send:
