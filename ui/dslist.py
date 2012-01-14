@@ -131,6 +131,7 @@ class ListofNodes:
     def ClearNodes(self,pNode,pcolor1,pcolor2):
         if self.MainNode==pNode:
             self.NodeList=[]
+            self.PeerList=[]
             self.MainNode.color1=pcolor1
             self.MainNode.color2=pcolor2
         for i in self.NodeList:
