@@ -730,7 +730,7 @@ class Graphical_display(wx.Frame):
                 TempA.SetMainNode(str(self.main_list[i][0].dst_addr[0]),
                                            str(self.main_list[i][0].dst_addr[1]),
                                            str(160),
-                                           str(int(TempB)),
+                                           str(int(TempB)+1),
                                            self.Nodex,self.Nodey,self.sizeofnodes,"Yellow","Black"                                               
                                            )
                 self.bootstrapnodes.append(TempA)
