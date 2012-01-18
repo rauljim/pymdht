@@ -39,15 +39,12 @@ class Node(object):
         return self._addr[0]
     
     def __eq__(self, other):
-        print self.addr, other.addr
         if self.addr == other.addr:
-            print True
             try:
                 return self.id == other.id
             except AttributeError: #self.id == None (id.bin_id fails)
                 return self.id is None and other.id is None
         else:
-            print False
             return False
 
     def __ne__(self, other):
