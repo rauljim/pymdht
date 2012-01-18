@@ -33,14 +33,14 @@ class TestNode:
         pass
     
     def test_node(self):
-        node1 = Node(addr1, id1)
+        node1 = Node(addr1, id1, 'version')
         node2 = Node(addr2, id2)
         node1b = Node(addr1, None)
         node1ip = Node(('127.0.0.2', 1111), id1)
         node1port = Node(addr2, id1)
         node1id = Node(addr1, id2)
 
-        eq_(str(node1), '<node: %r %r>' % (addr1, id1))
+        eq_(str(node1), '<node: %r %r (version)>' % (addr1, id1))
         #<node: ('127.0.0.1', 1111) 0x1313131313131313131313131313131313131313>
 
         eq_(node1.id, id1)
