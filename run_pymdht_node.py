@@ -111,7 +111,7 @@ def main(options, args):
         telnet_ui.start()
     elif options.cli:
         import ui.cli
-        ui.cli.command_user_inerface(dht)
+        ui.cli.command_user_interface(dht)
         
 if __name__ == '__main__':
     default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
