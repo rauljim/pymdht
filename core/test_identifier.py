@@ -44,33 +44,6 @@ class TestId(object):
     def test_is_hashable(self):
         d = {Id(BIN_ID1): 1}
         
-    def test_util(self):
-        assert identifier._bin_to_hex(BIN_ID1) == HEX_ID1
-        assert identifier._byte_xor('\0', '\1') == '\1'
-    
-    def test_first_different_byte(self):
-        str1 = '0' * ID_SIZE_BYTES
-        for i in range(ID_SIZE_BYTES):
-            str2 = '0' * i + '1' * (ID_SIZE_BYTES - i)
-            logger.debug('test_num: %d, _first_different_byte: %d' % (
-                i, identifier._first_different_byte(str1, str2)))
-            assert identifier._first_different_byte(str1, str2) == i
-        assert_raises(IndexError,
-                      identifier._first_different_byte, str1, str1)
-
-    def test_first_different_bit(self):
-        assert identifier._first_different_bit('\0', '\x01') == 7
-        assert identifier._first_different_bit('\0', '\x02') == 6
-        assert identifier._first_different_bit('\0', '\x04') == 5
-        assert identifier._first_different_bit('\0', '\x09') == 4
-        assert identifier._first_different_bit('\0', '\x10') == 3
-        assert identifier._first_different_bit('\0', '\x23') == 2
-        assert identifier._first_different_bit('\0', '\x40') == 1
-        assert identifier._first_different_bit('\0', '\xa5') == 0
-        assert identifier._first_different_bit('\0', '\xff') == 0
-        assert_raises(AssertionError, identifier._first_different_bit,
-                      '\5', '\5')
-
     def test_bin_id(self):
         assert Id(BIN_ID1).bin_id == BIN_ID1
 

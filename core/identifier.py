@@ -22,43 +22,7 @@ logger = logging.getLogger('dht')
 BITS_PER_BYTE = 8
 ID_SIZE_BYTES = 20
 ID_SIZE_BITS = ID_SIZE_BYTES * BITS_PER_BYTE
-
-
-def _bin_to_hex(bin_str):
-    """Convert a binary string to a hex string."""
-    return base64.b16encode(bin_str)
-
-def _hex_to_bin(hex_str):
-    try:
-        return base64.b16decode(hex_str, True)
-    except:
-        raise IdError
-
-def _byte_xor(byte1, byte2):
-    """Xor two characters as if they were bytes."""
-    return chr(ord(byte1) ^ ord(byte2))
-               
-def _first_different_byte(str1, str2):
-    """Return the position of the first different byte in the strings.
-    Raise IndexError when no difference was found (str1 == str2).
-    """
-    for i in range(len(str1)):
-        if str1[i] != str2[i]:
-            return i
-    raise IndexError
-
-def _first_different_bit(byte1, byte2):
-    """Return the position of the first different bit in the bytes.
-    The bytes must not be equal.
-
-    """
-    assert byte1 != byte2
-    byte = ord(byte1) ^ ord(byte2)
-    i = 0
-    while byte >> (BITS_PER_BYTE - 1) == 0:
-        byte <<= 1
-        i += 1
-    return i
+MAX_ID_INT = 2**ID_SIZE_BITS - 1
 
 
 class IdError(Exception):
@@ -68,7 +32,8 @@ class IdError(Exception):
 class Id(object):
 
     """Convert a string to an Id object.
-    The bin_id string's lenght must be ID_SIZE bytes (characters).
+    The bin_id string's lenght must be ID_SIZE bytes (characters)
+    OR an integer/long.
 
     You can use both binary and hexadecimal strings. Example:
     
@@ -77,6 +42,13 @@ class Id(object):
     
     >>> Id(chr(255) * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
     True
+
+    >>> Id(chr(0) * ID_SIZE_BYTES) == Id(0)
+    True
+
+    >>> Id(chr(255) * ID_SIZE_BYTES) == Id(MAX_ID_INT)
+    True
+    
     """
 
     def __init__(self, hex_or_bin_id):
@@ -84,16 +56,22 @@ class Id(object):
         self._bin = None
         self._hex = None
         self._int = None
+        self._log = None
         if isinstance(hex_or_bin_id, str):
             if len(hex_or_bin_id) == ID_SIZE_BYTES:
                 self._bin_id = hex_or_bin_id
             elif len(hex_or_bin_id) == ID_SIZE_BYTES*2:
                 self._hex = hex_or_bin_id
-                self._bin_id = _hex_to_bin(hex_or_bin_id)
+                try:
+                    self._bin_id = base64.b16decode(hex_or_bin_id, True)
+                except:
+                    raise IdError, 'input: %r' % hex_or_bin_id
         elif isinstance(hex_or_bin_id, long) or isinstance(hex_or_bin_id, int):
+            if hex_or_bin_id < 0 or hex_or_bin_id > MAX_ID_INT:
+                raise IdError, 'input: %r' % hex_or_bin_id
             self._int = hex_or_bin_id
             self._hex = '%040x' % self._int
-            self._bin_id = base64.b16decode(self._hex)
+            self._bin_id = base64.b16decode(self._hex, True)
         if not self._bin_id:
             raise IdError, 'input: %r' % hex_or_bin_id
         self._bin = self._bin_id
@@ -113,7 +91,7 @@ class Id(object):
     @property
     def hex(self):
         if not self._hex:
-            self._hex = _bin_to_hex(self._bin)
+            self._hex = base64.b16encode(self._bin)
         return self._hex
 
     @property
@@ -121,7 +99,15 @@ class Id(object):
         if not self._int:
             self._int = int(self.hex, 16)
         return self._int
-    
+    @property
+    def log(self):
+        if not self._log:
+            if self.int == 0:
+                self._log = -1
+            else:
+                self._log = len(bin(self.int)) - 3
+        return self._log
+        
     def __eq__(self, other):
         return self.bin_id == other.bin_id
 
@@ -189,20 +175,7 @@ class Id(object):
         159
 
         """
-        try:
-            byte_i = _first_different_byte(self.bin_id, other.bin_id)
-        except IndexError:
-            # _first_different_byte did't find differences, thus the
-            # distance is 0 and log_distance is -1 
-            return -1
-        unmatching_bytes = ID_SIZE_BYTES - byte_i - 1
-        byte1 = self.bin_id[byte_i]
-        byte2 = other.bin_id[byte_i]
-        bit_i = _first_different_bit(byte1, byte2)
-        # unmatching_bits (in byte: from least significant bit)
-        unmatching_bits = BITS_PER_BYTE - bit_i - 1
-        return unmatching_bytes * BITS_PER_BYTE + unmatching_bits
-    
+        return self.distance(other).log
             
     def order_closest(self, id_list):
         """Return a list with the Id objects in 'id_list' ordered
