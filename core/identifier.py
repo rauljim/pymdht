@@ -1,4 +1,3 @@
-# Copyright (C) 2009-2010 Raul Jimenez
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
@@ -7,8 +6,13 @@ This module provides the Id object and necessary tools.
 
 """
 
+#binascii.hexlify() bin>hex
+#int(a, 16) hex>int
+#hex() int>hex
+
 import sys
 import random
+import base64
 
 import logging
 
@@ -22,30 +26,13 @@ ID_SIZE_BITS = ID_SIZE_BYTES * BITS_PER_BYTE
 
 def _bin_to_hex(bin_str):
     """Convert a binary string to a hex string."""
-    hex_list = ['%02x' % ord(c) for c in bin_str]
-    return ''.join(hex_list)
+    return base64.b16encode(bin_str)
 
-def _hex_to_bin_byte(hex_byte):
-    #TODO2: Absolutely sure there is a library function for this
-    hex_down = '0123456789abcdef'
-    hex_up =   '0123456789ABCDEF'
-    value = 0
-    for i in xrange(2):
-        value *= 16
-        try:
-            value += hex_down.index(hex_byte[i])
-        except ValueError:
-            try:
-                value += hex_up.index(hex_byte[i])
-            except ValueError:
-#                logger.info('hex_byte: %d', hex_byte)
-                raise IdError
-    return chr(value)
-    
 def _hex_to_bin(hex_str):
-    return ''.join([_hex_to_bin_byte(hex_byte) for hex_byte in zip(
-                hex_str[::2], hex_str[1::2])])
-
+    try:
+        return base64.b16decode(hex_str, True)
+    except:
+        raise IdError
 
 def _byte_xor(byte1, byte2):
     """Xor two characters as if they were bytes."""
@@ -73,8 +60,10 @@ def _first_different_bit(byte1, byte2):
         i += 1
     return i
 
+
 class IdError(Exception):
     pass
+
 
 class Id(object):
 
