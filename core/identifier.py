@@ -80,14 +80,23 @@ class Id(object):
     """
 
     def __init__(self, hex_or_bin_id):
-        if not isinstance(hex_or_bin_id, str):
-            raise IdError
-        if len(hex_or_bin_id) == ID_SIZE_BYTES:
-            self._bin_id = hex_or_bin_id
-        elif len(hex_or_bin_id) == ID_SIZE_BYTES*2:
-            self._bin_id = _hex_to_bin(hex_or_bin_id)
-        else:
+        self._bin_id = None
+        self._bin = None
+        self._hex = None
+        self._int = None
+        if isinstance(hex_or_bin_id, str):
+            if len(hex_or_bin_id) == ID_SIZE_BYTES:
+                self._bin_id = hex_or_bin_id
+            elif len(hex_or_bin_id) == ID_SIZE_BYTES*2:
+                self._hex = hex_or_bin_id
+                self._bin_id = _hex_to_bin(hex_or_bin_id)
+        elif isinstance(hex_or_bin_id, long) or isinstance(hex_or_bin_id, int):
+            self._int = hex_or_bin_id
+            self._hex = '%040x' % self._int
+            self._bin_id = base64.b16decode(self._hex)
+        if not self._bin_id:
             raise IdError, 'input: %r' % hex_or_bin_id
+        self._bin = self._bin_id
 
     def __hash__(self):
         return self.bin_id.__hash__()
@@ -95,8 +104,24 @@ class Id(object):
     @property
     def bin_id(self):
         """bin_id is read-only."""
-        return self._bin_id
+        return self._bin
+ 
+    @property
+    def bin(self):
+        return self._bin
 
+    @property
+    def hex(self):
+        if not self._hex:
+            self._hex = _bin_to_hex(self._bin)
+        return self._hex
+
+    @property
+    def int(self):
+        if not self._int:
+            self._int = int(self.hex, 16)
+        return self._int
+    
     def __eq__(self, other):
         return self.bin_id == other.bin_id
 
@@ -107,7 +132,7 @@ class Id(object):
         return self.bin_id
 
     def __repr__(self):
-        return '%s' % _bin_to_hex(self.bin_id)
+        return '%s' % self.hex
 
     def distance(self, other):
         """
@@ -115,20 +140,7 @@ class Id(object):
         object.
 
         """
-        byte_list = [_byte_xor(a, b) for a, b in zip(self.bin_id,
-                                                     other.bin_id)]
-        return Id(''.join(byte_list))
-
-    '''
-    def lineal_distance(self, other, num_bytes=4):
-        result = 0
-        for i in xrange(num_bytes):
-            byte_dist_int = abs(ord(self._bin_id[i]) - ord(other._bin_id[i])) 
-            result = result * 256 + byte_dist_int
-        return result
-    '''            
-
-                               
+        return Id(self.int ^ other.int)
     
     def log_distance(self, other):
         """Return log (base 2) of the XOR distance between two Id

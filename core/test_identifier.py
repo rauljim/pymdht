@@ -31,7 +31,7 @@ class TestId(object):
     def test_create(self):
         _ = Id(BIN_ID1)
         _ = RandomId()
-        assert_raises(IdError, Id, 1)
+#TODO        assert_raises(IdError, Id, 1)
         assert_raises(IdError, Id, '1')
         _ = Id('1' * 40) # Hexadecimal
         assert_raises(IdError, Id, 'Z'*40)

@@ -323,6 +323,7 @@ class IncomingMsg(object):
             v = self._msg_dict[k]
             if kk:
                 v = v[kk]
+            return v
         except (KeyError):
             if optional:
                 return None
@@ -330,7 +331,6 @@ class IncomingMsg(object):
                 raise MsgError, 'Non-optional key (%s:%s) not found' % (k, kk)
         except (TypeError):
             raise MsgError, 'Probably k (%r) is not a dictionary' % (k)
-        return v
     
     def _get_str(self, k, kk=None, optional=False):
         v = self._get_value(k, kk, optional)
@@ -341,20 +341,18 @@ class IncomingMsg(object):
         return v
 
     def _get_id(self, k, kk=None):
+        v = self._get_str(k, kk)
         try:
-            v = self._get_value(k, kk)
-            v = Id(v)
+            return Id(v)
         except (IdError):
             raise MsgError, 'Value (%s:%s,%s) must be a valid Id' % (k, kk, v)
-        return v
 
     def _get_int(self, k, kk=None):
         v = self._get_value(k, kk)
         try:
-            v= int(v)
+            return int(v)
         except (TypeError, ValueError):
             raise MsgError, 'Value (%s:%s,%s) must be an int' % (k, kk, v)
-        return v
     
     def _sanitize_common(self):
         # Make sure the decoded data is a dict and has a TID key
