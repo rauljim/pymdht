@@ -4,6 +4,7 @@
 import sys
 import core.ptime as time
 import datetime
+from operator import attrgetter
 import os
 import cPickle
 import core.ptime as time
@@ -16,7 +17,7 @@ from core.identifier import Id, RandomId
 import core.message as message
 from core.querier import Querier
 from core.message import QUERY, RESPONSE, ERROR, version_repr
-from core.node import Node
+from core.node import Node, LookupNode
 import core.minitwisted as minitwisted
 
 logger = logging.getLogger('dht')
@@ -27,30 +28,33 @@ PING = False
 
 
 NUM_BITS = 160
-PREFIX_BITS = 18
+MIN_PREFIX_BITS = 18
+MAX_LOG_DISTANCE = NUM_BITS - MIN_PREFIX_BITS
 
-NUM_PARALLEL_EXTRACTIONS = 50
-EXTRACTION_DELAY = .01
+NUM_PARALLEL_EXTRACTIONS = 100
+EXTRACTION_DELAY = 1
 
 class ExtractingNode(object):
-    def __init__(self, node_, target):
-        self.node = node_
-        self.target = target
-        self.last_index =  NUM_BITS - PREFIX_BITS
+    def __init__(self, lookup_node):
+        self.lookup_node = lookup_node
+        self.target = lookup_node.target
+        self.distance_to_target = lookup_node.distance_to_target
+        self.last_index =  NUM_BITS - MIN_PREFIX_BITS
         self.found_nodes = set()
         self.reachable = False
+        self.last_extraction_ts = 0
+        self.extraction_done = False
 
-    def next_target(self):
-        if self.last_index == 0:
-            return
-        # if self.last_index < 130:
-        #     for n in self.found_nodes:
-        #         print n
-        #     raise
+    def next_step_target(self):
         i = self.last_index - 1
-        target = self.target.generate_close_id(i)
+        step_target = self.target.generate_close_id(i)
         self.last_index = i
-        return target
+        if i < 120:
+            print '120!!!!!!!!!!'
+            self.extraction_done = True
+        if self.distance_to_target.log > MAX_LOG_DISTANCE:
+            self.extraction_done = True
+        return step_target
 
     def add_found_nodes(self, nodes):
         self.reachable = True
@@ -60,82 +64,84 @@ class ExtractingNode(object):
                 num_duplicated += 1
             self.found_nodes.add(node_)
         if num_duplicated == len(nodes):
-            self.last_index = 0
+            self.extraction_done = True
 
     def timeout_handler(self):
-        self.last_index = 0
+        self.extraction_done = True
 
             
 class ExtractingQueue(object):
     def __init__(self, target):
         self.target = target
-        self.to_extract = []
         self.extracting_nodes = []
         self.extracted_nodes = []
-        self.inrange_extracted_nodes = []
         self.unreachable_nodes = []
         self.added_nodes = set()
-        self.other_nodes = []
-        self.last_index = 0
 
     def add_node(self, node_):
-        #print 'add',
         if node_ in self.added_nodes:
-            #print 'DUPLICATED'
             return
-        #print 'NEW',
-        self.added_nodes.add(node_)
-        extracting_node = ExtractingNode(node_, self.target)
-        if not self.inrange_extracted_nodes or self.in_range(node_, 1):
-            self.to_extract.append(extracting_node)
-            #print 'OK'
-        else:
-            self.other_nodes.append(extracting_node)
-            #print 'OTHER'
+        lookup_node = LookupNode(node_, self.target)
+        self.added_nodes.add(lookup_node)
+        extracting_node = ExtractingNode(lookup_node)
+        self.extracting_nodes.append(extracting_node)
+        self.extracting_nodes.sort(key=attrgetter('distance_to_target.int'))
 
-    def next_node_target(self):
-        #print 'next_target'
-        while (len(self.extracting_nodes) < NUM_PARALLEL_EXTRACTIONS
-               and self.to_extract):
-            #print 'pop'
-            self.extracting_nodes.append(self.to_extract.pop(0))
-        if not self.extracting_nodes:
-            return None, None
-        i = (self.last_index + 1) % len(self.extracting_nodes)
-        #print len(self.extracted_nodes), len(self.to_extract), len(self.extracting_nodes), i
-        extracting_node = self.extracting_nodes[i]
-        if (self.in_range(extracting_node.node) or
-            len(self.inrange_extracted_nodes) < 2):
-            target = extracting_node.next_target()
-        else:
-            target = None
-        if target:
-            self.last_index = i
-        else:
-            # done with this node
-            if extracting_node.reachable:
+    def next_node_step_target(self):
+        i = 0
+        if (len(self.added_nodes) > 200 and self.extracting_nodes
+            and self.extracting_nodes[0].distance_to_target.log > MAX_LOG_DISTANCE):
+                # Closest node to target is not in range, wait a bit
+                return None, None
+        while i < len(self.extracting_nodes):
+            extracting_node = self.extracting_nodes[i]
+            if 0:#i > 10:
+                if extracting_node.distance_to_target.log > MAX_LOG_DISTANCE:
+                    del self.extracting_nodes[i]
+                    #CAREFUL: do not increment i
+                    continue
+            if extracting_node.extraction_done:
+                # done with this node
                 self.extracted_nodes.append(extracting_node)
-                if self.in_range(extracting_node.node):
-                    self.inrange_extracted_nodes.append(extracting_node)
-            else:
-                self.unreachable_nodes.append(extracting_node)
-            del self.extracting_nodes[i]
-        return extracting_node, target
-
+                del self.extracting_nodes[i]
+                #CAREFUL: do not increment i
+                continue
+            current_time = time.time()
+            if current_time > (extracting_node.last_extraction_ts
+                               + EXTRACTION_DELAY):
+                step_target = extracting_node.next_step_target()
+                if step_target:
+                    extracting_node.last_extraction_ts = current_time
+                    print extracting_node.distance_to_target.log
+                    return extracting_node, step_target
+            i = i + 1 # too soon or node completely extracted. Next!
+        return None, None # no node to extract this round
 
     def in_range(self, node_, range_extension=0):
         return (node_.id.log_distance(self.target)
-                < NUM_BITS - PREFIX_BITS + range_extension)
+                < NUM_BITS - MIN_PREFIX_BITS + range_extension)
 
     def print_summary(self):
-        i = 0
+        num_nodes_pinged = 0
+        num_nodes_pinged_r = 0
+        num_inrange = 0
+        num_inrange_r = 0 
         for en in self.extracted_nodes:
-            if self.in_range(en.node):
-                i+= 1
-        print 'Nodes extracted:', len(self.extracted_nodes), i,
+            num_nodes_pinged += 1
+            if en.reachable:
+                num_nodes_pinged_r += 1
+            if self.in_range(en.lookup_node):
+                num_inrange += 1
+                if en.reachable:
+                    num_inrange_r += 1
+            
+        print 'Nodes pinged (reachable):', num_nodes_pinged, num_nodes_pinged_r
+        print 'Nodes inrange (reachable):', num_inrange, num_inrange_r
+
+
         i = 0
         for en in self.unreachable_nodes:
-            if self.in_range(en.node):
+            if self.in_range(en.lookup_node):
                 i+= 1
         print 'Nodes unreachable:', len(self.unreachable_nodes), i 
     
@@ -146,34 +152,29 @@ class ExtractingQueue(object):
                 i+= 1
         print 'Total nodes:', len(self.added_nodes), i
         i = 0
-        for en in self.to_extract:
-            if self.in_range(en.node):
-                i+= 1
-        print 'Nodes to extract:', len(self.to_extract), i
-        i = 0
         for en in self.extracting_nodes:
-            if self.in_range(en.node):
+            if self.in_range(en.lookup_node):
                 i+= 1
         print 'Nodes extracting:', len(self.extracting_nodes), i 
         i = 0
         for en in self.extracted_nodes:
-            if self.in_range(en.node):
+            if self.in_range(en.lookup_node):
                 i+= 1
         print 'Nodes extracted:', len(self.extracted_nodes), i
         i = 0
         for en in self.unreachable_nodes:
-            if self.in_range(en.node):
+            if self.in_range(en.lookup_node):
                 i+= 1
         print 'Nodes unreachable:', len(self.unreachable_nodes), i 
         i = 0
         for en in self.other_nodes:
-            if self.in_range(en.node):
+            if self.in_range(en.lookup_node):
                 i+= 1
         print 'Other nodes:', len(self.other_nodes), i
         print '-' * 40
         for extracted_node in self.extracted_nodes:
             node_ = extracted_node.node
-            if node_.id.log_distance(TARGET) < NUM_BITS - PREFIX_BITS:
+            if node_.id.log_distance(TARGET) < NUM_BITS - NUM_PREFIX_BITS:
                 print node_, node_.id.log_distance(TARGET) 
 
     
@@ -189,6 +190,7 @@ class Crawler(object):
                                         None)
         self.querier = Querier()
         self.last_extraction_ts = time.time()
+        self.num_msgs = 0
                         
     def on_stop(self):
         pass#self._experimental_m.on_stop()
@@ -198,25 +200,23 @@ class Crawler(object):
         if current_time > self.last_extraction_ts + 4:
             return #crawler DONE
         msgs_to_send = []
-        if current_time > self.last_extraction_ts + EXTRACTION_DELAY:
-          extracting_node, target = self.extracting_queue.next_node_target()
-          #print 'target:', `target`
-          if target:
-              msg = self.msg_f.outgoing_find_node_query(
-                  extracting_node.node,
-                  target,
-                  None,
-                  extracting_node)
-              #print 'sending query to', extracting_node.node,
-              #print extracting_node.node.id.log_distance(TARGET)
-              msgs_to_send.append(msg)
-              self.last_extraction_ts = current_time
-        # Take care of timeouts
-        (self._next_timeout_ts,
-        timeout_queries) = self.querier.get_timeout_queries()
-        for query in timeout_queries:
-            #print 'timeout'
-            query.experimental_obj.timeout_handler()
+        extracting_node, step_target = self.extracting_queue.next_node_step_target()
+        if step_target:
+            msg = self.msg_f.outgoing_find_node_query(
+                extracting_node.lookup_node,
+                step_target,
+                None,
+                extracting_node)
+            #print 'sending query to', extracting_node.node,
+            #print extracting_node.node.id.log_distance(TARGET)
+            msgs_to_send.append(msg)
+            self.last_extraction_ts = current_time
+            # Take care of timeouts
+            (self._next_timeout_ts,
+             timeout_queries) = self.querier.get_timeout_queries()
+            for query in timeout_queries:
+                #print 'timeout'
+                query.experimental_obj.timeout_handler()
         if msgs_to_send:
             timeout_call_ts, datagrams_to_send = self.querier.register_queries(
                 msgs_to_send)
@@ -226,7 +226,8 @@ class Crawler(object):
             import sys
             sys.stdout.write('.')
             sys.stdout.flush()
-        return current_time + EXTRACTION_DELAY, datagrams_to_send
+        self.num_msgs += len(datagrams_to_send)
+        return current_time + .01, datagrams_to_send
 
     def on_datagram_received(self, datagram):
         data = datagram.data
@@ -253,13 +254,15 @@ class Crawler(object):
                     self.extracting_queue.add_node(node_)
             #else:
                 #print 'not related'
+        self.num_msgs += len(datagrams_to_send)
         return self.last_extraction_ts + EXTRACTION_DELAY, datagrams_to_send
 
     def get_bootstrap_nodes(self):
-        return [en.node for en in self.extracting_queue.extracted_nodes[-10:]]
+        return [en.lookup_node.node for en in self.extracting_queue.extracted_nodes[-10:]]
     
     def print_summary(self):
         self.extracting_queue.print_summary()
+        print "Messages sent:", self.num_msgs
     
     def print_results(self):
         self.extracting_queue.print_results()
@@ -295,7 +298,7 @@ def main(options, args):
     reactor = minitwisted.ThreadedReactor(
         mcrawler.main_loop, 7005, 
         mcrawler.on_datagram_received,
-        task_interval=EXTRACTION_DELAY/2)
+        task_interval=.01)
     reactor.start()
     try:
         time.sleep(2000)
