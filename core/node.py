@@ -123,3 +123,13 @@ class RoutingNode(Node):
                      (consider_queries and event == QUERY):
                 return result
         return result # all timeouts (and queries), or empty list
+
+    
+class LookupNode(Node):
+
+    def __init__(self, node_, target):
+        Node.__init__(self, node_.addr, node_.id, node_.version,
+                      node_.is_ns)
+        self.node = node_
+        self.target = target
+        self.distance_to_target = self.id.distance(target)
