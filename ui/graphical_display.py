@@ -582,7 +582,7 @@ class Graphical_display(wx.Frame):
             if color1=="Red" and color2=="Red":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Yellow","Yellow")
-            if color1=="Black" and color2=="Black":
+            if color1=="Red" and color2=="Black":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Yellow","Black")
                             
@@ -604,43 +604,46 @@ class Graphical_display(wx.Frame):
             revert_changes()
                 
     def precalculation_nextstep(self):
-        self.nextstepprocessing(self.ptr)
-        current_location = self.ptr
-        if self.main_list[current_location][1] == 'bogus':
-            if self.main_list[self.ptr][2]==0:
-                playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+        if(self.pp_flag):
+            self.nextstepprocessing(self.ptr)
+            current_location = self.ptr
+            if self.main_list[current_location][1] == 'bogus':
+                if self.main_list[self.ptr][2]==0:
+                    playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+                else:
+                    playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
             else:
-                playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
+                if self.main_list[current_location][1].ts == '-':
+                    playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    playback_position="%.6f"%float(self.main_list[current_location][1].ts)
+            current_location = len(self.main_list)-1
+            if self.main_list[current_location][1] == 'bogus':
+                if self.main_list[current_location][2]==0:
+                    last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    last_position = "%.6f"%float(self.main_list[current_location][2])       
+            else:
+                if self.main_list[current_location][1].ts == '-':
+                    last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    last_position="%.6f"%float(self.main_list[current_location][1].ts)
+            
+            self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
+            if not self.ptr == 0:
+                percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
+                self.ProgressBar.SetValue(int(percentage))
+                #print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
+            self.ptr=self.ptr+1
+            self.handle_enable_disable()
+            self.printing()       
+            if(self.pp_flag==True):
+                if self.radio_option==True:
+                    wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
+                else:
+                    wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time*1000,self.precalculation_nextstep)
         else:
-            if self.main_list[current_location][1].ts == '-':
-                playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
-            else:
-                playback_position="%.6f"%float(self.main_list[current_location][1].ts)
-        current_location = len(self.main_list)-1
-        if self.main_list[current_location][1] == 'bogus':
-            if self.main_list[current_location][2]==0:
-                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
-            else:
-                last_position = "%.6f"%float(self.main_list[current_location][2])       
-        else:
-            if self.main_list[current_location][1].ts == '-':
-                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
-            else:
-                last_position="%.6f"%float(self.main_list[current_location][1].ts)
-        
-        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
-        if not self.ptr == 0:
-            percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
-            self.ProgressBar.SetValue(int(percentage))
-            #print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
-        self.ptr=self.ptr+1
-        self.handle_enable_disable()
-        self.printing()       
-        if(self.pp_flag==True):
-            if self.radio_option==True:
-                wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
-            else:
-                 wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time*1000,self.precalculation_nextstep)
+            print "Pause event deleting next event call"
 
     def nextstepprocessing(self,i):
         def Find_Vertical_Number(i,distance):
@@ -717,7 +720,7 @@ class Graphical_display(wx.Frame):
                                               index.x,index.y,index.size,color,color)
                             k.Add_Special_Node(TempA,index)
                         else:
-                            k.SetMainNodeColor("Black","Black")
+                            k.SetMainNodeColor("Red","Black")
                     else:
                         print "Error:Check"
                 else:
