@@ -31,7 +31,7 @@ NUM_BITS = 160
 MIN_PREFIX_BITS = 18
 MAX_LOG_DISTANCE = NUM_BITS - MIN_PREFIX_BITS
 
-NUM_PARALLEL_EXTRACTIONS = 100
+NUM_PARALLEL_EXTRACTIONS = 3
 EXTRACTION_DELAY = 1
 
 class ExtractingNode(object):
@@ -93,7 +93,7 @@ class ExtractingQueue(object):
             and self.extracting_nodes[0].distance_to_target.log > MAX_LOG_DISTANCE):
                 # Closest node to target is not in range, wait a bit
                 return None, None
-        while i < len(self.extracting_nodes):
+        while i < min(NUM_PARALLEL_EXTRACTIONS, len(self.extracting_nodes)):
             extracting_node = self.extracting_nodes[i]
             if 0:#i > 10:
                 if extracting_node.distance_to_target.log > MAX_LOG_DISTANCE:
@@ -112,7 +112,7 @@ class ExtractingQueue(object):
                 step_target = extracting_node.next_step_target()
                 if step_target:
                     extracting_node.last_extraction_ts = current_time
-                    print extracting_node.distance_to_target.log
+                    #print extracting_node.distance_to_target.log
                     return extracting_node, step_target
             i = i + 1 # too soon or node completely extracted. Next!
         return None, None # no node to extract this round
