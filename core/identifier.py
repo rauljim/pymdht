@@ -99,6 +99,7 @@ class Id(object):
         if not self._int:
             self._int = int(self.hex, 16)
         return self._int
+
     @property
     def log(self):
         if not self._log:
@@ -107,6 +108,10 @@ class Id(object):
             else:
                 self._log = len(bin(self.int)) - 3
         return self._log
+
+    @property
+    def prefix_len(self):
+        return ID_SIZE_BITS - self.log
         
     def __eq__(self, other):
         return self.bin_id == other.bin_id

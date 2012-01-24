@@ -41,61 +41,110 @@ EXTRACTION_DELAY = .5
 
 class RCrawler(object):
 
-    def __init__(self, ok_nodes, dead_nodes, bit_index):
-        self.bit_index = bit_index
+    def __init__(self, ok_nodes, dead_nodes, fix_prefix_len, t):
+        self.fix_prefix_len = fix_prefix_len
+        self.t = t
+        self.known_nodes = set()
         self.pending_nodes = []
         self.ok_nodes = self._split(ok_nodes)
         self.dead_nodes = self._split(dead_nodes)
 
-        
+        self.bootstrap_index = 0
         
         self.rcrawlers = None
         self.next_rcrawler = 0
         self.last_query_ts = 0
 
+        self.leaf = False
         self.done = False
 
     def next(self):
         if self.done:
-            return None, None
+            return None, None, None
         if self.rcrawlers:
             if self.rcrawlers[self.next_rcrawler].done:
                 self.next_rcrawler = self.next_rcrawler ^ 1 #round-robin
                 if self.rcrawlers[self.next_rcrawler].done:
                     self.done = True
-                    return None, None
-            node_, target = self.rcrawlers[self.next_rcrawler].next()
+                    return None, None, None
+            node_, target, rcrawler_obj = self.rcrawlers[self.next_rcrawler].next()
             self.next_rcrawler = self.next_rcrawler ^ 1 #round-robin
-            return node_, target
+            return node_, target, rcrawler_obj
             
         if self.pending_nodes:
             node_ = self.pending_nodes.pop(0)
             self.last_query_ts = time.time()
-            return node_, node_.id
+            return node_, node_.id, self
         if time.time() < self.last_query_ts + 2:
             # wait for timeouts
-            return None, None
-        if len(self.ok_nodes[0]) + len(self.ok_nodes[1]) < 6:
+            return None, None, None
+        if self.fix_prefix_len == 20:# len(self.ok_nodes[0]) + len(self.ok_nodes[1]) < 6:
             # this is a leaf
             self.done = True
-            return None, None
-        #if len(self.ok_nodes[0]) < 3:
-            
-        self.rcrawlers = (RCrawer(
-                self.ok_nodes[0], self.dead_nodes[0], self.bit_index+1),
-                          RCrawer(
-                self.ok_nodes[1], self.dead_nodes[1], self.bit_index+1))
-        #if not len(self.ok_nodes[0]) < 6:
-            
-        
+            return None, None, None
 
-    def got_nodes(self, node_, nodes):
-        self.ok_nodes[self._get_bit(node_)], add(node_)
+        b_node = None
+        if len(self.ok_nodes[0]) < 3 or len(self.ok_nodes[1]) < 3:
+            if len(self.ok_nodes[0]) < 3:
+                bootstrap_gen = self.ok_nodes[1].__iter__()
+            if len(self.ok_nodes[1]) < 3:
+                bootstrap_gen = self.ok_nodes[0].__iter__()
+            i = 0
+            try:
+                while i <= self.bootstrap_index:
+                    i += 1
+                    b_node = bootstrap_gen.next()
+                self.bootstrap_index += 1
+            except (StopIteration):
+                print 'cross boostrap failed'
+                self.leaf = True
+                self.done = True
+        if b_node:
+            print 'cross bootstrap'
+            self.last_query_ts = time.time()
+            return b_node, b_node.id.generate_close_id(NUM_BITS - self.fix_prefix_len), self
+        print 'R SPLIT', self.fix_prefix_len, '>', self.fix_prefix_len+1
+        t = [ok_nodes.__iter__().next().id for ok_nodes in self.ok_nodes]
+        self.rcrawlers = (RCrawler(
+                self.ok_nodes[0], self.dead_nodes[0], self.fix_prefix_len+1, t[0]),
+                          RCrawler(
+                self.ok_nodes[1], self.dead_nodes[1], self.fix_prefix_len+1, t[1]))
+        return None, None, None
+
+    def got_nodes_handler(self, node_, nodes):
+        if node_:
+            # node_ is None on bootstrap
+            self.ok_nodes[self._get_bit(node_)].add(node_)
         for n in nodes:
-            self.pending_nodes.append(n)
+            if n.id.distance(self.t).prefix_len < self.fix_prefix_len:
+                continue # node out of scope
+            if n not in self.known_nodes:
+                self.known_nodes.add(n)
+                self.pending_nodes.append(n)
 
-    def got_timeout(self, node_):
-        self.dead_nodes[self._get_bit(node_)], add(node_)
+    def timeout_handler(self, node_):
+        self.dead_nodes[self._get_bit(node_)].add(node_)
+
+    def print_result(self):
+        if self.rcrawlers:
+            self.rcrawlers[0].print_result()
+            self.rcrawlers[1].print_result()
+        else:
+            print '%3d | %3d %3d | %3d %3d' % (self.fix_prefix_len,
+                                               len(self.ok_nodes[0]),
+                                               len(self.dead_nodes[0]),
+                                               len(self.ok_nodes[1]),
+                                               len(self.dead_nodes[1]),)
+            
+    def get_num_ok(self):
+        if self.rcrawlers:
+            return self.rcrawlers[0].get_num_ok() + self.rcrawlers[1].get_num_ok()
+        return len(self.ok_nodes[0]) + len(self.ok_nodes[1])
+
+    def get_num_dead(self):
+        if self.rcrawlers:
+            return self.rcrawlers[0].get_num_dead() + self.rcrawlers[1].get_num_dead()
+        return len(self.dead_nodes[0]) + len(self.dead_nodes[1])
 
     def _split(self, nodes):
         splitted_nodes = (set(), set())
@@ -104,7 +153,7 @@ class RCrawler(object):
         return splitted_nodes
                                
     def _get_bit(self, node_):
-        if n.id.int & (1 << (NUM_BITS - self.bit_index - 1)):
+        if node_.id.int & (1 << (NUM_BITS - self.fix_prefix_len - 1)):
             return 1
         else:
             return 0
@@ -113,65 +162,63 @@ class RCrawler(object):
 class Crawler(object):
 
     def __init__(self, bootstrap_nodes):
-        self.target = RandomId()
-        self.extracting_queue = ExtractingQueue(self.target)
-        for node_ in bootstrap_nodes:
-            is_new_node = self.extracting_queue.add_node(node_)
+        self.rcrawler = RCrawler(set(), set(), 15, bootstrap_nodes[0].id)
+        self.rcrawler.got_nodes_handler(None, bootstrap_nodes)
         self.my_id = self._my_id = RandomId()
         self.msg_f = message.MsgFactory(PYMDHT_VERSION, self.my_id,
                                         None)
         self.querier = Querier()
-        self.last_extraction_ts = time.time()
+        self.next_main_loop_ts = 0
         self.num_msgs = 0
-        self.nodes_inrange_w_response = set()
                         
     def on_stop(self):
-        pass#self._experimental_m.on_stop()
+        pass
 
     def main_loop(self):
-        current_time = time.time()
-        if current_time > self.last_extraction_ts + 4:
-            return #crawler DONE
+        self.next_main_loop_ts = time.time() + .1
+        if self.rcrawler.done:
+            print 'ind | ok dead | ok dead'
+            self.rcrawler.print_result()
+            print self.rcrawler.get_num_ok(), self.rcrawler.get_num_dead()
+            print self.num_msgs, 'messages sent'
+            return
         msgs_to_send = []
-        only_inrange = len(self.nodes_inrange_w_response) > 4
-        extracting_node, step_target = \
-            self.extracting_queue.next_node_step_target(only_inrange)
-        if step_target:
+        node_, target, rcrawler_obj = self.rcrawler.next()
+        if target:
             msg = self.msg_f.outgoing_find_node_query(
-                extracting_node.lookup_node,
-                step_target,
+                node_,
+                target,
                 None,
-                extracting_node)
+                rcrawler_obj)
+            #print 'target', `target`, 'to node', `node_.id`
             #print 'sending query to', extracting_node.node,
             #print extracting_node.node.id.log_distance(TARGET)
             msgs_to_send.append(msg)
-            self.last_extraction_ts = current_time
             # Take care of timeouts
             (self._next_timeout_ts,
              timeout_queries) = self.querier.get_timeout_queries()
-            for query in timeout_queries:
+            for related_query in timeout_queries:
                 #print 'timeout'
-                query.experimental_obj.timeout_handler()
+                related_query.experimental_obj.timeout_handler(related_query.dst_node)
         if msgs_to_send:
             timeout_call_ts, datagrams_to_send = self.querier.register_queries(
                 msgs_to_send)
         else:
             datagrams_to_send = []
         self.num_msgs += len(datagrams_to_send)
-        if datagrams_to_send and self.num_msgs % 100 == 0:
+        if datagrams_to_send and self.num_msgs % 1 == 0:
             sys.stdout.write('.')
             sys.stdout.flush()
-        return current_time + .01, datagrams_to_send
+        return self.next_main_loop_ts, datagrams_to_send
 
     def on_datagram_received(self, datagram):
         data = datagram.data
         addr = datagram.addr
-        datagrams_to_send = []
         try:
             msg = self.msg_f.incoming_msg(datagram)
         except(message.MsgError):
             # ignore message
-            return self.last_extraction_ts + EXTRACTION_DELAY, datagrams_to_send
+            return self.next_main_loop_ts, datagrams_to_send
 
         if msg.type == message.RESPONSE:
             related_query = self.querier.get_related_query(msg)
@@ -179,29 +226,23 @@ class Crawler(object):
             if related_query and related_query.experimental_obj:
                 #print 'related >>>>>>>>>>>>>>>>>>>>>>', len(msg.nodes)
                 try:
-                    nodes = msg.nodes
+                    nodes = msg.all_nodes
                 except AttributeError:
                     print '\nno nodes>>>>>>>', msg._msg_dict
                     nodes = []
-                lookup_node = related_query.dst_node
-                if in_range(lookup_node):
-                    self.nodes_inrange_w_response.add(lookup_node)
-                related_query.experimental_obj.add_found_nodes(nodes)
-                new_nodes = False
-                for node_ in nodes:
-                    self.extracting_queue.add_node(node_)
-        self.num_msgs += len(datagrams_to_send)
-        return self.last_extraction_ts + EXTRACTION_DELAY, datagrams_to_send
+                node_ = related_query.dst_node
+                related_query.experimental_obj.got_nodes_handler(node_, nodes)
+        return self.next_main_loop_ts, []#datagrams_to_send
 
-    def get_bootstrap_nodes(self):
-        return [en.lookup_node.node for en in self.extracting_queue.pinged_nodes[-100:]]
+    # def get_bootstrap_nodes(self):
+    #     return [en.lookup_node.node for en in self.extracting_queue.pinged_nodes[-100:]]
     
-    def print_summary(self):
-        self.extracting_queue.print_summary()
-        print "Messages sent:", self.num_msgs
+    # def print_summary(self):
+    #     self.extracting_queue.print_summary()
+    #     print "Messages sent:", self.num_msgs
     
-    def print_results(self):
-        self.extracting_queue.print_results()
+    # def print_results(self):
+    #     self.extracting_queue.print_results()
 
 
 class MultiCrawler(object):
@@ -224,9 +265,10 @@ class MultiCrawler(object):
     
     
 def main(options, args):
-    ip, port_str = args
+    id_str, v, ip, port_str = args
+    id_ = Id(id_str)
     port = int(port_str)
-    bootstrap_node = Node((ip, port), RandomId())
+    bootstrap_node = Node((ip, port), id_, version=v)
     mcrawler = MultiCrawler(bootstrap_node)
 
     logs_path = '.'# os.path.join(os.path.expanduser('~'), '.pymdht')
