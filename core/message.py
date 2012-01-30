@@ -218,7 +218,7 @@ class OutgoingMsg(object):
           self.rtt = time.time() - self.sending_ts
           self.got_response = True            
           if response_msg.type == RESPONSE and not self.dst_node.id:
-              self.dst_node.id = response_msg.src_id
+              self.dst_node.id = response_msg.src_node.id
       return matched
 
     def make_query(self, src_id, experimental_obj=None,
@@ -292,6 +292,29 @@ class IncomingMsg(object):
         bencoded_msg = datagram.data
         src_addr = datagram.addr
         self.src_addr = src_addr
+        # COMMON
+        self.tid = None
+        self.type = None
+        self.version = None
+        self.ns_node = None # never used
+        # QUERY
+        #self.src_id = None
+        self.src_node = None
+        self.query = None
+        self.target = None # find_node
+        self.info_hash = None # announce_peer
+        self.bt_port = None # announce_peer
+        self.token = None # announce_peer
+        # RESPONSE
+#        self.src_id = None
+        self.src_node = None
+        self.nodes = None
+        self.nodes2 = None
+        self.all_nodes = None
+        self.token = None
+        self.peers = None
+        # ERROR
+        self.error = None
         try:
             # bencode.decode may raise bencode.DecodeError
             self._msg_dict = bencode.decode(bencoded_msg)
@@ -386,8 +409,8 @@ class IncomingMsg(object):
     
     def _sanitize_query(self):
         # src_id
-        self.src_id = self._get_id(ARGS, ID)
-        self.src_node = Node(self.src_addr, self.src_id, self.version)
+        src_id = self._get_id(ARGS, ID)
+        self.src_node = Node(self.src_addr, src_id, self.version)
         # query
         self.query = self._get_str(QUERY)
         if self.query in [GET_PEERS, ANNOUNCE_PEER]:
@@ -406,8 +429,8 @@ class IncomingMsg(object):
         
     def _sanitize_response(self):
         # src_id
-        self.src_id = self._get_id(RESPONSE, ID)
-        self.src_node = Node(self.src_addr, self.src_id, self.version)
+        src_id = self._get_id(RESPONSE, ID)
+        self.src_node = Node(self.src_addr, src_id, self.version)
         # all nodes
         self.all_nodes = []
         # nodes
@@ -434,6 +457,7 @@ class IncomingMsg(object):
             self.peers = mt.uncompact_peers(c_peers)
 
     def _sanitize_error(self):
+        self.src_node = Node(self.src_addr)
         try:
             self.error = [int(self._msg_dict[ERROR][0]),
                           str(self._msg_dict[ERROR][1])]

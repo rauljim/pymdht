@@ -256,7 +256,7 @@ class Controller:
 
         if msg.type == message.QUERY:
            
-            if msg.src_id == self._my_id:
+            if msg.src_node.id == self._my_id:
                 logger.debug('Got a msg from myself:\n%r', msg)
                 return self._next_main_loop_call_ts, datagrams_to_send
             #zinat: inform experimental_module
