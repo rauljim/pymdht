@@ -15,7 +15,7 @@ class Graphical_display(wx.Frame):
     sizeofnodes=10
     xspacingofnodes = 45
     yspacingofnodes = 40
-    startingx = -15
+    startingx = 30
     startingy = 40
     vsb = 1
     povsb = -1
@@ -407,7 +407,7 @@ class Graphical_display(wx.Frame):
         def display_main_node(i):
             self.TxtBox1.WriteText("Node Information:\n")
             self.draw_circle(dc,"White","White",i.MainNode.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.MainNode.y - ((self.povsb + 1) * self.yspacingofnodes), i.MainNode.size/4)
-            Str=str(i.MainNode.IPadress)+","+str(i.MainNode.Port)+","+i.MainNode.dn
+            Str=str(i.MainNode.IPadress)+","+str(i.MainNode.Port)
             self.TxtBox1.WriteText(Str)
             self.TxtBox1.WriteText("\nNodes Information:\n")
             if not i.NodeList==[]:
@@ -424,7 +424,7 @@ class Graphical_display(wx.Frame):
                 self.TxtBox1.WriteText("None\n")
         def display_child_node(i):
             self.draw_circle(dc,"Orange","Orange",i.x - (self.xstartofnodes + (self.pohsb + 1) * self.xspacingofnodes), i.y - ((self.povsb + 1) * self.yspacingofnodes), i.size/4)    
-            Str=str(i.IPadress)+","+str(i.Port)+","+str(i.d)
+            Str=str(i.IPadress)+","+str(i.Port)
             self.TxtBox1.WriteText(Str)
             self.TxtBox1.WriteText("\n")
         ninfo1=process_all_list((
@@ -478,8 +478,13 @@ class Graphical_display(wx.Frame):
         TempA = ""
         for child in self.panel1.GetChildren():
                 child.Destroy() 
-        for i in range(self.pohsb+1, 35 + self.pohsb):
-            wx.StaticText(self.panel1, label=str(159 - i), pos=(15+self.xspacingofnodes*(i-self.pohsb-1), 0))
+        for i in range(self.pohsb+1, 50 + self.pohsb):
+            if self.pohsb==-1:
+                if i==self.pohsb+1:
+                    wx.StaticText(self.panel1, label=" ? ", pos=(65+self.xspacingofnodes*(-1), 0))
+                wx.StaticText(self.panel1, label=str(159 - i), pos=(60+self.xspacingofnodes*(i-self.pohsb-1), 0))
+            else:
+                wx.StaticText(self.panel1, label=str(159 - i), pos=(15+self.xspacingofnodes*(i-self.pohsb-1), 0))
 #            a = str(160 - i)
 #            if len(a) == 3:
 #                a = "   " + a
@@ -577,12 +582,19 @@ class Graphical_display(wx.Frame):
             if color1=="Red" and color2=="Red":
                 for k in self.bootstrapnodes:
                             k.ClearNodes(index,"Yellow","Yellow")
+            if color1=="Red" and color2=="Black":
+                for k in self.bootstrapnodes:
+                            k.ClearNodes(index,"Yellow","Black")
                             
         if(self.main_list[i][1]=='bogus'):
-            color1="Red"
-            color2="Red"
             index=self.find_information_of_existing_node(str(self.main_list[i][0].dst_addr[0]),
                                                             str(self.main_list[i][0].dst_addr[1]))
+            if index.d!="160":
+                color1=index.color1
+                color2=index.color2
+            else:
+                color1=index.color1
+                color2=index.color2
             revert_changes()
         else:
             index=self.find_information_of_existing_node(str(self.main_list[i][1].src_addr[0]),
@@ -592,43 +604,46 @@ class Graphical_display(wx.Frame):
             revert_changes()
                 
     def precalculation_nextstep(self):
-        self.nextstepprocessing(self.ptr)
-        current_location = self.ptr
-        if self.main_list[current_location][1] == 'bogus':
-            if self.main_list[self.ptr][2]==0:
-                playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+        if(self.pp_flag):
+            self.nextstepprocessing(self.ptr)
+            current_location = self.ptr
+            if self.main_list[current_location][1] == 'bogus':
+                if self.main_list[self.ptr][2]==0:
+                    playback_position = "%.6f"%float(self.main_list[self.ptr][0].ts)
+                else:
+                    playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
             else:
-                playback_position = "%.6f"%float(self.main_list[self.ptr][2])       
+                if self.main_list[current_location][1].ts == '-':
+                    playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    playback_position="%.6f"%float(self.main_list[current_location][1].ts)
+            current_location = len(self.main_list)-1
+            if self.main_list[current_location][1] == 'bogus':
+                if self.main_list[current_location][2]==0:
+                    last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    last_position = "%.6f"%float(self.main_list[current_location][2])       
+            else:
+                if self.main_list[current_location][1].ts == '-':
+                    last_position = "%.6f"%float(self.main_list[current_location][0].ts)
+                else:
+                    last_position="%.6f"%float(self.main_list[current_location][1].ts)
+            
+            self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
+            if not self.ptr == 0:
+                percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
+                self.ProgressBar.SetValue(int(percentage))
+                #print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
+            self.ptr=self.ptr+1
+            self.handle_enable_disable()
+            self.printing()       
+            if(self.pp_flag==True):
+                if self.radio_option==True:
+                    wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
+                else:
+                    wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time*1000,self.precalculation_nextstep)
         else:
-            if self.main_list[current_location][1].ts == '-':
-                playback_position = "%.6f"%float(self.main_list[current_location][0].ts)
-            else:
-                playback_position="%.6f"%float(self.main_list[current_location][1].ts)
-        current_location = len(self.main_list)-1
-        if self.main_list[current_location][1] == 'bogus':
-            if self.main_list[current_location][2]==0:
-                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
-            else:
-                last_position = "%.6f"%float(self.main_list[current_location][2])       
-        else:
-            if self.main_list[current_location][1].ts == '-':
-                last_position = "%.6f"%float(self.main_list[current_location][0].ts)
-            else:
-                last_position="%.6f"%float(self.main_list[current_location][1].ts)
-        
-        self.srclabel2.SetLabel("Playback position of Lookup       :        "+playback_position + " / " + last_position )
-        if not self.ptr == 0:
-            percentage = self.limitofprogress/float(float(last_position)/float(playback_position))
-            self.ProgressBar.SetValue(int(percentage))
-            #print "Progress" + str(int(percentage)) + " : " + str(self.limitofprogress)
-        self.ptr=self.ptr+1
-        self.handle_enable_disable()
-        self.printing()       
-        if(self.pp_flag==True):
-            if self.radio_option==True:
-                wx.CallLater(float(self.TextBox1.GetValue()),self.precalculation_nextstep)
-            else:
-                 wx.CallLater(float(self.TextBox2.GetValue())*self.wait_time*1000,self.precalculation_nextstep)
+            print "Pause event deleting next event call"
 
     def nextstepprocessing(self,i):
         def Find_Vertical_Number(i,distance):
@@ -680,22 +695,49 @@ class Graphical_display(wx.Frame):
         def add_peer_information(TempA,i):
             TempA.SetPeerList(self.main_list[i][1].peers)
             return TempA
+        count = 0
         if(self.main_list[i][1]=='bogus'):
             for k in self.bootstrapnodes:
                 index=k.Return_Node_of_IPandPort(self.main_list[i][0].dst_addr[0],str(self.main_list[i][0].dst_addr[1]),None)
                 if(index!=None):
                     if index.color1 == "Blue":
                         color = "Yellow"
+                        TempA = iDSlist.ListofNodes()
+                        TempA.SetMainNode(index.IPadress,
+                                          index.Port,
+                                          index.d,
+                                          index.dn,
+                                          index.x,index.y,index.size,color,color)
+                        k.Add_Special_Node(TempA,index)
+                    elif index.color1 == "Yellow":
+                        if index.d!="160":
+                            color = "Red"
+                            TempA = iDSlist.ListofNodes()
+                            TempA.SetMainNode(index.IPadress,
+                                              index.Port,
+                                              index.d,
+                                              index.dn,
+                                              index.x,index.y,index.size,color,color)
+                            k.Add_Special_Node(TempA,index)
+                        else:
+                            k.SetMainNodeColor("Red","Black")
                     else:
-                        color = "Red"
-                       #print index.color1,index.color2,color
-                    TempA = iDSlist.ListofNodes()
-                    TempA.SetMainNode(index.IPadress,
-                                      index.Port,
-                                      index.d,
-                                      index.dn,
-                                      index.x,index.y,index.size,color,color)
-                    k.Add_Special_Node(TempA,index)
+                        print "Error:Check"
+                else:
+                    count = count + 1
+            if count == len(self.bootstrapnodes):
+                TempB=Find_Vertical_Number(i,str(160))
+                TempA = iDSlist.ListofNodes()
+                self.Nodex = self.xstartofnodes + (160 - int(160)) * self.xspacingofnodes
+                self.Nodey = int(TempB) * self.yspacingofnodes                    
+                TempA.SetMainNode(str(self.main_list[i][0].dst_addr[0]),
+                                           str(self.main_list[i][0].dst_addr[1]),
+                                           str(160),
+                                           str(int(TempB)+1),
+                                           self.Nodex,self.Nodey,self.sizeofnodes,"Yellow","Black"                                               
+                                           )
+                self.bootstrapnodes.append(TempA)
+                #print count,self.Nodex,self.Nodey,TempB,len(self.bootstrapnodes)
         elif(self.main_list[i][1].ts=="-"):
             index1=self.find_information_of_existing_node(str(self.main_list[i][1].src_addr[0]),
                                                         str(self.main_list[i][1].src_addr[1]))
@@ -836,25 +878,25 @@ class Graphical_display(wx.Frame):
         dc = wx.PaintDC(self.panel4)
         font1 = wx.Font(11, wx.MODERN, wx.NORMAL, wx.NORMAL, False, u'Arial')
         self.panel4.SetFont(font1)        
-        self.draw_circle(dc,"Green","Green",30,-25,self.sizeofnodes)
+        self.draw_circle(dc,"Green","Green",-15,-25,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(35, 10))
         version.SetLabel(label="Response")
-        self.draw_circle(dc,"Yellow","Yellow",185,-25,self.sizeofnodes)
+        self.draw_circle(dc,"Yellow","Yellow",140,-25,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(190, 10))
         version.SetLabel(label="Query")
-        self.draw_circle(dc,"Blue","Blue",340,-25,self.sizeofnodes)
+        self.draw_circle(dc,"Blue","Blue",300,-25,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(345, 10))
         version.SetLabel(label="Not Queried")
-        self.draw_circle(dc,"Brown","Brown",505,-35, self.sizeofnodes/4)
-        self.draw_circle(dc,"Brown","Brown",485,-15, self.sizeofnodes/4)    
+        self.draw_circle(dc,"Brown","Brown",460,-35, self.sizeofnodes/4)
+        self.draw_circle(dc,"Brown","Brown",440,-15, self.sizeofnodes/4)    
         version = wx.StaticText(self.panel4, pos=(500, 10))
         version.SetLabel(label="Peers")
-        self.draw_circle(dc,"Red","Red",30,5,self.sizeofnodes)
+        self.draw_circle(dc,"Red","Red",-15,5,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(35, 40))
         version.SetLabel(label="Timeout")
-        self.draw_circle(dc,self.color,"Black",185,5,self.sizeofnodes)
+        self.draw_circle(dc,self.color,"Black",140,5,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(190, 40))
         version.SetLabel(label="Neighbour")
-        self.draw_circle(dc,"Black",self.color,340,5,self.sizeofnodes)
+        self.draw_circle(dc,"Black",self.color,300,5,self.sizeofnodes)
         version = wx.StaticText(self.panel4, pos=(345, 40))
         version.SetLabel(label="No Contact Node")
