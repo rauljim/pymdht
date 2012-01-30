@@ -1,4 +1,4 @@
- import wx
+import wx
 
 import core.ptime as time
 import sys, os
