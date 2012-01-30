@@ -297,17 +297,15 @@ class IncomingMsg(object):
         self.type = None
         self.version = None
         self.ns_node = None # never used
-        # QUERY
-        #self.src_id = None
+        self.src_id = None
         self.src_node = None
+        # QUERY
         self.query = None
         self.target = None # find_node
         self.info_hash = None # announce_peer
         self.bt_port = None # announce_peer
         self.token = None # announce_peer
         # RESPONSE
-#        self.src_id = None
-        self.src_node = None
         self.nodes = None
         self.nodes2 = None
         self.all_nodes = None
@@ -409,8 +407,8 @@ class IncomingMsg(object):
     
     def _sanitize_query(self):
         # src_id
-        src_id = self._get_id(ARGS, ID)
-        self.src_node = Node(self.src_addr, src_id, self.version)
+        self.src_id = self._get_id(ARGS, ID)
+        self.src_node = Node(self.src_addr, self.src_id, self.version)
         # query
         self.query = self._get_str(QUERY)
         if self.query in [GET_PEERS, ANNOUNCE_PEER]:
@@ -429,8 +427,8 @@ class IncomingMsg(object):
         
     def _sanitize_response(self):
         # src_id
-        src_id = self._get_id(RESPONSE, ID)
-        self.src_node = Node(self.src_addr, src_id, self.version)
+        self.src_id = self._get_id(RESPONSE, ID)
+        self.src_node = Node(self.src_addr, self.src_id, self.version)
         # all nodes
         self.all_nodes = []
         # nodes
@@ -457,6 +455,7 @@ class IncomingMsg(object):
             self.peers = mt.uncompact_peers(c_peers)
 
     def _sanitize_error(self):
+        self.src_id = None
         self.src_node = Node(self.src_addr)
         try:
             self.error = [int(self._msg_dict[ERROR][0]),
