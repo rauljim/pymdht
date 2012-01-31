@@ -3,6 +3,10 @@
 - bootstrap_mode available to run a node as bootstrap node. It ignores some
   queries to avoid being added to too many routing tables.
 - telnet-like API available with option --telnet-port (see ui/telnet_api.txt)
+- Module identifier simplified and cleaned up.
+- Added some crawling scripts to run experiments
+- IncomingMsg attributed listed for clarity
+- Log file is now limited in size (10 MB in nomal mode, 1 GB in debug)
 
 == 12.1.0
 
