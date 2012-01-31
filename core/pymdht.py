@@ -19,7 +19,7 @@ import minitwisted
 import controller
 import logging, logging_conf
 
-PYMDHT_VERSION = (12, 2, 0)
+PYMDHT_VERSION = (12, 2, 1)
 VERSION_LABEL = ''.join(
     ['NS',
      chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
