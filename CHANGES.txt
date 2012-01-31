@@ -1,4 +1,4 @@
-== 12.1.1
+== 12.2.0
 
 - bootstrap_mode available to run a node as bootstrap node. It ignores some
   queries to avoid being added to too many routing tables.
