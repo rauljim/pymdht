@@ -5,6 +5,7 @@
 import sys
 import threading
 import logging
+from operator import attrgetter
 
 import os, sys
 this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -36,9 +37,7 @@ class _QueuedNode(object):
             return -1 
         elif other.distance is None:
             return 1
-        return (self.distance.log - other.distance.log
-                or (getattr(self.node, 'rtt', .5) -
-                    getattr(other.node, 'rtt', .5)))
+        return self.distance.__cmp__(other.distance)
     
 
 class _LookupQueue(object):
@@ -106,7 +105,7 @@ class _LookupQueue(object):
         
     def _add_responded_qnode(self, qnode):
         self.responded_qnodes.append(qnode)
-        self.responded_qnodes.sort()
+        self.responded_qnodes.sort(key=attrgetter('distance'))
         del self.responded_qnodes[self.max_responded_qnodes:]
 
     def _add_queued_qnodes(self, qnodes):
