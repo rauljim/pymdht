@@ -30,7 +30,7 @@ class Responder(object):
                 return
             return self.msg_f.outgoing_ping_response(msg.src_node)
         elif msg.query == message.FIND_NODE:
-            log_distance = msg.target.log_distance(self._my_id)
+            log_distance = msg.target.distance(self._my_id).log
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                         NUM_NODES, False)
             #TODO: return the closest rnodes to the target instead of the 8
@@ -39,7 +39,7 @@ class Responder(object):
                 msg.src_node, rnodes)
         elif msg.query == message.GET_PEERS:
             token = self._token_m.get()
-            log_distance = msg.info_hash.log_distance(self._my_id)
+            log_distance = msg.info_hash.distance(self._my_id).log
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                         NUM_NODES, False)
             #TODO: return the closest rnodes to the target instead of the 8

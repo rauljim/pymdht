@@ -168,7 +168,7 @@ class RoutingTable(object):
         return result 
 
     def find_next_bucket_with_room_index(self, node_=None, log_distance=None):
-        index = log_distance or node_.log_distance(self.my_node)
+        index = log_distance or node_.distance(self.my_node).log
         for i in range(index + 1, NUM_SBUCKETS):
             # exclude node's bucket
             sbucket = self.sbuckets[i]

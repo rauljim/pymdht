@@ -61,8 +61,8 @@ class Node(object):
                                        self.id,
                                        self.version)
 
-    def log_distance(self, other):
-        return self.id.log_distance(other.id)
+    def distance(self, other):
+        return self.id.distance(other.id)
 
     def compact(self):
         """Return compact format"""

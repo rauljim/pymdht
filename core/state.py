@@ -39,7 +39,7 @@ def save(my_id, rnodes, filename):
         else:
             rtt = rnode.rtt
         f.write('%d %r %8s %15s %5d %4d %6d\n' % (
-                my_id.log_distance(rnode.id),
+                my_id.distance(rnode.id).log,
                 rnode.id, version_repr(rnode.version),
                 rnode.addr[0], rnode.addr[1],
                 rtt * 1000,

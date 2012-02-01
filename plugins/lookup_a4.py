@@ -64,7 +64,7 @@ class _LookupQueue(object):
         qnodes = []
         for n in rnodes:
             if n.id:
-                log_distance = n.id.log_distance(self.info_hash)
+                log_distance = n.id.distance(self.info_hash).log
             else:
                 log_distance = None
             qnode = _QueuedNode(n, log_distance, None)
@@ -75,11 +75,11 @@ class _LookupQueue(object):
     def on_response(self, src_node, nodes, token, max_nodes):
         ''' Nodes must not be duplicated'''
         qnode = _QueuedNode(src_node,
-                            src_node.id.log_distance(self.info_hash),
+                            src_node.id.distance(self.info_hash).log,
                             token)
         self._add_responded_qnode(qnode)
-        qnodes = [_QueuedNode(n, n.id.log_distance(
-                    self.info_hash), None)
+        qnodes = [_QueuedNode(n, n.id.distance(
+                    self.info_hash).log, None)
                   for n in nodes]
         self._add_queued_qnodes(qnodes)
         return self._pop_nodes_to_query(max_nodes)

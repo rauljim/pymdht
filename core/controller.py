@@ -141,8 +141,8 @@ class Controller:
             lookup_obj = self._pending_lookups[0]
         else:
             return queries_to_send
-        log_distance = lookup_obj.info_hash.log_distance(self._my_id)
-        bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
+        distance = lookup_obj.info_hash.distance(self._my_id)
+        bootstrap_rnodes = self._routing_m.get_closest_rnodes(distance.log,
                                                               0,
                                                               True)
         #TODO: get the full bucket

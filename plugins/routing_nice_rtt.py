@@ -97,7 +97,7 @@ class RoutingManager(object):
         if not lookup_target:
             lookup_target = identifier.RandomId()
         if not nodes:
-            log_distance = lookup_target.log_distance(self.my_node.id)
+            log_distance = lookup_target.distance(self.my_node.id).log
             nodes = self.get_closest_rnodes(log_distance, 0, True)
         return lookup_target, nodes
         
@@ -209,7 +209,7 @@ class RoutingManager(object):
         if self.bootstrapper.is_bootstrap_node(node_):
             return
         
-        log_distance = self.my_node.log_distance(node_)
+        log_distance = self.my_node.distance(node_).log
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except(IndexError):
@@ -251,7 +251,7 @@ class RoutingManager(object):
         self._found_nodes_queue.add(nodes)
 
         logger.debug('on response received %f', rtt)
-        log_distance = self.my_node.log_distance(node_)
+        log_distance = self.my_node.distance(node_).log
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except(IndexError):
@@ -339,7 +339,7 @@ class RoutingManager(object):
         if self.bootstrapper.is_bootstrap_node(node_):
             return
 
-        log_distance = self.my_node.log_distance(node_)
+        log_distance = self.my_node.distance(node_).log
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except (IndexError):
@@ -447,7 +447,7 @@ class _ReplacementQueue(object):
     def pop(self, _):
         while self._queue:
             rnode = self._queue.pop(0)
-            log_distance = self.table.my_node.log_distance(rnode)
+            log_distance = self.table.my_node.distance(rnode).log
             sbucket = self.table.get_sbucket(log_distance)
             m_bucket = sbucket.main
             if m_bucket.there_is_room():
@@ -485,7 +485,7 @@ class _QueryReceivedQueue(object):
             if time_in_queue < QUARANTINE_PERIOD:
                 return
             # Quarantine period passed
-            log_distance = self.table.my_node.log_distance(node_)
+            log_distance = self.table.my_node.distance(node_).log
             self._queued_nodes_set.remove(node_)
             self._nodes_queued_per_bucket[log_distance] = (
                 self._nodes_queued_per_bucket[log_distance] - 1)
@@ -511,7 +511,7 @@ class _FoundNodesQueue(object):
             if node_ in self._queued_nodes_set:
                 # This node has already been queued
                 continue
-            log_distance = self.table.my_node.log_distance(node_)
+            log_distance = self.table.my_node.distance(node_).log
             num_nodes_queued = self._nodes_queued_per_bucket[log_distance]
             if num_nodes_queued > 32:
                 # many nodes queued for this bucket already
@@ -532,7 +532,7 @@ class _FoundNodesQueue(object):
         while self._queue:
             node_ = self._queue.pop(0)
             self._queued_nodes_set.remove(node_)
-            log_distance = self.table.my_node.log_distance(node_)
+            log_distance = self.table.my_node.distance(node_).log
             sbucket = self.table.get_sbucket(log_distance)
             m_bucket = sbucket.main
             rnode = m_bucket.get_rnode(node_)
