@@ -57,7 +57,7 @@ class Node(object):
             return self.addr.__hash__()
 
     def __repr__(self):
-        return '<node: %r %r (%s)>' % (self.addr,
+        return '<node: %26r %r (%s)>' % (self.addr,
                                        self.id,
                                        self.version)
 
