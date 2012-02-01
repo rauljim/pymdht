@@ -81,7 +81,7 @@ class RoutingManager(object):
 
         This method will be called for every response received.
         """
-        log_distance = self.my_node.log_distance(node_)
+        log_distance = self.my_node.distance(node_).log
         sbucket = self.table.get_sbucket(log_distance)
         rnode = node_.get_rnode(log_distance)
         rnode.rtt = rtt
@@ -104,7 +104,7 @@ class RoutingManager(object):
 
         This method will be called for every timeout triggered.
         """
-        log_distance = self.my_node.log_distance(node_)
+        log_distance = self.my_node.distance(node_).log
         sbucket = self.table.get_sbucket(log_distance)
         sbucket.main.remove(node_)
         queries_to_send = []

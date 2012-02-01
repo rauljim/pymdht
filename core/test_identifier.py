@@ -125,7 +125,7 @@ class TestId(object):
 
 
 
-    def test_order_closest(self):
+    def _test_order_closest(self):
         id0 = Id(BIN_ID0)
         ordered_list = [
             Id('\x00' * ID_SIZE_BYTES),
