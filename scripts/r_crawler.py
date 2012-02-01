@@ -155,7 +155,7 @@ class RCrawler(object):
         return splitted_nodes
                                
     def _get_bit(self, node_):
-        if node_.id.int & (1 << (NUM_BITS - self.fix_prefix_len - 1)):
+        if node_.id.long & (1 << (NUM_BITS - self.fix_prefix_len - 1)):
             return 1
         else:
             return 0
@@ -164,7 +164,7 @@ class RCrawler(object):
 class Crawler(object):
 
     def __init__(self, bootstrap_nodes):
-        self.rcrawler = RCrawler(set(), set(), 18, bootstrap_nodes[0].id)
+        self.rcrawler = RCrawler(set(), set(), 13, bootstrap_nodes[0].id)
         self.rcrawler.got_nodes_handler(None, bootstrap_nodes)
         self.my_id = self._my_id = RandomId()
         self.msg_f = message.MsgFactory(PYMDHT_VERSION, self.my_id,
