@@ -38,7 +38,7 @@ class Responder(object):
             return self.msg_f.outgoing_find_node_response(
                 msg.src_node, rnodes)
         elif msg.query == message.GET_PEERS:
-            token = self._token_m.get()
+            token = self._token_m.get(msg.src_node.ip)
             log_distance = msg.info_hash.distance(self._my_id).log
             rnodes = self._routing_m.get_closest_rnodes(log_distance,
                                                         NUM_NODES, False)
@@ -50,9 +50,13 @@ class Responder(object):
             return self.msg_f.outgoing_get_peers_response(
                 msg.src_node, token, nodes=rnodes, peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
-            peer_addr = (msg.src_addr[0], msg.bt_port)
-            self._tracker.put(msg.info_hash, peer_addr)
-            return self.msg_f.outgoing_announce_peer_response(msg.src_node)
+            if msg.token and self.token_m.check(msg.src_node.ip, msg.token):
+                peer_addr = (msg.src_addr[0], msg.bt_port)
+                self._tracker.put(msg.info_hash, peer_addr)
+                return self.msg_f.outgoing_announce_peer_response(msg.src_node)
+            else:
+                logger.warning('BAD TOKEN!')
+                return
         else:
             logger.debug('Invalid QUERY: %r' % (msg.query))
             #TODO: maybe send an error back?
