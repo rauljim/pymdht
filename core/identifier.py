@@ -22,8 +22,7 @@ logger = logging.getLogger('dht')
 BITS_PER_BYTE = 8
 ID_SIZE_BYTES = 20
 ID_SIZE_BITS = ID_SIZE_BYTES * BITS_PER_BYTE
-MAX_ID_INT = 2**ID_SIZE_BITS - 1
-ALL_ONES_INT = (1 << ID_SIZE_BITS) - 1
+MAX_ID_INT = ALL_ONES_INT = (1 << ID_SIZE_BITS) - 1
 
 class IdError(Exception):
     pass
@@ -238,7 +237,9 @@ class Id(object):
         else:
             int_id = self.int & (ALL_ONES_INT ^ (1 << index))
         return Id(int_id)
-    
+
+MAX_ID = Id(MAX_ID_INT)
+
     
 class RandomId(Id):
 
