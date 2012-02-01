@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 
-
 import sys
+sys.path.append('..')
+
 import core.ptime as time
 import datetime
 from operator import attrgetter
@@ -22,7 +23,7 @@ import core.minitwisted as minitwisted
 
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (12, 1, 1)
+PYMDHT_VERSION = (12, 2, 1)
 
 PING = False
 
@@ -103,12 +104,13 @@ class RCrawler(object):
             print 'cross bootstrap'
             self.last_query_ts = time.time()
             return b_node, b_node.id.generate_close_id(NUM_BITS - self.fix_prefix_len), self
-        print 'R SPLIT', self.fix_prefix_len, '>', self.fix_prefix_len+1
-        t = [ok_nodes.__iter__().next().id for ok_nodes in self.ok_nodes]
+        print 'R SPLIT', self.fix_prefix_len, '>', self.fix_prefix_len + 1
         self.rcrawlers = (RCrawler(
-                self.ok_nodes[0], self.dead_nodes[0], self.fix_prefix_len+1, t[0]),
+                self.ok_nodes[0], self.dead_nodes[0], self.fix_prefix_len + 1,
+                self.t.set_bit(NUM_BITS - (self.fix_prefix_len + 1), 0)),
                           RCrawler(
-                self.ok_nodes[1], self.dead_nodes[1], self.fix_prefix_len+1, t[1]))
+                self.ok_nodes[1], self.dead_nodes[1], self.fix_prefix_len + 1,
+                self.t.set_bit(NUM_BITS - (self.fix_prefix_len + 1), 1)))
         return None, None, None
 
     def got_nodes_handler(self, node_, nodes):
@@ -162,7 +164,7 @@ class RCrawler(object):
 class Crawler(object):
 
     def __init__(self, bootstrap_nodes):
-        self.rcrawler = RCrawler(set(), set(), 15, bootstrap_nodes[0].id)
+        self.rcrawler = RCrawler(set(), set(), 18, bootstrap_nodes[0].id)
         self.rcrawler.got_nodes_handler(None, bootstrap_nodes)
         self.my_id = self._my_id = RandomId()
         self.msg_f = message.MsgFactory(PYMDHT_VERSION, self.my_id,
@@ -170,6 +172,8 @@ class Crawler(object):
         self.querier = Querier()
         self.next_main_loop_ts = 0
         self.num_msgs = 0
+        self.ok_nodes = set()
+        self.dead_nodes = set()
                         
     def on_stop(self):
         pass
@@ -181,6 +185,8 @@ class Crawler(object):
             self.rcrawler.print_result()
             print self.rcrawler.get_num_ok(), self.rcrawler.get_num_dead()
             print self.num_msgs, 'messages sent'
+            for n in sorted(self.ok_nodes, key=attrgetter('ip')):
+                print n
             return
         msgs_to_send = []
         node_, target, rcrawler_obj = self.rcrawler.next()
@@ -200,6 +206,7 @@ class Crawler(object):
             for related_query in timeout_queries:
                 #print 'timeout'
                 related_query.experimental_obj.timeout_handler(related_query.dst_node)
+                self.dead_nodes.add(related_query.dst_node)
         if msgs_to_send:
             timeout_call_ts, datagrams_to_send = self.querier.register_queries(
                 msgs_to_send)
@@ -225,13 +232,10 @@ class Crawler(object):
             #print 'got reply',
             if related_query and related_query.experimental_obj:
                 #print 'related >>>>>>>>>>>>>>>>>>>>>>', len(msg.nodes)
-                try:
-                    nodes = msg.all_nodes
-                except AttributeError:
-                    print '\nno nodes>>>>>>>', msg._msg_dict
-                    nodes = []
-                node_ = related_query.dst_node
+                nodes = msg.all_nodes
+                node_ = msg.src_node
                 related_query.experimental_obj.got_nodes_handler(node_, nodes)
+                self.ok_nodes.add(node_)
         return self.next_main_loop_ts, []#datagrams_to_send
 
     # def get_bootstrap_nodes(self):
