@@ -63,9 +63,9 @@ class TestNode:
         eq_(tc.CLIENT_NODE.compact_addr,
             utils.compact_addr(tc.CLIENT_ADDR))
 
-    def test_log_distance(self):
-        eq_(tc.CLIENT_NODE.log_distance(tc.SERVER_NODE),
-            tc.CLIENT_ID.log_distance(tc.SERVER_ID))
+    def test_distance(self):
+        eq_(tc.CLIENT_NODE.distance(tc.SERVER_NODE),
+            tc.CLIENT_ID.distance(tc.SERVER_ID))
 
     def test_compact(self):
         eq_(tc.CLIENT_NODE.compact(),

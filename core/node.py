@@ -64,6 +64,10 @@ class Node(object):
     def distance(self, other):
         return self.id.distance(other.id)
 
+    def log_distance(self, other):
+        # Only for backward compatibility. It will be removed.
+        return self.distance(other).log
+
     def compact(self):
         """Return compact format"""
         return self.id.bin_id + self.compact_addr

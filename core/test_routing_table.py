@@ -159,7 +159,7 @@ class TestRoutingTable:
         empty_b = Bucket(MAX_RNODES, set())
 
         # Get empty superbucket
-        log_distance = self.my_node.log_distance(tc.SERVER_NODE)
+        log_distance = self.my_node.distance(tc.SERVER_NODE).log
         sbucket = self.rt.get_sbucket(log_distance)
         m_bucket = sbucket.main
         r_bucket = sbucket.replacement
@@ -202,7 +202,7 @@ class TestRoutingTable:
         eq_(self.rt.get_main_rnodes(),
             [tc.SERVER_NODE, new_node])
 
-        ld_to_server = tc.SERVER_ID.log_distance(tc.CLIENT_ID)
+        ld_to_server = tc.SERVER_ID.distance(tc.CLIENT_ID).log
         eq_(self.rt.get_closest_rnodes(ld_to_server, 1, True),
             [tc.SERVER_NODE])
         eq_(self.rt.get_closest_rnodes(ld_to_server, 8, False),
@@ -271,7 +271,7 @@ class TestRoutingTable:
         nodes = [node.Node(n.addr, tc.CLIENT_ID.generate_close_id(ld))
                            for n, ld in zip(tc.NODES, log_distances)]
         for node_ in nodes:
-            log_distance = self.my_node.log_distance(node_)
+            log_distance = self.my_node.distance(node_).log
             sbucket = self.rt.get_sbucket(log_distance)
             sbucket.main.add(node_.get_rnode(log_distance))
             self.rt.num_rnodes += 1
@@ -300,7 +300,7 @@ class TestRoutingTable:
                                        exclude_myself=False),
             [tc.CLIENT_NODE] + nodes)
 
-        ld_to_7 = tc.CLIENT_NODE.log_distance(nodes[7])
+        ld_to_7 = tc.CLIENT_NODE.distance(nodes[7]).log
         closest_nodes = self.rt.get_closest_rnodes(ld_to_7, 8,
                                                    exclude_myself=True)
         eq_(closest_nodes[0], nodes[7])
@@ -324,7 +324,7 @@ class TestRoutingTable:
     def test_complete_coverage(self):
         #TODO: ips_in_table
         eq_(self.rt.get_closest_rnodes(76, 8, False), [tc.CLIENT_NODE])
-        log_distance = self.my_node.log_distance(tc.SERVER_NODE)
+        log_distance = self.my_node.distance(tc.SERVER_NODE).log
         str(self.rt.get_sbucket(log_distance).main)
         repr(self.rt)
         
