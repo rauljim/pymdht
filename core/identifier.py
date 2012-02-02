@@ -54,6 +54,7 @@ class Id(object):
         self._bin_id = None
         self._bin = None
         self._hex = None
+        self._bin_str = None
         self._long = None
         self._log = None
         if isinstance(hex_or_bin_id, str):
@@ -92,6 +93,14 @@ class Id(object):
         if not self._hex:
             self._hex = base64.b16encode(self._bin)
         return self._hex
+
+    @property
+    def bin_str(self):
+        if not self._bin_str:
+            bin_str = bin(self.long)[2:]
+            # Need to pad to get 160 bits
+            self._bin_str = '0'*(ID_SIZE_BITS - len(bin_str)) + bin_str
+        return self._bin_str
 
     @property
     def long(self):
@@ -183,7 +192,10 @@ class Id(object):
 
         """
         return self.distance(other).log
-            
+
+    def get_prefix(self, prefix_len):
+        return self.bin_str[:prefix_len]
+    
     def DD_order_closest(self, id_list):
         """Return a list with the Id objects in 'id_list' ordered
         according to the distance to self. The closest id first.
@@ -247,7 +259,11 @@ MAX_ID = Id(MAX_ID_LONG)
 class RandomId(Id):
 
     """Create a random Id object."""
-    def __init__(self):
-        random_str = ''.join([chr(random.randint(0, 255)) \
-                                      for _ in xrange(ID_SIZE_BYTES)])
-        Id.__init__(self, random_str)
+    def __init__(self, bin_prefix=''):
+        padding_len = ID_SIZE_BITS - len(bin_prefix)
+        long_id = 0
+        if bin_prefix:
+            long_id = long(bin_prefix, 2)
+            long_id = long_id << padding_len
+        long_id = long_id + random.randint(0, (1 << padding_len) - 1)
+        Id.__init__(self, long_id)
