@@ -45,29 +45,45 @@ LEAF_PREFIX_LEN = 20
 
 class RCrawler(object):
 
-    def __init__(self, ok_nodes, dead_nodes, fix_prefix_len, t):
-        self.fix_prefix_len = fix_prefix_len
-        self.t = t
+    def __init__(self, target_prefix):
+        self.target_prefix = target_prefix
         self.known_nodes = set()
         self.pending_nodes = []
-        self.ok_nodes = self._split(ok_nodes)
-        self.dead_nodes = self._split(dead_nodes)
-
-        self.bootstrap_index = 0
+        self.ok_nodes = set()
+        self.dead_nodes = set()
         
-        self.rcrawlers = None
         self.next_rcrawler = 0
         self.last_query_ts = 0
 
         self.leaf = False
         self.done = False
+        self.leaf = len(target_prefix) == LEAF_PREFIX_LEN
+        if self.leaf:
+            self.rcrawlers = None
+        else:
+            self.rcrawlers = [RCrawler(target_prefix + '0'),
+                              RCrawler(target_prefix + '1')]
+        
+    def next_bootstrap_target(self):
+        target = None
+        if self.leaf:
+            if len(self.ok_nodes) < 3:
+                target =  RandomId(self.target_prefix)
+        else:
+            target = self.rcrawlers[self.next_rcrawler].next_bootstrap_target()
+            self.next_rcrawler = self.next_rcrawler ^ 1 #round-robin
+            if not target:
+                target = self.rcrawlers[self.next_rcrawler].next_bootstrap_target()
+        return target
 
+    
+        
     def next(self):
         if self.done:
             return None, None, None
         if self.rcrawlers:
-            if self.rcrawlers[self.next_rcrawler].done:
-                self.next_rcrawler = self.next_rcrawler ^ 1 #round-robin
+            if 
+                
                 if self.rcrawlers[self.next_rcrawler].done:
                     self.done = True
                     return None, None, None
