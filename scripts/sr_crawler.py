@@ -26,12 +26,12 @@ logger = logging.getLogger('dht')
 
 PYMDHT_VERSION = (12, 2, 1)
 
-EXTRACTION_DELAY = .01
+EXTRACTION_DELAY = .0001
 
-PRINT_DOT_EACH = 10
+PRINT_DOT_EACH = 1
 
-START_PREFIX_LEN = 10
-LEAF_PREFIX_LEN = 23
+START_PREFIX_LEN = 8
+LEAF_PREFIX_LEN = 22
 
 
 class RCrawler(object):
@@ -141,7 +141,8 @@ class RCrawler(object):
 class Crawler(object):
 
     def __init__(self, bootstrap_nodes):
-        target_prefix = bootstrap_nodes[0].id.get_prefix(START_PREFIX_LEN)
+        self.target = bootstrap_nodes[0].id
+        target_prefix = self.target.get_prefix(START_PREFIX_LEN)
         self.rcrawler = RCrawler(target_prefix)
         for n in bootstrap_nodes:
             self.rcrawler.found_node_handler(n)
@@ -161,7 +162,7 @@ class Crawler(object):
         pass
 
     def main_loop(self):
-        self.next_main_loop_ts = time.time() + .1
+        self.next_main_loop_ts = time.time() + EXTRACTION_DELAY
         if time.time() > self.last_msg_ts + 4:# self.rcrawler.done:
             print 'ind | ok dead | ok dead'
             self.rcrawler.print_result()
@@ -173,18 +174,22 @@ class Crawler(object):
             return
         target = None
         msgs_to_send = []
-        if self.num_msgs % 5 == 0 or (self.num_msgs > 100
-                                       and not self.pending_nodes):
+        if ((self.num_msgs < 20 and self.num_msgs % 5 == 0)
+            or (self.num_msgs < 100 and self.num_msgs % 20 == 0)
+            or (self.num_msgs > 100 and self.num_msgs % 50 == 0)
+            or (self.num_msgs > 100 and not self.pending_nodes)):
             dst_node, target = self.rcrawler.next_bootstrap_msg()
             if target:
-                print 'bootstrap OK'
+                print 'O',
             else:
-                print 'bootstrap FAILED'
+                print 'F',
         if not target and self.pending_nodes:
             dst_node = self.pending_nodes.pop(0)
             if dst_node.id.bin_str.startswith(self.rcrawler.target_prefix):
                 self.rcrawler.pinged_node_handler(dst_node)
-            target = dst_node.id
+                target = dst_node.id
+            else:
+                target = self.target
             
         if target:
             msg = self.msg_f.outgoing_find_node_query(
