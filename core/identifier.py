@@ -195,6 +195,13 @@ class Id(object):
 
     def get_prefix(self, prefix_len):
         return self.bin_str[:prefix_len]
+
+    def get_bit(self, index):
+        if self.long & (1 << (ID_SIZE_BITS - index - 1)):
+            return 1
+        else:
+            return 0
+
     
     def DD_order_closest(self, id_list):
         """Return a list with the Id objects in 'id_list' ordered
