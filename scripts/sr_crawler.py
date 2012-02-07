@@ -26,11 +26,11 @@ logger = logging.getLogger('dht')
 
 PYMDHT_VERSION = (12, 2, 1)
 
-EXTRACTION_DELAY = .0001
+EXTRACTION_DELAY = .01
 
 PRINT_DOT_EACH = 1
 
-START_PREFIX_LEN = 8
+START_PREFIX_LEN = 20
 LEAF_PREFIX_LEN = 22
 
 
@@ -49,7 +49,7 @@ class RCrawler(object):
         self.last_query_ts = 0
 
         self.leaf = False
-        self.done = False
+        self.bootstrap_done = False
         self.leaf = len(target_prefix) == LEAF_PREFIX_LEN
         if self.leaf:
             self.rcrawlers = None
@@ -59,27 +59,34 @@ class RCrawler(object):
 
     def next_bootstrap_msg(self):
         dst_node = None
-        target = None
+        target = None 
         if self.leaf:
+            return dst_node, target
+        self.bootstrap_done = (self.rcrawlers[0].bootstrap_done
+                               and self.rcrawlers[1].bootstrap_done)
+        if self.bootstrap_done:
             return dst_node, target
         for i, j in ((0,1), (1,0)):
             rcrawler0 = self.rcrawlers[i]
             rcrawler1 = self.rcrawlers[j]
             #print self.target_prefix, 'rc0 ok', len(rcrawler0.ok_nodes),
             #print 'rc1 pending', len(rcrawler1.pending_nodes),
-            if (rcrawler1.num_bootstrap_attempts < 3 and rcrawler0.ok_nodes
-                and not rcrawler1.pending_nodes and len(rcrawler1.ok_nodes) < 3):
+            if (rcrawler0.ok_nodes and not rcrawler1.bootstrap_done
+                and not rcrawler1.pending_nodes):
                 # Try bootrapping rcrawler1 from nodes from rcrawler0
                 rcrawler1.num_bootstrap_attempts += 1
+                rcrawler1.bootstrap_done = rcrawler1.num_bootstrap_attempts > 2
                 dst_node = random.sample(rcrawler0.ok_nodes, 1)[0]
                 target =  RandomId(rcrawler1.target_prefix)
-                #print 'OK'
-                return dst_node, target
-            #print 'NO'
-        dst_node, target = self.rcrawlers[self.next_rcrawler].next_bootstrap_msg()
-        self.next_rcrawler = self.next_rcrawler ^ 1 #round-robin
+                print rcrawler1.target_prefix
+                break
         if not target:
             dst_node, target = self.rcrawlers[self.next_rcrawler].next_bootstrap_msg()
+            self.next_rcrawler = self.next_rcrawler ^ 1 #round-robin
+        if not target:
+            dst_node, target = self.rcrawlers[self.next_rcrawler].next_bootstrap_msg()
+        self.bootstrap_done = (self.rcrawlers[0].bootstrap_done
+                               and self.rcrawlers[1].bootstrap_done)
         return dst_node, target
 
     def ok_node_handler(self, node_):
@@ -87,6 +94,8 @@ class RCrawler(object):
         if node_:
             # node_ is None on bootstrap
             self.ok_nodes.add(node_)
+            self.bootstrap_done = self.bootstrap_done or (
+                self.leaf and len(self.ok_nodes) > 2)
             if self.rcrawlers:
                 rcrawler_bit = node_.id.get_bit(len(self.target_prefix))
                 self.rcrawlers[rcrawler_bit].ok_node_handler(node_)
@@ -143,6 +152,7 @@ class Crawler(object):
     def __init__(self, bootstrap_nodes):
         self.target = bootstrap_nodes[0].id
         target_prefix = self.target.get_prefix(START_PREFIX_LEN)
+        print target_prefix
         self.rcrawler = RCrawler(target_prefix)
         for n in bootstrap_nodes:
             self.rcrawler.found_node_handler(n)
@@ -175,8 +185,8 @@ class Crawler(object):
         target = None
         msgs_to_send = []
         if ((self.num_msgs < 20 and self.num_msgs % 5 == 0)
-            or (self.num_msgs < 100 and self.num_msgs % 20 == 0)
-            or (self.num_msgs > 100 and self.num_msgs % 50 == 0)
+            or (self.num_msgs < 100 and self.num_msgs % 10 == 0)
+            or (self.num_msgs > 100 and self.num_msgs % 20 == 0)
             or (self.num_msgs > 100 and not self.pending_nodes)):
             dst_node, target = self.rcrawler.next_bootstrap_msg()
             if target:
@@ -235,8 +245,8 @@ class Crawler(object):
             if related_query and related_query.experimental_obj:
                 nodes = msg.all_nodes
                 src_node = msg.src_node
-                #print '%s >>>>>>>>>>>>>>>>>>>>>> %d' % (
-                #    src_node.id.hex, len(msg.nodes))
+                print '%s >>>>>>>>>>>>>>>>>>>>>> %d' % (
+                    src_node.id.hex, len(msg.nodes))
                 if src_node.id.bin_str.startswith(self.rcrawler.target_prefix):
                     self.rcrawler.ok_node_handler(src_node)
                 for n in nodes:
@@ -270,7 +280,7 @@ class MultiCrawler(object):
     def main_loop(self):
         main_loop_result = self.current_crawler.main_loop()
         if not main_loop_result:
-            print
+            print 'DONE'
             #self.current_crawler.print_summary()
             bootstrap_nodes = self.current_crawler.get_bootstrap_nodes()
             self.current_crawler = Crawler(bootstrap_nodes)
@@ -294,11 +304,11 @@ def main(options, args):
         mcrawler.main_loop, 7005, 
         mcrawler.on_datagram_received,
         task_interval=EXTRACTION_DELAY / 2)
-    reactor.start()
-    try:
-        time.sleep(20000)
-    except:
-        pass
+    # NO THREADED REACTOR
+    reactor._lock.acquire = lambda :None
+    reactor._lock.release = lambda :None  
+    reactor.run2()
+
         
 if __name__ == '__main__':
     parser = OptionParser()
