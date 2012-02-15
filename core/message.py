@@ -218,7 +218,7 @@ class OutgoingMsg(object):
           self.rtt = time.time() - self.sending_ts
           self.got_response = True            
           if response_msg.type == RESPONSE and not self.dst_node.id:
-              self.dst_node.id = response_msg.src_id
+              self.dst_node.id = response_msg.src_node.id
       return matched
 
     def make_query(self, src_id, experimental_obj=None,
@@ -292,6 +292,27 @@ class IncomingMsg(object):
         bencoded_msg = datagram.data
         src_addr = datagram.addr
         self.src_addr = src_addr
+        # COMMON
+        self.tid = None
+        self.type = None
+        self.version = None
+        self.ns_node = None # never used
+        self.src_id = None
+        self.src_node = None
+        # QUERY
+        self.query = None
+        self.target = None # find_node
+        self.info_hash = None # announce_peer
+        self.bt_port = None # announce_peer
+        self.token = None # announce_peer
+        # RESPONSE
+        self.nodes = None
+        self.nodes2 = None
+        self.all_nodes = None
+        self.token = None
+        self.peers = None
+        # ERROR
+        self.error = None
         try:
             # bencode.decode may raise bencode.DecodeError
             self._msg_dict = bencode.decode(bencoded_msg)
@@ -323,6 +344,7 @@ class IncomingMsg(object):
             v = self._msg_dict[k]
             if kk:
                 v = v[kk]
+            return v
         except (KeyError):
             if optional:
                 return None
@@ -330,7 +352,6 @@ class IncomingMsg(object):
                 raise MsgError, 'Non-optional key (%s:%s) not found' % (k, kk)
         except (TypeError):
             raise MsgError, 'Probably k (%r) is not a dictionary' % (k)
-        return v
     
     def _get_str(self, k, kk=None, optional=False):
         v = self._get_value(k, kk, optional)
@@ -341,20 +362,18 @@ class IncomingMsg(object):
         return v
 
     def _get_id(self, k, kk=None):
+        v = self._get_str(k, kk)
         try:
-            v = self._get_value(k, kk)
-            v = Id(v)
+            return Id(v)
         except (IdError):
             raise MsgError, 'Value (%s:%s,%s) must be a valid Id' % (k, kk, v)
-        return v
 
     def _get_int(self, k, kk=None):
         v = self._get_value(k, kk)
         try:
-            v= int(v)
+            return int(v)
         except (TypeError, ValueError):
             raise MsgError, 'Value (%s:%s,%s) must be an int' % (k, kk, v)
-        return v
     
     def _sanitize_common(self):
         # Make sure the decoded data is a dict and has a TID key
@@ -436,6 +455,8 @@ class IncomingMsg(object):
             self.peers = mt.uncompact_peers(c_peers)
 
     def _sanitize_error(self):
+        self.src_id = None
+        self.src_node = Node(self.src_addr)
         try:
             self.error = [int(self._msg_dict[ERROR][0]),
                           str(self._msg_dict[ERROR][1])]

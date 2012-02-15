@@ -3,6 +3,7 @@
 # See LICENSE.txt for more information
 
 import logging
+import logging.handlers
 import os
 
 FORMAT = '%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(funcName)s()\n\
@@ -14,6 +15,10 @@ FORMAT = '%(asctime)s %(levelname)s %(filename)s:%(lineno)s - %(funcName)s()\n\
 #                    format='%(asctime)s %(levelname)-8s %(message)s',
 #                    datefmt='%a, %d %b %Y %H:%M:%S',
 #                    stream=devnullstream)
+
+
+LOG_SIZE_LIMIT_NORMAL = 10 * 2**20 # 10 MB
+LOG_SIZE_LIMIT_DEBUG = 2**30 # 1 GB
 
 
 def testing_setup(module_name):
@@ -35,8 +40,13 @@ def setup(logs_path, logs_level):
     logger = logging.getLogger('dht')
     logger.setLevel(logs_level)
 
-    logger_conf = logging.FileHandler(
-        os.path.join(logs_path, 'pymdht.log'), 'w')
+    if logs_level == logging.DEBUG:
+        log_size_limit = LOG_SIZE_LIMIT_DEBUG
+    else:
+        log_size_limit = LOG_SIZE_LIMIT_NORMAL
+    filename = os.path.join(logs_path, 'pymdht.log')
+    logger_conf = logging.handlers.RotatingFileHandler(
+        filename, mode='w', maxBytes=log_size_limit, backupCount=0)
     logger_conf.setLevel(logs_level)
     logger_conf.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(logger_conf)

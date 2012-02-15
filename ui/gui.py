@@ -50,7 +50,7 @@ class Interactive_GUI(wx.Frame):
     def display_on_grid(self,t):
         pos = self.lc.InsertStringItem(self.counter1,str(self.counter1))
         self.lc.SetStringItem(pos, 1,str(t[0]))
-        if(t[2]!="-"):
+        if(t[2].__class__.__name__=='Node'):
             self.lc.SetStringItem(pos, 2,"%d Peer(s) from Node" % t[1])
             self.lc.SetStringItem(pos, 3,str(t[2].addr))
         else:

@@ -47,7 +47,7 @@ class TestController:
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 exp_m_mod,
-                                                None)
+                                                None, False)
         self.my_id = self.controller._my_id
         self.querier2 = querier.Querier()#self.my_id)
         self.servers_msg_f = message.MsgFactory(VERSION_LABEL, tc.SERVER_ID)
@@ -67,7 +67,7 @@ class TestController:
         controller.Controller(VERSION_LABEL ,
                               tc.CLIENT_NODE, 'test_logs/state.dat.no',
                               routing_m_mod, lookup_m_mod, exp_m_mod,
-                              None)
+                              None, False)
 
     def test_adding_and_removing_node(self):
         # The routing table is initially empty

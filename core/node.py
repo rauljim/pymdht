@@ -39,17 +39,27 @@ class Node(object):
         return self._addr[0]
     
     def __eq__(self, other):
-        try:
-            return self.addr == other.addr and self.id == other.id
-        except AttributeError: #self.id == None
-            return self.id is None and other.id is None \
-                   and self.addr == other.addr
+        if self.addr == other.addr:
+            try:
+                return self.id == other.id
+            except AttributeError: #self.id == None (id.bin_id fails)
+                return self.id is None and other.id is None
+        else:
+            return False
 
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        if self.id:
+            return self.addr.__hash__() ^ self.id.__hash__()
+        else:
+            return self.addr.__hash__()
+
     def __repr__(self):
-        return '<node: %r %r>' % (self.addr, self.id)
+        return '<node: %r %r (%s)>' % (self.addr,
+                                       self.id,
+                                       self.version)
 
     def log_distance(self, other):
         return self.id.log_distance(other.id)
@@ -90,8 +100,8 @@ class RoutingNode(Node):
         self.last_seen = current_time
         self.bucket_insertion_ts = None
         
-    def __repr__(self):
-        return '<rnode: %r %r>' % (self.addr, self.id)
+    #def __repr__(self):
+    #    return '<rnode: %r %r>' % (self.addr, self.id)
 
     def get_rnode(self):
         return self
@@ -113,3 +123,13 @@ class RoutingNode(Node):
                      (consider_queries and event == QUERY):
                 return result
         return result # all timeouts (and queries), or empty list
+
+    
+class LookupNode(Node):
+
+    def __init__(self, node_, target):
+        Node.__init__(self, node_.addr, node_.id, node_.version,
+                      node_.is_ns)
+        self.node = node_
+        self.target = target
+        self.distance_to_target = self.id.distance(target)
