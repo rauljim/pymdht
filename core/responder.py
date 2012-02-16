@@ -50,7 +50,7 @@ class Responder(object):
             return self.msg_f.outgoing_get_peers_response(
                 msg.src_node, token, nodes=rnodes, peers=peers)
         elif msg.query == message.ANNOUNCE_PEER:
-            if msg.token and self.token_m.check(msg.src_node.ip, msg.token):
+            if msg.token and self._token_m.check(msg.src_node.ip, msg.token):
                 peer_addr = (msg.src_addr[0], msg.bt_port)
                 self._tracker.put(msg.info_hash, peer_addr)
                 return self.msg_f.outgoing_announce_peer_response(msg.src_node)
