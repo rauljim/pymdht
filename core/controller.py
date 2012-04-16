@@ -397,10 +397,10 @@ class Controller:
                     self._size_estimation_file.flush()
 
 
+                queries_to_send.extend(self._announce(
+                        related_query.lookup_obj))
+                lookup_id = related_query.lookup_obj.lookup_id
                 if callback_f and callable(callback_f):
-                    queries_to_send.extend(self._announce(
-                            related_query.lookup_obj))
-                    lookup_id = related_query.lookup_obj.lookup_id
                     related_query.lookup_obj.callback_f(lookup_id, None, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(
             related_query.dst_node)
