@@ -54,7 +54,7 @@ def load(filename):
         hex_id = f.readline().strip()
         my_id = Id(hex_id)
         for line in f:
-            _, hex_id, _, ip, port, _, _, _ = line.split()
+            _, hex_id, _, ip, port, _, _ = line.split()
             addr = (ip, int(port))
             node_ = Node(addr, Id(hex_id))
             nodes.append(node_)
