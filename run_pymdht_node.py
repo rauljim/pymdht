@@ -58,6 +58,7 @@ def main(options, args):
     print 'Private DHT name:', options.private_dht_name
     print 'debug mode:', options.debug
     print 'bootstrap mode:', options.bootstrap_mode
+    print 'Swift tracker port:', options.swift_port
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
     routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
@@ -72,7 +73,8 @@ def main(options, args):
                         experimental_m_mod,
                         options.private_dht_name,
                         logs_level,
-                        options.bootstrap_mode)
+                        options.bootstrap_mode,
+                        options.swift_port)
     if options.lookup_delay:
         loop_forever = not options.num_lookups
         remaining_lookups = options.num_lookups
@@ -198,6 +200,10 @@ if __name__ == '__main__':
                       action='store_true', default=False,
                       help="Only for well-known bootsrap nodes. It will ignore\
     some incoming queries to avoid being added to too many routing tables.")
+    parser.add_option("--swift-port",dest="swift_port",
+                      metavar='INT', default=0,
+                      help="Open a Swift tracker interface on the indicated\
+    UDP port. Default 0, means do not run a swift tracker.")
     parser.add_option("--version",dest="version",
                       action='store_true', default=False,
                       help="Print Pymdhtversion and exit.")
@@ -217,7 +223,7 @@ if __name__ == '__main__':
     options.stop_delay = int(options.stop_delay)
     options.announce_port = int(options.announce_port)
     options.log_distance = int(options.log_distance)
-
+    options.swift_port = int(options.swift_port)
     main(options, args)
 
 

@@ -18,6 +18,7 @@ import ptime as time
 import minitwisted
 import controller
 import logging, logging_conf
+import swift_tracker
 
 PYMDHT_VERSION = (12, 2, 3)
 VERSION_LABEL = ''.join(
@@ -45,8 +46,9 @@ class Pymdht:
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
-                 debug_level, id_=None,
-                 bootsrap_mode=False):
+                 debug_level,
+                 bootsrap_mode=False,
+                 swift_port=0):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(VERSION_LABEL,
@@ -60,6 +62,9 @@ class Pymdht:
             self.controller.main_loop,
             my_node.addr[1], self.controller.on_datagram_received)
         self.reactor.start()
+        if swift_port:
+            print 'Creating SwiftTracker'
+            swift_tracker.SwiftTracker(self, swift_port).start()
 
     def stop(self):
         """Stop the DHT node."""
@@ -87,7 +92,7 @@ class Pymdht:
         
         """
         use_cache = True
-        print 'use_cache ON, only for debugging'
+        print 'pymdht: use_cache ON!!'
         self.reactor.call_asap(self.controller.get_peers,
                                lookup_id, info_hash,
                                callback_f, bt_port,
