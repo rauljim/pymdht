@@ -107,7 +107,7 @@ class Controller:
         logger.debug('get_peers %d %r' % (bt_port, info_hash))
         if use_cache:
             peers = self._get_cached_peers(info_hash)
-            if peers and callable(callback_f):
+            if peers and callback_f and callable(callback_f):
                 callback_f(lookup_id, peers, None)
                 callback_f(lookup_id, None, None)
                 return datagrams_to_send
@@ -153,7 +153,7 @@ class Controller:
             callback_f = lookup_obj.callback_f
             if peers:
                 self._add_cache_peers(lookup_obj.info_hash, peers)
-                if callable(callback_f):
+                if callback_f and callable(callback_f):
                     callback_f(lookup_obj.lookup_id, peers, None)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
@@ -295,10 +295,11 @@ class Controller:
                 callback_f = lookup_obj.callback_f
                 if peers:
                     self._add_cache_peers(lookup_obj.info_hash, peers)
-                    if callable(callback_f):
+                    if callback_f and callable(callback_f):
+                        print >>sys.stderr, `callaback_f`
                         callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
-                    if callable(callback_f):
+                    if callback_f and callable(callback_f:
                         callback_f(lookup_id, None, msg.src_node)
                     queries_to_send = self._announce(
                         related_query.lookup_obj)
