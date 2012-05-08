@@ -355,7 +355,7 @@ class Controller:
                     lookup_id = related_query.lookup_obj.lookup_id
                     if lookup_done:
                         callback_f(lookup_id, None, msg.src_node)
-			    # maintenance related tasks
+                # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_error_received(addr)
 
