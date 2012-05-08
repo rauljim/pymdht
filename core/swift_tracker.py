@@ -12,7 +12,7 @@ import logging
 
 
 # from core.pymdht import Pymdht
-from core.identifier import Id, RandomId
+from identifier import Id, RandomId
 # from core.node import Node
 # import plugins.routing_nice_rtt as routing_m_mod
 # import plugins.lookup_a4 as lookup_m_mod
