@@ -153,13 +153,13 @@ class SwiftTracker(threading.Thread):
                 return
         if remote_cid == CHANNEL_ZERO and channel.rhash:
             #droid.log(">>>>>>> DHT: got HANDSHAKE from swift <<<<<<<")  
-            self.pymdht.get_peers(channel, channel.rhash, self._on_peers_found, 0)
+            self.pymdht.get_peers(channel, channel.rhash, self._on_peers_found, channel.remote_addr[1])
             # need to complete handshake
             reply = ''.join((channel.remote_cid,
                              chr(HANDSHAKE),
                              channel.local_cid,
                              ))
-            self.socket.sendto(reply, addr)
+            self.socket.sendto(reply, channel.remote_addr)
             #droid.log('>>>>>>>>>>>>> GETTING PEERS <<<<<<<<<<<<<<')
             # reply = ''.join((channel.remote_cid,
             #                  chr(PEX_RES),
