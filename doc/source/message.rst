@@ -1,5 +1,0 @@
-message
-=======
-
-.. automodule:: message
-   :members:
