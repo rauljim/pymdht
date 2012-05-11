@@ -296,10 +296,9 @@ class Controller:
                 if peers:
                     self._add_cache_peers(lookup_obj.info_hash, peers)
                     if callback_f and callable(callback_f):
-                        print >>sys.stderr, `callaback_f`
                         callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
-                    if callback_f and callable(callback_f:
+                    if callback_f and callable(callback_f):
                         callback_f(lookup_id, None, msg.src_node)
                     queries_to_send = self._announce(
                         related_query.lookup_obj)
