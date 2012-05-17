@@ -12,6 +12,7 @@ Find usage examples in server_dht.py and interactive_dht.py.
 
 """
 
+import sys
 import os
 import ptime as time
 
@@ -106,7 +107,3 @@ class Pymdht:
         
     def stop_and_get_capture(self):
         return self.reactor.stop_and_get_capture()
-
-    #TODO2: Future Work
-    #TODO2: def add_bootstrap_node(self, node_addr, node_id=None):
-    #TODO2: def lookup.back_off()
