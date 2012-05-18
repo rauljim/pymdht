@@ -21,7 +21,7 @@ import controller
 import logging, logging_conf
 import swift_tracker
 
-PYMDHT_VERSION = (12, 5, 0)
+PYMDHT_VERSION = (12, 5, 1)
 VERSION_LABEL = ''.join(
     ['NS',
      chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
