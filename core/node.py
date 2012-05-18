@@ -57,12 +57,16 @@ class Node(object):
             return self.addr.__hash__()
 
     def __repr__(self):
-        return '<node: %r %r (%s)>' % (self.addr,
+        return '<node: %26r %r (%s)>' % (self.addr,
                                        self.id,
                                        self.version)
 
+    def distance(self, other):
+        return self.id.distance(other.id)
+
     def log_distance(self, other):
-        return self.id.log_distance(other.id)
+        # Only for backward compatibility. It will be removed.
+        return self.distance(other).log
 
     def compact(self):
         """Return compact format"""

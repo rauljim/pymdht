@@ -104,7 +104,7 @@ class ThreadedReactor(threading.Thread):
         except:
             logger.critical( 'MINITWISTED CRASHED')
             logger.exception('MINITWISTED CRASHED')
-            print 'MINITWISTED CRASHED'
+            print 'MINITWISTED CRASHED (see logs)'
             if DEBUG:
                 raise
         self.running = False

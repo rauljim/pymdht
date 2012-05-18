@@ -22,8 +22,7 @@ logger = logging.getLogger('dht')
 BITS_PER_BYTE = 8
 ID_SIZE_BYTES = 20
 ID_SIZE_BITS = ID_SIZE_BYTES * BITS_PER_BYTE
-MAX_ID_INT = 2**ID_SIZE_BITS - 1
-
+MAX_ID_LONG = ALL_ONES_LONG = (1 << ID_SIZE_BITS) - 1
 
 class IdError(Exception):
     pass
@@ -46,7 +45,7 @@ class Id(object):
     >>> Id(chr(0) * ID_SIZE_BYTES) == Id(0)
     True
 
-    >>> Id(chr(255) * ID_SIZE_BYTES) == Id(MAX_ID_INT)
+    >>> Id(chr(255) * ID_SIZE_BYTES) == Id(MAX_ID_LONG)
     True
     
     """
@@ -55,7 +54,8 @@ class Id(object):
         self._bin_id = None
         self._bin = None
         self._hex = None
-        self._int = None
+        self._bin_str = None
+        self._long = None
         self._log = None
         if isinstance(hex_or_bin_id, str):
             if len(hex_or_bin_id) == ID_SIZE_BYTES:
@@ -67,10 +67,10 @@ class Id(object):
                 except:
                     raise IdError, 'input: %r' % hex_or_bin_id
         elif isinstance(hex_or_bin_id, long) or isinstance(hex_or_bin_id, int):
-            if hex_or_bin_id < 0 or hex_or_bin_id > MAX_ID_INT:
+            if hex_or_bin_id < 0 or hex_or_bin_id > MAX_ID_LONG:
                 raise IdError, 'input: %r' % hex_or_bin_id
-            self._int = hex_or_bin_id
-            self._hex = '%040x' % self._int
+            self._long = long(hex_or_bin_id)
+            self._hex = '%040x' % self._long
             self._bin_id = base64.b16decode(self._hex, True)
         if not self._bin_id:
             raise IdError, 'input: %r' % hex_or_bin_id
@@ -95,26 +95,37 @@ class Id(object):
         return self._hex
 
     @property
-    def int(self):
-        if not self._int:
-            self._int = int(self.hex, 16)
-        return self._int
+    def bin_str(self):
+        if not self._bin_str:
+            bin_str = bin(self.long)[2:]
+            # Need to pad to get 160 bits
+            self._bin_str = '0'*(ID_SIZE_BITS - len(bin_str)) + bin_str
+        return self._bin_str
+
+    @property
+    def long(self):
+        if not self._long:
+            self._long = long(self.hex, 16)
+        return self._long
 
     @property
     def log(self):
         if not self._log:
-            if self.int == 0:
+            if self.long == 0:
                 self._log = -1
             else:
-                self._log = len(bin(self.int)) - 3
+                self._log = len(bin(self.long)) - 3
         return self._log
 
     @property
     def prefix_len(self):
         return ID_SIZE_BITS - self.log
+
+    def __cmp__(self, other):
+        return self.long.__cmp__(other.long)
         
     def __eq__(self, other):
-        return self.bin_id == other.bin_id
+        return self.long == other.long
 
     def __ne__(self, other):
         return not self == other
@@ -131,7 +142,7 @@ class Id(object):
         object.
 
         """
-        return Id(self.int ^ other.int)
+        return Id(self.long ^ other.long)
     
     def log_distance(self, other):
         """Return log (base 2) of the XOR distance between two Id
@@ -181,8 +192,18 @@ class Id(object):
 
         """
         return self.distance(other).log
-            
-    def order_closest(self, id_list):
+
+    def get_prefix(self, prefix_len):
+        return self.bin_str[:prefix_len]
+
+    def get_bit(self, index):
+        if self.long & (1 << (ID_SIZE_BITS - index - 1)):
+            return 1
+        else:
+            return 0
+
+    
+    def DD_order_closest(self, id_list):
         """Return a list with the Id objects in 'id_list' ordered
         according to the distance to self. The closest id first.
         
@@ -232,11 +253,24 @@ class Id(object):
         result = Id(bin_id)
         return result 
 
+    def set_bit(self, index, value):
+        if value:
+            long_id = self.long | (1 << index)
+        else:
+            long_id = self.long & (ALL_ONES_LONG ^ (1 << index))
+        return Id(long_id)
+
+MAX_ID = Id(MAX_ID_LONG)
+
     
 class RandomId(Id):
 
     """Create a random Id object."""
-    def __init__(self):
-        random_str = ''.join([chr(random.randint(0, 255)) \
-                                      for _ in xrange(ID_SIZE_BYTES)])
-        Id.__init__(self, random_str)
+    def __init__(self, bin_prefix=''):
+        padding_len = ID_SIZE_BITS - len(bin_prefix)
+        long_id = 0
+        if bin_prefix:
+            long_id = long(bin_prefix, 2)
+            long_id = long_id << padding_len
+        long_id = long_id + random.randint(0, (1 << padding_len) - 1)
+        Id.__init__(self, long_id)

@@ -107,7 +107,7 @@ class Controller:
         logger.debug('get_peers %d %r' % (bt_port, info_hash))
         if use_cache:
             peers = self._get_cached_peers(info_hash)
-            if peers and callable(callback_f):
+            if peers and callback_f and callable(callback_f):
                 callback_f(lookup_id, peers, None)
                 callback_f(lookup_id, None, None)
                 return datagrams_to_send
@@ -141,8 +141,8 @@ class Controller:
             lookup_obj = self._pending_lookups[0]
         else:
             return queries_to_send
-        log_distance = lookup_obj.info_hash.log_distance(self._my_id)
-        bootstrap_rnodes = self._routing_m.get_closest_rnodes(log_distance,
+        distance = lookup_obj.info_hash.distance(self._my_id)
+        bootstrap_rnodes = self._routing_m.get_closest_rnodes(distance.log,
                                                               0,
                                                               True)
         #TODO: get the full bucket
@@ -153,7 +153,7 @@ class Controller:
             callback_f = lookup_obj.callback_f
             if peers:
                 self._add_cache_peers(lookup_obj.info_hash, peers)
-                if callable(callback_f):
+                if callback_f and callable(callback_f):
                     callback_f(lookup_obj.lookup_id, peers, None)
             # do the lookup
             queries_to_send = lookup_obj.start(bootstrap_rnodes)
@@ -295,10 +295,10 @@ class Controller:
                 callback_f = lookup_obj.callback_f
                 if peers:
                     self._add_cache_peers(lookup_obj.info_hash, peers)
-                    if callable(callback_f):
+                    if callback_f and callable(callback_f):
                         callback_f(lookup_id, peers, msg.src_node)
                 if lookup_done:
-                    if callable(callback_f):
+                    if callback_f and callable(callback_f):
                         callback_f(lookup_id, None, msg.src_node)
                     queries_to_send = self._announce(
                         related_query.lookup_obj)
@@ -355,7 +355,7 @@ class Controller:
                     lookup_id = related_query.lookup_obj.lookup_id
                     if lookup_done:
                         callback_f(lookup_id, None, msg.src_node)
-			    # maintenance related tasks
+                # maintenance related tasks
             maintenance_queries_to_send = \
                 self._routing_m.on_error_received(addr)
 
@@ -397,10 +397,10 @@ class Controller:
                     self._size_estimation_file.flush()
 
 
+                queries_to_send.extend(self._announce(
+                        related_query.lookup_obj))
+                lookup_id = related_query.lookup_obj.lookup_id
                 if callback_f and callable(callback_f):
-                    queries_to_send.extend(self._announce(
-                            related_query.lookup_obj))
-                    lookup_id = related_query.lookup_obj.lookup_id
                     related_query.lookup_obj.callback_f(lookup_id, None, None)
         maintenance_queries_to_send = self._routing_m.on_timeout(
             related_query.dst_node)

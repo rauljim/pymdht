@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 
-
 import sys
+sys.path.append('..')
+
 import core.ptime as time
 import datetime
 from operator import attrgetter
@@ -22,7 +23,7 @@ import core.minitwisted as minitwisted
 
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (12, 1, 1)
+PYMDHT_VERSION = (12, 2, 1)
 
 PING = False
 
@@ -34,9 +35,12 @@ MIN_PREFIX_BITS = 10
 NUM_BITS = 160
 MAX_LOG_DISTANCE = NUM_BITS - MIN_PREFIX_BITS
 
-NUM_PARALLEL_EXTRACTIONS = 500
-EXTRACTION_DELAY = .5
+EXTRACTION_DELAY = .2
 
+PRINT_DOT_EACH = 10
+
+START_PREFIX_LEN = 13
+LEAF_PREFIX_LEN = 20
 
 
 class RCrawler(object):
@@ -78,7 +82,7 @@ class RCrawler(object):
         if time.time() < self.last_query_ts + 2:
             # wait for timeouts
             return None, None, None
-        if self.fix_prefix_len == 20:# len(self.ok_nodes[0]) + len(self.ok_nodes[1]) < 6:
+        if self.fix_prefix_len == LEAF_PREFIX_LEN:# len(self.ok_nodes[0]) + len(self.ok_nodes[1]) < 6:
             # this is a leaf
             self.done = True
             return None, None, None
@@ -103,12 +107,13 @@ class RCrawler(object):
             print 'cross bootstrap'
             self.last_query_ts = time.time()
             return b_node, b_node.id.generate_close_id(NUM_BITS - self.fix_prefix_len), self
-        print 'R SPLIT', self.fix_prefix_len, '>', self.fix_prefix_len+1
-        t = [ok_nodes.__iter__().next().id for ok_nodes in self.ok_nodes]
+        print 'R SPLIT', self.fix_prefix_len, '>', self.fix_prefix_len + 1
         self.rcrawlers = (RCrawler(
-                self.ok_nodes[0], self.dead_nodes[0], self.fix_prefix_len+1, t[0]),
+                self.ok_nodes[0], self.dead_nodes[0], self.fix_prefix_len + 1,
+                self.t.set_bit(NUM_BITS - (self.fix_prefix_len + 1), 0)),
                           RCrawler(
-                self.ok_nodes[1], self.dead_nodes[1], self.fix_prefix_len+1, t[1]))
+                self.ok_nodes[1], self.dead_nodes[1], self.fix_prefix_len + 1,
+                self.t.set_bit(NUM_BITS - (self.fix_prefix_len + 1), 1)))
         return None, None, None
 
     def got_nodes_handler(self, node_, nodes):
@@ -153,7 +158,7 @@ class RCrawler(object):
         return splitted_nodes
                                
     def _get_bit(self, node_):
-        if node_.id.int & (1 << (NUM_BITS - self.fix_prefix_len - 1)):
+        if node_.id.long & (1 << (NUM_BITS - self.fix_prefix_len - 1)):
             return 1
         else:
             return 0
@@ -162,7 +167,7 @@ class RCrawler(object):
 class Crawler(object):
 
     def __init__(self, bootstrap_nodes):
-        self.rcrawler = RCrawler(set(), set(), 15, bootstrap_nodes[0].id)
+        self.rcrawler = RCrawler(set(), set(), START_PREFIX_LEN, bootstrap_nodes[0].id)
         self.rcrawler.got_nodes_handler(None, bootstrap_nodes)
         self.my_id = self._my_id = RandomId()
         self.msg_f = message.MsgFactory(PYMDHT_VERSION, self.my_id,
@@ -170,6 +175,8 @@ class Crawler(object):
         self.querier = Querier()
         self.next_main_loop_ts = 0
         self.num_msgs = 0
+        self.ok_nodes = set()
+        self.dead_nodes = set()
                         
     def on_stop(self):
         pass
@@ -181,6 +188,8 @@ class Crawler(object):
             self.rcrawler.print_result()
             print self.rcrawler.get_num_ok(), self.rcrawler.get_num_dead()
             print self.num_msgs, 'messages sent'
+            for n in sorted(self.ok_nodes, key=attrgetter('ip')):
+                print n
             return
         msgs_to_send = []
         node_, target, rcrawler_obj = self.rcrawler.next()
@@ -200,13 +209,14 @@ class Crawler(object):
             for related_query in timeout_queries:
                 #print 'timeout'
                 related_query.experimental_obj.timeout_handler(related_query.dst_node)
+                self.dead_nodes.add(related_query.dst_node)
         if msgs_to_send:
             timeout_call_ts, datagrams_to_send = self.querier.register_queries(
                 msgs_to_send)
         else:
             datagrams_to_send = []
         self.num_msgs += len(datagrams_to_send)
-        if datagrams_to_send and self.num_msgs % 1 == 0:
+        if datagrams_to_send and self.num_msgs % PRINT_DOT_EACH == 0:
             sys.stdout.write('.')
             sys.stdout.flush()
         return self.next_main_loop_ts, datagrams_to_send
@@ -218,20 +228,17 @@ class Crawler(object):
             msg = self.msg_f.incoming_msg(datagram)
         except(message.MsgError):
             # ignore message
-            return self.next_main_loop_ts, datagrams_to_send
+            return self.next_main_loop_ts, []
 
         if msg.type == message.RESPONSE:
             related_query = self.querier.get_related_query(msg)
             #print 'got reply',
             if related_query and related_query.experimental_obj:
                 #print 'related >>>>>>>>>>>>>>>>>>>>>>', len(msg.nodes)
-                try:
-                    nodes = msg.all_nodes
-                except AttributeError:
-                    print '\nno nodes>>>>>>>', msg._msg_dict
-                    nodes = []
-                node_ = related_query.dst_node
+                nodes = msg.all_nodes
+                node_ = msg.src_node
                 related_query.experimental_obj.got_nodes_handler(node_, nodes)
+                self.ok_nodes.add(node_)
         return self.next_main_loop_ts, []#datagrams_to_send
 
     # def get_bootstrap_nodes(self):
@@ -254,7 +261,7 @@ class MultiCrawler(object):
         main_loop_result = self.current_crawler.main_loop()
         if not main_loop_result:
             print
-            self.current_crawler.print_summary()
+            #self.current_crawler.print_summary()
             bootstrap_nodes = self.current_crawler.get_bootstrap_nodes()
             self.current_crawler = Crawler(bootstrap_nodes)
             main_loop_result = self.current_crawler.main_loop()
@@ -276,7 +283,7 @@ def main(options, args):
     reactor = minitwisted.ThreadedReactor(
         mcrawler.main_loop, 7005, 
         mcrawler.on_datagram_received,
-        task_interval=.005)
+        task_interval=EXTRACTION_DELAY / 2)
     reactor.start()
     try:
         time.sleep(20000)

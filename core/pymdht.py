@@ -12,14 +12,16 @@ Find usage examples in server_dht.py and interactive_dht.py.
 
 """
 
+import sys
 import os
 import ptime as time
 
 import minitwisted
 import controller
 import logging, logging_conf
+import swift_tracker
 
-PYMDHT_VERSION = (12, 2, 2)
+PYMDHT_VERSION = (12, 5, 0)
 VERSION_LABEL = ''.join(
     ['NS',
      chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
@@ -45,8 +47,9 @@ class Pymdht:
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
-                 debug_level, id_=None,
-                 bootsrap_mode=False):
+                 debug_level,
+                 bootsrap_mode=False,
+                 swift_port=0):
         logging_conf.setup(conf_path, debug_level)
         state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(VERSION_LABEL,
@@ -60,6 +63,9 @@ class Pymdht:
             self.controller.main_loop,
             my_node.addr[1], self.controller.on_datagram_received)
         self.reactor.start()
+        if swift_port:
+            print 'Creating SwiftTracker'
+            swift_tracker.SwiftTracker(self, swift_port).start()
 
     def stop(self):
         """Stop the DHT node."""
@@ -87,7 +93,7 @@ class Pymdht:
         
         """
         use_cache = True
-        print 'use_cache ON, only for debugging'
+        print 'pymdht: use_cache ON!!'
         self.reactor.call_asap(self.controller.get_peers,
                                lookup_id, info_hash,
                                callback_f, bt_port,
@@ -101,7 +107,3 @@ class Pymdht:
         
     def stop_and_get_capture(self):
         return self.reactor.stop_and_get_capture()
-
-    #TODO2: Future Work
-    #TODO2: def add_bootstrap_node(self, node_addr, node_id=None):
-    #TODO2: def lookup.back_off()

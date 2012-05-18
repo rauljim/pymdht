@@ -125,7 +125,7 @@ class TestId(object):
 
 
 
-    def test_order_closest(self):
+    def _test_order_closest(self):
         id0 = Id(BIN_ID0)
         ordered_list = [
             Id('\x00' * ID_SIZE_BYTES),
@@ -168,5 +168,15 @@ class TestId(object):
 
             
 class TestRandomId:
+    prefixes = ['', '0', '1', '10101010101010']
+    norandom_prefixes = ['0'*160, '1'*160]
+    invalid_prefixes = ['a', '2', 2, '0'*161, '1'*161]
     for i in xrange(123):
         assert RandomId() != RandomId()
+
+    for prefix in prefixes + norandom_prefixes:
+        eq_(RandomId(prefix).get_prefix(len(prefix)), prefix)
+    for prefix in prefixes:
+        ok_(RandomId(prefix) != RandomId(prefix))
+    for prefix in invalid_prefixes:
+        assert_raises(Exception, RandomId, prefix)

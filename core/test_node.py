@@ -40,7 +40,7 @@ class TestNode:
         node1port = Node(addr2, id1)
         node1id = Node(addr1, id2)
 
-        eq_(str(node1), '<node: %r %r (version)>' % (addr1, id1))
+        eq_(str(node1), '<node: %26r %r (version)>' % (addr1, id1))
         #<node: ('127.0.0.1', 1111) 0x1313131313131313131313131313131313131313>
 
         eq_(node1.id, id1)
@@ -63,9 +63,9 @@ class TestNode:
         eq_(tc.CLIENT_NODE.compact_addr,
             utils.compact_addr(tc.CLIENT_ADDR))
 
-    def test_log_distance(self):
-        eq_(tc.CLIENT_NODE.log_distance(tc.SERVER_NODE),
-            tc.CLIENT_ID.log_distance(tc.SERVER_ID))
+    def test_distance(self):
+        eq_(tc.CLIENT_NODE.distance(tc.SERVER_NODE),
+            tc.CLIENT_ID.distance(tc.SERVER_ID))
 
     def test_compact(self):
         eq_(tc.CLIENT_NODE.compact(),

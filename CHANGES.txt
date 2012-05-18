@@ -1,3 +1,7 @@
+== 12.5.0
+
+- removed telnet API. Replaced with swift/ppsp API (see core/swift_tracker.py)
+
 == 12.2.2
 
 - bugfix: boostrap check crash on error message received.

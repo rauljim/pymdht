@@ -39,7 +39,7 @@ def save(my_id, rnodes, filename):
         else:
             rtt = rnode.rtt
         f.write('%d %r %8s %15s %5d %4d %6d\n' % (
-                my_id.log_distance(rnode.id),
+                my_id.distance(rnode.id).log,
                 rnode.id, version_repr(rnode.version),
                 rnode.addr[0], rnode.addr[1],
                 rtt * 1000,
@@ -54,7 +54,7 @@ def load(filename):
         hex_id = f.readline().strip()
         my_id = Id(hex_id)
         for line in f:
-            _, hex_id, ip, port, _, _, _ = line.split()
+            _, hex_id, _, ip, port, _, _ = line.split()
             addr = (ip, int(port))
             node_ = Node(addr, Id(hex_id))
             nodes.append(node_)

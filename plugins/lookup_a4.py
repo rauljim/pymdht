@@ -5,6 +5,7 @@
 import sys
 import threading
 import logging
+from operator import attrgetter
 
 import os, sys
 this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,20 +26,18 @@ ANNOUNCE_REDUNDANCY = 3
 
 class _QueuedNode(object):
 
-    def __init__(self, node_, log_distance, token):
+    def __init__(self, node_, distance, token):
         self.node = node_
-        self.log_distance = log_distance
+        self.distance = distance
         self.token = token
 
     def __cmp__(self, other):
         # nodes without log_distance (bootstrap) go first
-        if self.log_distance is None:
+        if self.distance is None:
             return -1 
-        elif other.log_distance is None:
+        elif other.distance is None:
             return 1
-        return (self.log_distance - other.log_distance
-                or (getattr(self.node, 'rtt', .5) -
-                    getattr(other.node, 'rtt', .5)))
+        return self.distance.__cmp__(other.distance)
     
 
 class _LookupQueue(object):
@@ -64,10 +63,10 @@ class _LookupQueue(object):
         qnodes = []
         for n in rnodes:
             if n.id:
-                log_distance = n.id.log_distance(self.info_hash)
+                distance = n.id.distance(self.info_hash)
             else:
-                log_distance = None
-            qnode = _QueuedNode(n, log_distance, None)
+                distance = None
+            qnode = _QueuedNode(n, distance, None)
             qnodes.append(qnode)
         self._add_queued_qnodes(qnodes)
         return self._pop_nodes_to_query(max_nodes)
@@ -75,10 +74,10 @@ class _LookupQueue(object):
     def on_response(self, src_node, nodes, token, max_nodes):
         ''' Nodes must not be duplicated'''
         qnode = _QueuedNode(src_node,
-                            src_node.id.log_distance(self.info_hash),
+                            src_node.id.distance(self.info_hash),
                             token)
         self._add_responded_qnode(qnode)
-        qnodes = [_QueuedNode(n, n.id.log_distance(
+        qnodes = [_QueuedNode(n, n.id.distance(
                     self.info_hash), None)
                   for n in nodes]
         self._add_queued_qnodes(qnodes)
@@ -106,7 +105,7 @@ class _LookupQueue(object):
         
     def _add_responded_qnode(self, qnode):
         self.responded_qnodes.append(qnode)
-        self.responded_qnodes.sort()
+        self.responded_qnodes.sort(key=attrgetter('distance'))
         del self.responded_qnodes[self.max_responded_qnodes:]
 
     def _add_queued_qnodes(self, qnodes):
@@ -119,7 +118,7 @@ class _LookupQueue(object):
 
     def _pop_nodes_to_query(self, max_nodes):
         if len(self.responded_qnodes) > MARK_INDEX:
-            mark = self.responded_qnodes[MARK_INDEX].log_distance
+            mark = self.responded_qnodes[MARK_INDEX].distance.log
         else:
             mark = identifier.ID_SIZE_BITS
         nodes_to_query = [] 
@@ -128,7 +127,7 @@ class _LookupQueue(object):
                 qnode = self.queued_qnodes[0]
             except (IndexError):
                 break # no more queued nodes left
-            if qnode.log_distance < mark:
+            if qnode.distance is None or qnode.distance.log < mark:
                 self.queried_ips.add(qnode.node.ip)
                 nodes_to_query.append(qnode.node)
                 del self.queued_qnodes[0]
@@ -155,7 +154,7 @@ class GetPeersLookup(object):
         self.slowdown_alpha = 4
         self.slowdown_m = 1
         
-        logger.debug('New lookup (info_hash: %r)' % info_hash)
+        logger.debug('New lookup (info_hash: %r) %d' % (info_hash, bt_port))
         self._my_id = my_id
         self.lookup_id = lookup_id
         self.callback_f = callback_f
