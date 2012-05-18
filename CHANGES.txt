@@ -1,4 +1,4 @@
-== 12.2.3
+== 12.5.0
 
 - removed telnet API. Replaced with swift/ppsp API (see core/swift_tracker.py)
 
