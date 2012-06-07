@@ -332,7 +332,7 @@ class Controller:
                 (lookup_queries_to_send,
                  num_parallel_queries,
                  lookup_done
-                 ) = related_query.lookup_obj.on_error_received(msg)
+                 ) = related_query.lookup_obj.on_error_received(msg, addr)
                 datagrams = self._register_queries(lookup_queries_to_send)
                 datagrams_to_send.extend(datagrams)
 
