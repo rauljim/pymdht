@@ -71,6 +71,9 @@ _MAINTENANCE_DELAY = {# bootstrap delay is determined by the bootstrap module
 MIN_RNODES = 100
 
 NUM_FILLING_LOOKUPS = 0 #FIXME: it was 8
+MAX_TIMEOUTS_IN_A_ROW = 10 # When x timeouts in a row, we consider that the
+# nodes is (temporarely) off-line and stop expelling nodes from routing table
+# so that these nodes can be refreshed when/if the node comes on-line again.
 
 class RoutingManager(object):
     
@@ -92,6 +95,7 @@ class RoutingManager(object):
                                    self._ping_a_replacement_node,
                                    ]
         self._num_pending_filling_lookups = NUM_FILLING_LOOKUPS
+        self._num_timeouts_in_a_row = 0
 
     def _get_maintenance_lookup(self, lookup_target=None, nodes=[]):
         if not lookup_target:
@@ -206,6 +210,7 @@ class RoutingManager(object):
         Return a list of queries when queries need to be sent (the queries
         will be sent out by the caller)
         '''
+        self._num_timeouts_in_a_row = 0
         if self.bootstrapper.is_bootstrap_node(node_):
             return
         
@@ -243,6 +248,7 @@ class RoutingManager(object):
         return
             
     def on_response_received(self, node_, rtt, nodes):
+        self._num_timeouts_in_a_row = 0
         if self.bootstrapper.is_bootstrap_node(node_):
             return
 
@@ -335,8 +341,12 @@ class RoutingManager(object):
         return
     
     def on_timeout(self, node_):
+        self._num_timeouts_in_a_row += 1
+        if self._num_timeouts_in_a_row > MAX_TIMEOUTS_IN_A_ROW:
+            # stop, do not expell nodes from routing table
+            return []
         if self.bootstrapper.is_bootstrap_node(node_):
-            return
+            return []
 
         log_distance = self.my_node.distance(node_).log
         try:
