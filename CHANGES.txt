@@ -1,6 +1,8 @@
 == 12.5.1
 
-
+- bugfix: a call to on_error in controller.py
+- limitation of pending get_peers lookups (controller)
+- limitation of number of channels in swift_tracker.py
 
 == 12.5.0
 
