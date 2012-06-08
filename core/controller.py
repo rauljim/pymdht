@@ -43,7 +43,7 @@ STATE_FILENAME = 'pymdht.state'
 #TIMEOUT_DELAY = 2
 
 CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
-
+MAX_PENDING_LOOKUPS = 5
 
 class Controller:
 
@@ -103,6 +103,8 @@ class Controller:
         This method is designed to be used as minitwisted's external handler.
 
         """
+        if len(self._pending_lookups) >= MAX_PENDING_LOOKUPS:
+            del self._pending_lookups[0]
         datagrams_to_send = []
         logger.debug('get_peers %d %r' % (bt_port, info_hash))
         if use_cache:
