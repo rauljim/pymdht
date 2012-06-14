@@ -6,6 +6,7 @@
 - limitation of pending get_peers lookups (controller)
 - limitation of number of channels in swift_tracker.py
 - off-line mode: routing table will stop expelling nodes when connection is lost
+- major bugfix: memory leak in core/querier.py in optimization mode (python -O)
 
 == 12.5.0
 
