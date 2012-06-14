@@ -51,6 +51,11 @@ MAX_BT_PORT = 2**16
 
 TOAST_EACH = 20
 
+#TODO: agree on a clear protocol between swift and pymdht
+#NOTE: Tribler's version has a MAX_CHANNEL instead of TIMEOUT
+
+CHANNEL_TIMEOUT = 20 * 60
+
 class SwiftTracker(threading.Thread):
 
     def __init__(self, pymdht, swift_port):
@@ -183,6 +188,7 @@ class Channel(object):
         self.remote_cid  = None
         self.peers = set()
         self.rhash = None
+        self.last_get_ts = time.time()
 
         
 class ChannelManager(object):
@@ -196,9 +202,16 @@ class ChannelManager(object):
             channel = Channel(remote_addr)
             self.channels.append(channel)
         else:
-            for c in self.channels:
+            channels_to_remove = []
+            for i, c in enumerate(self.channels):
                 if c.local_cid == local_cid:
+                    c.last_get_ts = time.time()
                     channel = c
+                else:
+                    if c.last_get_ts + CHANNEL_TIMEOUT > time.time():
+                        channels_to_remove.append(i)
+            for i in channels_to_remove:
+                del self.channels[i]
         return channel
 
     def remove(self, channel):
