@@ -1,5 +1,7 @@
 == 12.6.1
 
+- clean up boostrap data structure when bootstrap is done
+
 == 12.6.0
 
 - bugfix: a call to on_error in controller.py
