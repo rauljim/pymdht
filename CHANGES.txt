@@ -1,4 +1,4 @@
-== 12.6.1
+== 12.6.2
 
 - clean up boostrap data structure when bootstrap is done
 
