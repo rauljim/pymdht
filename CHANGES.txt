@@ -1,3 +1,5 @@
+== 12.6.1
+
 == 12.6.0
 
 - bugfix: a call to on_error in controller.py
