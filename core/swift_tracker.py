@@ -59,7 +59,7 @@ CHANNEL_TIMEOUT = 20 * 60
 class SwiftTracker(threading.Thread):
 
     def __init__(self, pymdht, swift_port):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name = "SwiftTracker")
         self.daemon = True
 
         self.pymdht = pymdht
