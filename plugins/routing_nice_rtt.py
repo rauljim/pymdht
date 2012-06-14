@@ -126,6 +126,7 @@ class RoutingManager(object):
                     maintenance_delay = bootstrap_delay
                 else:
                     self._maintenance_mode = FILL_BUCKETS
+                    self.bootstrapper.bootstrap_done()
         elif self._maintenance_mode == FILL_BUCKETS:
             if self._num_pending_filling_lookups:
                 self._num_pending_filling_lookups -= 1
