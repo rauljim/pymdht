@@ -22,6 +22,7 @@ class GetPeersLookup(object):
         self.callback_f = callback_f
         self.bt_port = bt_port
         self._msg_factory = msg_f.outgoing_get_peers_query
+        self.start_ts = time.time()
     
     def start(self, bootstrap_rnodes):
         queries_to_send = [self._msg_factory(bn, self._my_id,
