@@ -23,7 +23,7 @@ import swift_tracker
 
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (12, 6, 2)
+PYMDHT_VERSION = (12, 6, 3)
 VERSION_LABEL = ''.join(
     ['NS',
      chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
