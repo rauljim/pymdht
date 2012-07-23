@@ -9,7 +9,7 @@ import sys
 sys.path.append('..')
 import logging
 
-from core.pymdht import PYMDHT_VERSION
+from core.pymdht import PYMDHT_VERSION, VERSION_LABEL
 import core.logging_conf as logging_conf
 from core.node import Node
 from core.message import MsgFactory, Datagram, IncomingMsg
@@ -31,7 +31,7 @@ MAX_NODES = 2000
 class NodeCrawler(object):
 
     def __init__(self, filename):
-        self.msg_f = MsgFactory(PYMDHT_VERSION, MY_ID)
+        self.msg_f = MsgFactory(VERSION_LABEL, MY_ID)
         self._lock = threading.Lock()
         self._is_done = False
         self._pinged_ips = set()
