@@ -1,12 +1,12 @@
 == 12.6.3
 
 - Changed crawler to save, at most, one address per /24 subnet in
-  "boostrap.backup". This should give some protection against an adversary
+  "bootstrap.backup". This should give some protection against an adversary
   running many malicious nodes on a subnet. It should also add robustness.
 
 == 12.6.2
 
-- clean up boostrap data structure when bootstrap is done
+- clean up bootstrap data structure when bootstrap is done
 
 == 12.6.0
 
@@ -22,7 +22,7 @@
 
 == 12.2.2
 
-- bugfix: boostrap check crash on error message received.
+- bugfix: bootstrap check crash on error message received.
 
 == 12.2.0
 
@@ -32,7 +32,7 @@
 - Module identifier simplified and cleaned up.
 - Added some crawling scripts to run experiments
 - IncomingMsg attributed listed for clarity
-- Log file is now limited in size (10 MB in nomal mode, 1 GB in debug)
+- Log file is now limited in size (10 MB in normal mode, 1 GB in debug)
 
 == 12.1.0
 
@@ -59,14 +59,14 @@
 
 == 11.8.0
 
-- Refined all code related to bootstraping.
+- Refined all code related to bootstrapping.
 - Added GUI code (from Shariq)
 
 === 11.07
 
 - Profiling toolkit integrated (profiler directory)
 
-- Many nodes to bootstrap into the overlay. boostrap.main contains nodes
+- Many nodes to bootstrap into the overlay. bootstrap.main contains nodes
 controlled by us and bootstrap.backup contains nodes we have seen alive for a
 long time.
 
