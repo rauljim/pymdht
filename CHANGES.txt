@@ -3,6 +3,8 @@
 - Changed crawler to save, at most, one address per /24 subnet in
   "bootstrap.backup". This should give some protection against an adversary
   running many malicious nodes on a subnet. It should also add robustness.
+- Bootstrap simplified (moved from routing_manager to controller)
+- controller.get_peers simplified (pending_lookups is no longer needed)
 
 == 12.6.2
 

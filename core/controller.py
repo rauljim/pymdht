@@ -13,8 +13,6 @@ implementations of routing and lookup managers in parallel.
 
 """
 
-size_estimation = False
-
 import sys
 import ptime as time
 import datetime
@@ -31,6 +29,7 @@ from querier import Querier
 from message import QUERY, RESPONSE, ERROR
 from node import Node
 import responder
+import bootstrap
 #import pkgutil
 
 #from profilestats import profile
@@ -43,7 +42,7 @@ STATE_FILENAME = 'pymdht.state'
 #TIMEOUT_DELAY = 2
 
 CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
-PENDING_LOOKUP_TIMEOUT = 30
+
 
 class Controller:
 
@@ -54,10 +53,7 @@ class Controller:
                  private_dht_name,
                  bootstrap_mode):
         
-        if size_estimation:
-            self._size_estimation_file = open('size_estimation.dat', 'w')
-        
-        
+        self.bootstrapper = bootstrap.OverlayBootstrapper()
         self.state_filename = state_filename
         saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
         my_addr = my_node.addr
@@ -71,7 +67,7 @@ class Controller:
                                         private_dht_name)
         self._querier = Querier()
         self._routing_m = routing_m_mod.RoutingManager(
-            self._my_node, saved_bootstrap_nodes, self.msg_f)
+            self._my_node, self.msg_f, self.bootstrapper)
 
         self._responder = responder.Responder(self._my_id, self._routing_m,
                                               self.msg_f, bootstrap_mode)
@@ -86,21 +82,20 @@ class Controller:
         self._next_maintenance_ts = current_ts
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
-        self._pending_lookups = []
         self._cached_lookups = []
-                
+           
     def on_stop(self):
         self._experimental_m.on_stop()
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port, use_cache):
         """
         Start a get\_peers lookup whose target is 'info\_hash'. The handler
-        'callback\_f' will be called with two arguments ('lookup\_id' and a
-        'peer list') whenever peers are discovered. Once the lookup is
-        completed, the handler will be called with 'lookup\_id' and None as
-        arguments.
+        'callback\_f' will be called with three arguments ('lookup\_id',
+        'peers', 'node') whenever peers are discovered. Once the lookup is
+        completed, the handler will be called with arguments:
+        ('lookup\_id', None, None).
 
-        This method is designed to be used as minitwisted's external handler.
+        This method is called by minitwisted, using the minitwisted thread.
 
         """
         datagrams_to_send = []
@@ -111,11 +106,28 @@ class Controller:
                 callback_f(lookup_id, peers, None)
                 callback_f(lookup_id, None, None)
                 return datagrams_to_send
-        self._pending_lookups.append(self._lookup_m.get_peers(lookup_id,
-                                                              info_hash,
-                                                              callback_f,
-                                                              bt_port))
-        queries_to_send =  self._try_do_lookup()
+        lookup_obj = self._lookup_m.get_peers(lookup_id,
+                                              info_hash,
+                                              callback_f,
+                                              bt_port)
+        queries_to_send = []
+        distance = lookup_obj.info_hash.distance(self._my_id)
+        bootstrap_rnodes = self._routing_m.get_closest_rnodes(
+            distance.log, 0, True) #TODO: get the full bucket
+        if not bootstrap_rnodes:
+            # empty routing table: OVERLAY BOOTSTRAP
+            addrs = self.bootstrapper.get_shuffled_addrs()
+            bootstrap_rnodes = [Node(addr) for addr in addrs]
+        # look if I'm tracking this info_hash
+        peers = self._tracker.get(lookup_obj.info_hash)
+        callback_f = lookup_obj.callback_f
+        if peers:
+            self._add_cache_peers(lookup_obj.info_hash, peers)
+            if callback_f and callable(callback_f):
+                callback_f(lookup_obj.lookup_id, peers, None)
+        # do the lookup
+        queries_to_send = lookup_obj.start(bootstrap_rnodes)
+
         datagrams_to_send = self._register_queries(queries_to_send)
         return datagrams_to_send
     
@@ -135,42 +147,6 @@ class Controller:
         else:
             self._cached_lookups.append((time.time(), info_hash, peers))
 
-    def _try_do_lookup(self):
-        queries_to_send = []
-        current_time = time.time()
-        while self._pending_lookups:
-            pending_lookup = self._pending_lookups[0]
-            # Drop all pending lookups older than PENDING_LOOKUP_TIMEOUT
-            if time.time() > pending_lookup.start_ts + PENDING_LOOKUP_TIMEOUT:
-                del self._pending_lookups[0]
-            else:
-                break
-        if self._pending_lookups:
-            lookup_obj = self._pending_lookups[0]
-        else:
-            return queries_to_send
-        distance = lookup_obj.info_hash.distance(self._my_id)
-        bootstrap_rnodes = self._routing_m.get_closest_rnodes(distance.log,
-                                                              0,
-                                                              True)
-        #TODO: get the full bucket
-        if bootstrap_rnodes:
-            del self._pending_lookups[0]
-            # look if I'm tracking this info_hash
-            peers = self._tracker.get(lookup_obj.info_hash)
-            callback_f = lookup_obj.callback_f
-            if peers:
-                self._add_cache_peers(lookup_obj.info_hash, peers)
-                if callback_f and callable(callback_f):
-                    callback_f(lookup_obj.lookup_id, peers, None)
-            # do the lookup
-            queries_to_send = lookup_obj.start(bootstrap_rnodes)
-        else:
-            next_lookup_attempt_ts = time.time() + .2
-            self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
-                                               next_lookup_attempt_ts)
-        return queries_to_send
-    
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
 
@@ -197,8 +173,6 @@ class Controller:
         else:
             # It's too early
             return self._next_main_loop_call_ts, []
-        # Retry failed lookup (if any)
-        queries_to_send.extend(self._try_do_lookup())
         
         # Take care of timeouts
         if current_ts >= self._next_timeout_ts:
@@ -305,12 +279,6 @@ class Controller:
                     self._add_cache_peers(lookup_obj.info_hash, peers)
                     if callback_f and callable(callback_f):
                         callback_f(lookup_id, peers, msg.src_node)
-                # Size estimation
-                if size_estimation and lookup_done:
-                    line = '%d %d\n' % (
-                        related_query.lookup_obj.get_number_nodes_within_region())
-                    self._size_estimation_file.write(line)
-                    self._size_estimation_file.flush()
                 if lookup_done:
                     if callback_f and callable(callback_f):
                         callback_f(lookup_id, None, msg.src_node)
@@ -349,13 +317,6 @@ class Controller:
                     if lookup_done:
                         callback_f(lookup_id, None, msg.src_node)
                 if lookup_done:
-                    # Size estimation
-                    if size_estimation:
-                        line = '%d %d\n' % (
-                            related_query.lookup_obj.get_number_nodes_within_region())
-                        self._size_estimation_file.write(line)
-                        self._size_estimation_file.flush()
-                    
                     datagrams = self._announce(related_query.lookup_obj)
                     datagrams_to_send.extend(datagrams)
             # maintenance related tasks
@@ -392,13 +353,6 @@ class Controller:
             queries_to_send.extend(lookup_queries_to_send)
             callback_f = related_query.lookup_obj.callback_f
             if lookup_done:
-                # Size estimation
-                if size_estimation:
-                    line = '%d %d\n' % (
-                        related_query.lookup_obj.get_number_nodes_within_region())
-                    self._size_estimation_file.write(line)
-                    self._size_estimation_file.flush()
-
                 lookup_id = related_query.lookup_obj.lookup_id
                 if callback_f and callable(callback_f):
                     related_query.lookup_obj.callback_f(lookup_id, None, None)

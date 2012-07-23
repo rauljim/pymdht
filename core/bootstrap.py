@@ -2,10 +2,6 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 """
-Bootstrap node into the overlay by sending messages to:
-- saved nodes (pymdht.state)
-If the file exists, all nodes will be pinged (with a find_node message).
-Those nodes that reply will be put in the routing table
 - main and backup bootstrap nodes
 These nodes are hardcoded (see core/bootstrap.main and core/bootstrap.backup)
 Main nodes are run by us, backup nodes are wild nodes we have seen running for
@@ -28,119 +24,103 @@ import node
 
 logger = logging.getLogger('dht')
 
+MAIN_FILENAME = 'bootstrap.main'
+BACKUP_FILENAME = 'bootstrap.backup'
+LOCAL_FILENAME = 'bootstrap.local' #TODO: ~/.pymdht
 
-BOOTSTRAP_MAIN_FILENAME = 'bootstrap.main'
-BOOTSTRAP_BACKUP_FILENAME = 'bootstrap.backup'
+MAX_ADDRS = 2050
 
-MIN_RNODES_BOOTSTRAP = 10
-
-SAVED_NODES_PER_BOOTSTRAP = 10
-MAIN_NODES_PER_BOOTSTRAP = 1
-BACKUP_NODES_PER_BOOTSTRAP = 7
-
-SAVED_DELAY = .1
-BOOTSTRAP_DELAY = 5
 
 class OverlayBootstrapper(object):
 
-    def __init__(self, my_id, saved_bootstrap_nodes, msg_f):
-        self.my_id = my_id
-        self.saved_bootstrap_nodes = saved_bootstrap_nodes
-        self.msg_f = msg_f
-        (self.main_bootstrap_nodes,
-         self.backup_bootstrap_nodes) = _get_bootstrap_nodes()
-        self.bootstrap_ips = set() #ips of nodes we used to bootstrap.
-        # They shouldn't be added to routing table to avoid overload
-        # (if possible)
+    def __init__(self):
+        #TODO: subnet
+        self.hardcoded_ips = set()
+        self._ip_port = {}
 
-    def do_bootstrap(self, num_rnodes):
-        '''
-        If there are saved nodes, all of them are pinged so we recover our
-        saved routing table as best as we can.
-        If there are no saved nodes (or not enough of them replied) we start
-        performing maintenance lookup with main bootstrap nodes (and backup)
-        until we have got enough nodes in the routing table.
-        '''
-        queries_to_send = []
-        maintenance_lookup = None
+        filename = MAIN_FILENAME
+        f = _get_open_file(filename)
+        for line in f:
+            addr = _sanitize_bootstrap_addr(line)
+            self.hardcoded_ips.add(addr[0])
+            self._ip_port[addr[0]] = addr[1]
+        print '%s: %d hardcoded, %d bootstrap' % (filename,
+                                                  len(self.hardcoded_ips),
+                                                  len(self._ip_port))
+        filename = BACKUP_FILENAME
+        f = _get_open_file(filename)
+        for line in f:
+            addr = _sanitize_bootstrap_addr(line)
+            self.hardcoded_ips.add(addr[0])
+        print '%s: %d hardcoded, %d bootstrap' % (filename,
+                                                  len(self.hardcoded_ips),
+                                                  len(self._ip_port))
+        filename = LOCAL_FILENAME
+        f = _get_open_file(filename)
+        for line in f:
+            addr = _sanitize_bootstrap_addr(line)
+            self._ip_port[addr[0]] = addr[1]
+        print '%s: %d hardcoded, %d bootstrap' % (filename,
+                                                  len(self.hardcoded_ips),
+                                                  len(self._ip_port))
 
-        if self.saved_bootstrap_nodes:
-            nodes = self.saved_bootstrap_nodes[:SAVED_NODES_PER_BOOTSTRAP]
-            del self.saved_bootstrap_nodes[:SAVED_NODES_PER_BOOTSTRAP]
-            queries_to_send = [self._get_bootstrap_query(node_) for node_ in nodes]
-            delay = SAVED_DELAY
-#            print '>> using saved nodes', len(nodes)
-        elif num_rnodes > MIN_RNODES_BOOTSTRAP:
-            delay = 0 # bootstrap done
-        else:
-            nodes = self._pop_bootstrap_nodes()
-            maintenance_lookup = (self.my_id, nodes)
-            delay = BOOTSTRAP_DELAY
-#            print '>> using bootstrap nodes', len(nodes)
-        return queries_to_send, maintenance_lookup, delay
+    def get_shuffled_addrs(self):
+        addrs = list(self._ip_port.items())
+        random.shuffle(addrs)
+        return addrs
+        
+    def pop_random_addr(self):
+        return #TODO
+        
+    def is_hardcoded(self, addr):
+        """
+        Having addresses hardcoded increases the load of these nodes "lucky"
+        enough to be in the list.
+        To compensate, these nodes should not be added to the routing table.
 
-    def bootstrap_done(self):
-        #clean up stuff that will never be used
-        self.saved_bootstrap_nodes = []
-        self.main_bootstrap_nodes = []
-        self.backup_bootstrap_nodes = []
-    
-    def is_bootstrap_node(self, node_):
-        return node_.ip in self.bootstrap_ips
+        Routing manager should check a node before adding to routing table.
+        """
+        return addr[0] in self.hardcoded_ips
 
-    def _get_bootstrap_query(self, node_):
-        return self.msg_f.outgoing_find_node_query(node_, self.my_id, None)
+    def report_unreachable(self, addr):
+        #remove from dict
+        self._ip_port.pop(addr[0], None)
 
-    def _pop_bootstrap_nodes(self):
-        nodes = []
-        for _ in xrange(MAIN_NODES_PER_BOOTSTRAP):
-            if self.main_bootstrap_nodes:
-                i = random.randint(0, len(self.main_bootstrap_nodes) - 1)
-                nodes.append(self.main_bootstrap_nodes.pop(i))
-        for _ in xrange(BACKUP_NODES_PER_BOOTSTRAP):
-            if self.backup_bootstrap_nodes:
-                i = random.randint(0, len(self.backup_bootstrap_nodes) - 1)
-                nodes.append(self.backup_bootstrap_nodes.pop(i))
-        for node_ in nodes:
-            self.bootstrap_ips.add(node_.ip)
-        return nodes
-                             
+    def report_reachable(self, addr):
+        if len(self._ip_port) < MAX_ADDRS:
+            self._ip_port[addr[0]] = addr[1]
 
-def _sanitize_bootstrap_node(line):
+    def save_to_file():
+        addrs = list(self._ip_port.items())
+        addrs.sort()
+        for addr in addrs:
+            out = _get_open_file(BOOTSTRAP_LOCAL_FILENAME, 'w')
+            print >>out, addr[0], addr[1] #TODO: inet_aton
+        self._ip_port = {}
+        
+
+def _sanitize_bootstrap_addr(line):
     # no need to catch exceptions, get_bootstrap_nodes takes care of them
     ip, port_str = line.split()
-    addr = ip, int(port_str)
-    return node.Node(addr, version=None)
+    return ip, int(port_str)
 
-def _get_bootstrap_nodes():
+def _get_open_file(filename, mode='r'): #TODO: move to utils
     data_path = os.path.dirname(message.__file__)
-    mainfile = os.path.join(data_path, BOOTSTRAP_MAIN_FILENAME)
-    backfile = os.path.join(data_path, BOOTSTRAP_BACKUP_FILENAME)
+    abs_filename = os.path.join(data_path, filename)
     
     # Arno, 2012-05-25: py2exe support
     if hasattr(sys, "frozen"):
         print >>sys.stderr,"pymdht: bootstrap: Frozen mode"
-        installdir = os.path.dirname(unicode(sys.executable,sys.getfilesystemencoding()))
+        installdir = os.path.dirname(unicode(
+                sys.executable,sys.getfilesystemencoding()))
         if sys.platform == "darwin":
             installdir = installdir.replace("MacOS","Resources")
-        mainfile = os.path.join(installdir,"Tribler","Core","DecentralizedTracking","pymdht","core","bootstrap.main")
-        backfile = os.path.join(installdir,"Tribler","Core","DecentralizedTracking","pymdht","core","bootstrap.backup")
-    print >>sys.stderr,"pymdht: bootstrap: mainfile",mainfile 
-    print >>sys.stderr,"pymdht: bootstrap: backfile",backfile
+        abs_filename = os.path.join(installdir, "Tribler", "Core",
+                         "DecentralizedTracking", "pymdht", "core",
+                         filename)
+    print >>sys.stderr,"pymdht: bootstrap:", filename, abs_filename
     try:
-        f = open(mainfile)
-        main = [_sanitize_bootstrap_node(n) for n in f]
-    except (Exception):
-        logger.exception('main bootstrap file corrupted!')
-        main = []
-        raise
-#    print 'main: %d nodes' % len(main)
-    try:
-        f = open(backfile)
-        backup = [_sanitize_bootstrap_node(n) for n in f]
-    except (Exception):
-        logger.exception('backup bootstrap file corrupted!')
-        backup = []
-        raise
-#    print 'backup: %d nodes' % len(backup)
-    return main, backup
+        f = open(abs_filename, mode)
+    except (IOError):
+        f = []
+    return f
