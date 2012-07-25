@@ -24,9 +24,9 @@ import node
 
 logger = logging.getLogger('dht')
 
-MAIN_FILENAME = 'bootstrap.main'
-BACKUP_FILENAME = 'bootstrap.backup'
-LOCAL_FILENAME = 'bootstrap.local' #TODO: ~/.pymdht
+STABLE_FILENAME = 'bootstrap_stable'
+UNSTABLE_FILENAME = 'bootstrap_unstable'
+LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
 
 MAX_ADDRS = 2050
 
@@ -36,41 +36,43 @@ class OverlayBootstrapper(object):
     def __init__(self):
         #TODO: subnet
         self.hardcoded_ips = set()
-        self._ip_port = {}
+        self._stable_ip_port = {}
+        self._unstable_ip_port = {}
 
-        filename = MAIN_FILENAME
+        filename = STABLE_FILENAME
         f = _get_open_file(filename)
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
-            self._ip_port[addr[0]] = addr[1]
-        print '%s: %d hardcoded, %d bootstrap' % (filename,
-                                                  len(self.hardcoded_ips),
-                                                  len(self._ip_port))
-        filename = BACKUP_FILENAME
-        f = _get_open_file(filename)
-        for line in f:
-            addr = _sanitize_bootstrap_addr(line)
-            self.hardcoded_ips.add(addr[0])
+            self._stable_ip_port[addr[0]] = addr[1]
         print '%s: %d hardcoded, %d bootstrap' % (filename,
                                                   len(self.hardcoded_ips),
                                                   len(self._ip_port))
         filename = LOCAL_FILENAME
         f = _get_open_file(filename)
+        local_exists = 
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
-            self._ip_port[addr[0]] = addr[1]
+            self._unstable_ip_port[addr[0]] = addr[1]
+        print '%s: %d hardcoded, %d bootstrap' % (filename,
+                                                  len(self.hardcoded_ips),
+                                                  len(self._ip_port))
+        filename = UNSTABLE_FILENAME
+        f = _get_open_file(filename)
+        for line in f:
+            addr = _sanitize_bootstrap_addr(line)
+            self.hardcoded_ips.add(addr[0])
         print '%s: %d hardcoded, %d bootstrap' % (filename,
                                                   len(self.hardcoded_ips),
                                                   len(self._ip_port))
 
-    def get_shuffled_addrs(self):
+    def get_sample_unstable_addrs(self, num_addrs):
         addrs = list(self._ip_port.items())
-        random.shuffle(addrs)
+        addrs = random.sample(addrs, num_addrs)
         return addrs
-        
-    def pop_random_addr(self):
-        return #TODO
+
+    def get_shuffled_stable_addrs(self):
+        addrs = 
         
     def is_hardcoded(self, addr):
         """
@@ -84,11 +86,20 @@ class OverlayBootstrapper(object):
 
     def report_unreachable(self, addr):
         #remove from dict
-        self._ip_port.pop(addr[0], None)
+        #TODO: do not remove if many unreachable reports in a row (node may be
+        #temporarely offline (common in Android)
+        self._unstable_ip_port.pop(addr[0], None)
 
-    def report_reachable(self, addr):
-        if len(self._ip_port) < MAX_ADDRS:
-            self._ip_port[addr[0]] = addr[1]
+    def report_reachable(self, addr, reachable_since=0):
+        if addr[0] in self._stable_ip_port:
+            # already in STABLE list, don't add to UNSTABLE
+            return
+        if reachable_since == 0:
+            if len(self._ip_port) < MAX_ADDRS:
+                self._unstable_ip_port[addr[0]] = addr[1]
+        else:
+            #TODO: save a long-term reachable node every hour
+            pass
 
     def save_to_file():
         addrs = list(self._ip_port.items())

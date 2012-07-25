@@ -22,7 +22,7 @@ from core.pymdht import PYMDHT_VERSION
 MY_ID = RandomId()
 TID = '11'
 
-INPUT_FILE = '../core/bootstrap.backup'
+INPUT_FILE = '../core/bootstrap_unstable '
 PORT = 7667
 
 TIMEOUT = .25 # seconds
@@ -88,6 +88,7 @@ class NodeCrawler(object):
         return TIMEOUT, datagrams_to_send
 
     def _on_datagram_received(self, datagram):
+        #TODO: do not add to UNSTABLE if node is alredy in STABLE
         addr = datagram.addr
         subnet = self._get_subnet(addr)
         if addr in self._pinged_addrs:
