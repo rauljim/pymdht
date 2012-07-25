@@ -87,6 +87,7 @@ class Controller:
            
     def on_stop(self):
         self._experimental_m.on_stop()
+        self.bootstrapper.save_to_file()
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port, use_cache):
         """
