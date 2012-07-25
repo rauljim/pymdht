@@ -30,6 +30,7 @@ LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
 
 MAX_ADDRS_SHORT = 2100
 MAX_ADDRS_LONG = 2500
+ADD_LONG_EACH = 30#60 * 60 # one hour
 
 
 class OverlayBootstrapper(object):
@@ -57,9 +58,9 @@ class OverlayBootstrapper(object):
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
             self._unstable_ip_port[addr[0]] = addr[1]
-        print '%s: %d hardcoded, %d stable' % (filename,
-                                               len(self.hardcoded_ips),
-                                               len(self._unstable_ip_port))
+        print '%s: %d hardcoded, %d unstable' % (filename,
+                                                 len(self.hardcoded_ips),
+                                                 len(self._unstable_ip_port))
         filename = UNSTABLE_FILENAME
         f = _get_open_file(filename)
         for line in f:
@@ -70,6 +71,10 @@ class OverlayBootstrapper(object):
         print '%s: %d hardcoded, %d unstable' % (filename,
                                                  len(self.hardcoded_ips),
                                                  len(self._unstable_ip_port))
+        #long-term variables
+        self.last_long_add_ts = time.time()
+        self.oldest_ts = time.time()
+        self.oldest_addr = None
 
     def get_sample_unstable_addrs(self, num_addrs):
         #TODO: known issue (not critical)
@@ -123,41 +128,48 @@ class OverlayBootstrapper(object):
             print 'OFF-LINE'
             return
         #remove from dict (if present)
-        self._unstable_ip_port.pop(addr[0], None)
-        print 'REMOVE'
+        removed = self._unstable_ip_port.pop(addr[0], None)
+        if removed:
+            print 'REMOVE'
+        else:
+            print 'not unstable'
 
-    def report_reachable(self, addr, reachable_since=0):
+    def report_reachable(self, addr, reachable_since_ts=0):
         """
-        - reachable_since == 0:
+        - reachable_since_ts == 0:
           This node has been discovered during overlay boostrap. It will be added
           to the UNSTABLE list if there is enough room.
           **Use only from lookup manager (overlay bootstrap lookup).
-        - reachable_since != 0:
+        - reachable_since_ts != 0:
           This node has been in the routing table for longer than one hour. Once
           in a while, a long-term reachable node is written to the UNSTABLE file.
           **Use only from routing table manager.
         """
-        print 'reachable', addr
-        self._num_unreachable_reports_in_a_row = 0
+        print 'reachable', addr, reachable_since_ts
         if addr[0] in self._stable_ip_port or addr[0] in self._unstable_ip_port:
             # already in a bootstrap list
             return
 
-        if reachable_since == 0 and len(self._unstable_ip_port) < MAX_ADDRS_SHORT:
+        if reachable_since_ts == 0 and len(self._unstable_ip_port) < MAX_ADDRS_SHORT:
+            print 'ADDED'
             self._unstable_ip_port[addr[0]] = addr[1]
-        if reachable_since and len(self._unstable_ip_port) < MAX_ADDRS_LONG:
-            #TODO: save a long-term reachable node every hour
-            pass
+        if reachable_since_ts and len(self._unstable_ip_port) < MAX_ADDRS_LONG:
+            if reachable_since_ts < self.oldest_ts:
+                self.oldest_ts = reachable_since_ts
+                self.oldest_addr = addr
+            if time.time() > self.last_long_add_ts + ADD_LONG_EACH:
+                print 'added long:', addr, time.time() - reachable_since_ts 
+                self._unstable_ip_port[addr[0]] = addr[1]
+                self.last_long_add_ts = time.time()
 
-    def save_to_file():
-        addrs = list(self._ip_port.items())
+    def save_to_file(self):
+        addrs = self._unstable_ip_port.items()
         addrs.sort()
+        out = _get_open_file(LOCAL_FILENAME, 'w')
         for addr in addrs:
-            out = _get_open_file(BOOTSTRAP_LOCAL_FILENAME, 'w')
             print >>out, addr[0], addr[1] #TODO: inet_aton
-        self._ip_port = {}
-        
 
+            
 def _sanitize_bootstrap_addr(line):
     # no need to catch exceptions, get_bootstrap_nodes takes care of them
     ip, port_str = line.split()

@@ -257,6 +257,8 @@ class RoutingManager(object):
             if rnode:
                 # node in routing table: update rnode
                 self._update_rnode_on_response_received(rnode, rtt)
+                self.bootstrapper.report_reachable(rnode.addr,
+                                                   rnode.creation_ts)
             # This IP is in the table. Stop here to avoid multiple entries
             # with the same IP
             return
