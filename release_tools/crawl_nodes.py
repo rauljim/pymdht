@@ -22,7 +22,7 @@ from core.pymdht import PYMDHT_VERSION
 MY_ID = RandomId()
 TID = '11'
 
-INPUT_FILE = '../core/bootstrap_unstable '
+INPUT_FILE = '../core/bootstrap_unstable'
 PORT = 7667
 
 TIMEOUT = .25 # seconds
