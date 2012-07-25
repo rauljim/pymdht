@@ -73,7 +73,8 @@ class Controller:
                                               self.msg_f, bootstrap_mode)
         self._tracker = self._responder._tracker
         
-        self._lookup_m = lookup_m_mod.LookupManager(self._my_id, self.msg_f)
+        self._lookup_m = lookup_m_mod.LookupManager(self._my_id, self.msg_f,
+                                                    self.bootstrapper)
         self._experimental_m = experimental_m_mod.ExperimentalManager(
             self._my_node.id, self.msg_f) 
                   
@@ -114,10 +115,6 @@ class Controller:
         distance = lookup_obj.info_hash.distance(self._my_id)
         bootstrap_rnodes = self._routing_m.get_closest_rnodes(
             distance.log, 0, True) #TODO: get the full bucket
-        if not bootstrap_rnodes:
-            # empty routing table: OVERLAY BOOTSTRAP
-            addrs = self.bootstrapper.get_shuffled_addrs()
-            bootstrap_rnodes = [Node(addr) for addr in addrs]
         # look if I'm tracking this info_hash
         peers = self._tracker.get(lookup_obj.info_hash)
         callback_f = lookup_obj.callback_f
@@ -126,7 +123,9 @@ class Controller:
             if callback_f and callable(callback_f):
                 callback_f(lookup_obj.lookup_id, peers, None)
         # do the lookup
-        queries_to_send = lookup_obj.start(bootstrap_rnodes)
+        # NOTE: if bootstrap_rnodes is empty, a OVERLAY BOOTSTRAP will be
+        # done.
+        queries_to_send = lookup_obj.start(bootstrap_rnodes, self.bootstrapper)
 
         datagrams_to_send = self._register_queries(queries_to_send)
         return datagrams_to_send

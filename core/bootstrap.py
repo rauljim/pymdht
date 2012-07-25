@@ -28,7 +28,8 @@ STABLE_FILENAME = 'bootstrap_stable'
 UNSTABLE_FILENAME = 'bootstrap_unstable'
 LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
 
-MAX_ADDRS = 2050
+MAX_ADDRS_SHORT = 2100
+MAX_ADDRS_LONG = 2500
 
 
 class OverlayBootstrapper(object):
@@ -38,6 +39,8 @@ class OverlayBootstrapper(object):
         self.hardcoded_ips = set()
         self._stable_ip_port = {}
         self._unstable_ip_port = {}
+        self._local_exists = False
+        self._sample_unstable_addrs = []
 
         filename = STABLE_FILENAME
         f = _get_open_file(filename)
@@ -45,34 +48,47 @@ class OverlayBootstrapper(object):
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
             self._stable_ip_port[addr[0]] = addr[1]
-        print '%s: %d hardcoded, %d bootstrap' % (filename,
-                                                  len(self.hardcoded_ips),
-                                                  len(self._ip_port))
+        print '%s: %d hardcoded, %d stable' % (filename,
+                                               len(self.hardcoded_ips),
+                                               len(self._stable_ip_port))
         filename = LOCAL_FILENAME
         f = _get_open_file(filename)
-        local_exists = 
+        local_exists = bool(f)
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
             self._unstable_ip_port[addr[0]] = addr[1]
-        print '%s: %d hardcoded, %d bootstrap' % (filename,
-                                                  len(self.hardcoded_ips),
-                                                  len(self._ip_port))
+        print '%s: %d hardcoded, %d stable' % (filename,
+                                               len(self.hardcoded_ips),
+                                               len(self._unstable_ip_port))
         filename = UNSTABLE_FILENAME
         f = _get_open_file(filename)
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
-        print '%s: %d hardcoded, %d bootstrap' % (filename,
-                                                  len(self.hardcoded_ips),
-                                                  len(self._ip_port))
+            if not local_exists:
+                self._unstable_ip_port[addr[0]] = addr[1]
+        print '%s: %d hardcoded, %d unstable' % (filename,
+                                                 len(self.hardcoded_ips),
+                                                 len(self._unstable_ip_port))
 
     def get_sample_unstable_addrs(self, num_addrs):
-        addrs = list(self._ip_port.items())
-        addrs = random.sample(addrs, num_addrs)
-        return addrs
+        #TODO: known issue (not critical)
+        #If you get a new sample before the previous one is consumed
+        #(i.e. self._sample_unstable_addrs == []), one of the assumptions of the
+        #off-line detector is broken and the detector will not work.
+        if self._sample_unstable_addrs:
+            i_warn_you_msg = "You are messing with my off-line detector, my friend"
+            print i_warn_you_msg
+            logger.warning(i_warn_you_msg)
+        self._sample_unstable_addrs = random.sample(
+            self._unstable_ip_port.items(), num_addrs)
+        # return a copy (lookup manager may modify it)
+        return self._sample_unstable_addrs[:] 
 
     def get_shuffled_stable_addrs(self):
-        addrs = 
+        addrs = self._stable_ip_port.items()
+        random.suffle(addrs)
+        return addrs
         
     def is_hardcoded(self, addr):
         """
@@ -85,19 +101,51 @@ class OverlayBootstrapper(object):
         return addr[0] in self.hardcoded_ips
 
     def report_unreachable(self, addr):
-        #remove from dict
-        #TODO: do not remove if many unreachable reports in a row (node may be
-        #temporarely offline (common in Android)
+        """
+        Use only during overlay bootstrap
+        """
+        print 'unreachable:', addr,
+        # Reported addrs will be deleted from UNSTABLE list.  We consider the
+        # case of a temporaly off-line node that incorrectly report nodes as
+        # unreachable, when in reality the reported node may be reachable. This
+        # case is common in Android (battery-saving settings shut off radio to
+        # save battery).
+
+        # The idea is that if addrs are reported as unreachable in the same order
+        # as pinged (i.e. same as self._sample_unstable_addrs), we assume the
+        # local node is off-line and do not remove the addr from UNSTABLE.
+
+        # To make it simpler, we don't allow creating multiple samples (see
+        # get_sample_unstable_addrs).
+        if (self._sample_unstable_addrs and
+            addr == self._sample_unstable_addrs.pop(0)):
+            # assume local node is off-line, do not remove
+            print 'OFF-LINE'
+            return
+        #remove from dict (if present)
         self._unstable_ip_port.pop(addr[0], None)
+        print 'REMOVE'
 
     def report_reachable(self, addr, reachable_since=0):
-        if addr[0] in self._stable_ip_port:
-            # already in STABLE list, don't add to UNSTABLE
+        """
+        - reachable_since == 0:
+          This node has been discovered during overlay boostrap. It will be added
+          to the UNSTABLE list if there is enough room.
+          **Use only from lookup manager (overlay bootstrap lookup).
+        - reachable_since != 0:
+          This node has been in the routing table for longer than one hour. Once
+          in a while, a long-term reachable node is written to the UNSTABLE file.
+          **Use only from routing table manager.
+        """
+        print 'reachable', addr
+        self._num_unreachable_reports_in_a_row = 0
+        if addr[0] in self._stable_ip_port or addr[0] in self._unstable_ip_port:
+            # already in a bootstrap list
             return
-        if reachable_since == 0:
-            if len(self._ip_port) < MAX_ADDRS:
-                self._unstable_ip_port[addr[0]] = addr[1]
-        else:
+
+        if reachable_since == 0 and len(self._unstable_ip_port) < MAX_ADDRS_SHORT:
+            self._unstable_ip_port[addr[0]] = addr[1]
+        if reachable_since and len(self._unstable_ip_port) < MAX_ADDRS_LONG:
             #TODO: save a long-term reachable node every hour
             pass
 
