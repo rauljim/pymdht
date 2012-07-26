@@ -18,7 +18,7 @@ from core.identifier import RandomId
 from core.minitwisted import ThreadedReactor
 import core.ptime as time
 from core.pymdht import PYMDHT_VERSION
-import utils
+import core.utils as utils
 
 MY_ID = RandomId()
 TID = '11'
@@ -95,7 +95,7 @@ class NodeCrawler(object):
         if len(self._found_nodes) < MAX_NODES:
             msg = IncomingMsg(None, datagram)
             for node_ in msg.all_nodes or []:
-                if self._get_subnet(node_.addr) not in self._ok_subnet_addrs:
+                if utils.get_subnet(node_.addr) not in self._ok_subnet_addrs:
                     self._found_nodes.append(node_)
         return TIMEOUT, []
         
