@@ -18,6 +18,7 @@ from core.identifier import RandomId
 from core.minitwisted import ThreadedReactor
 import core.ptime as time
 from core.pymdht import PYMDHT_VERSION
+import utils
 
 MY_ID = RandomId()
 TID = '11'
@@ -75,9 +76,6 @@ class NodeCrawler(object):
                 self._is_done = True  
         return datagram
 
-    def _get_subnet(self, addr):
-        return socket.inet_aton(addr[0])[:3]
-        
     def _main_loop(self):
         datagrams_to_send = []
         datagram = self._get_ping_datagram()
@@ -90,7 +88,7 @@ class NodeCrawler(object):
     def _on_datagram_received(self, datagram):
         #TODO: do not add to UNSTABLE if node is alredy in STABLE
         addr = datagram.addr
-        subnet = self._get_subnet(addr)
+        subnet = utils.get_subnet(addr)
         if addr in self._pinged_addrs:
             self._pinged_addrs.remove(addr)
             self._ok_subnet_addrs[subnet] = addr

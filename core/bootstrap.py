@@ -2,14 +2,20 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 """
-- main and backup bootstrap nodes
-These nodes are hardcoded (see core/bootstrap.main and core/bootstrap.backup)
-Main nodes are run by us, backup nodes are wild nodes we have seen running for
-a long time.
-Each bootstrap step, a number of main nodes and backup nodes (see
-*_NODES_PER_BOOTSTRAP) are used to peroform a lookup.
-These bootstrap nodes SHOULD NOT be added to the routing table to avoid
-overloading them (use is_bootstrap_node() before adding nodes to routing table!
+- stable and unstable bootstrap addresses (hardcoded)
+These nodes are hardcoded (see core/bootstrap.main and
+core/bootstrap.backup). These two files are shipped with the code.
+Stable nodes are run by us, unstable nodes are wild nodes we have seen running
+for a long time.
+Harcoded bootstrap nodes SHOULD NOT be added to the routing table to avoid
+overloading them (use is_hardcoded() before adding nodes to routing table!
+
+- local bootstrap addresses
+These nodes are updated locally, thus the name. The file is saved in the same
+directory as the logs (see conf_path in pymdht.Pymdht). If the file does not
+exist, the hardcoded unstable list is used.
+This file will contain, at most, an IP address per /24 subnet.
+
 """
 
 import os
@@ -21,12 +27,13 @@ import ptime as time
 import identifier
 import message
 import node
+import utils
 
 logger = logging.getLogger('dht')
 
-STABLE_FILENAME = 'bootstrap_stable'
-UNSTABLE_FILENAME = 'bootstrap_unstable'
-LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
+HARDCODED_STABLE_FILENAME = 'bootstrap_stable'
+HARDCODED_UNSTABLE_FILENAME = 'bootstrap_unstable'
+LOCAL_UNSTABLE_FILENAME = 'pymdht.bootstrap'
 
 MAX_ZERO_UPTIME_ADDRS = 2100
 MAX_LONG_UPTIME_ADDRS = 2500
@@ -40,19 +47,23 @@ class OverlayBootstrapper(object):
         self.hardcoded_ips = set()
         self._stable_ip_port = {}
         self._unstable_ip_port = {}
+        self._all_subnets = set()
         self._local_exists = False
         self._sample_unstable_addrs = []
-        self.abs_local_filename = os.path.join(conf_path, LOCAL_FILENAME)
+        self.abs_local_filename = os.path.join(conf_path,
+                                               LOCAL_UNSTABLE_FILENAME)
 
-        filename = STABLE_FILENAME
+        filename = HARDCODED_STABLE_FILENAME
         f = _get_open_file(filename)
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
             self._stable_ip_port[addr[0]] = addr[1]
+            self._all_subnets.add(utils.get_subnet(addr))
         print '%s: %d hardcoded, %d stable' % (filename,
                                                len(self.hardcoded_ips),
                                                len(self._stable_ip_port))
+        # local (unstable)
         try:
             f = open(self.abs_local_filename)
         except:
@@ -64,16 +75,18 @@ class OverlayBootstrapper(object):
             for line in f:
                 addr = _sanitize_bootstrap_addr(line)
                 self._unstable_ip_port[addr[0]] = addr[1]
+                self._all_subnets.add(utils.get_subnet(addr))
         print '%s: %d hardcoded, %d unstable' % (filename,
                                                  len(self.hardcoded_ips),
                                                  len(self._unstable_ip_port))
-        filename = UNSTABLE_FILENAME
+        filename = HARDCODED_UNSTABLE_FILENAME
         f = _get_open_file(filename)
         for line in f:
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
             if not local_exists:
                 self._unstable_ip_port[addr[0]] = addr[1]
+                self._all_subnets.add(utils.get_subnet(addr))
         print '%s: %d hardcoded, %d unstable' % (filename,
                                                  len(self.hardcoded_ips),
                                                  len(self._unstable_ip_port))
@@ -115,6 +128,10 @@ class OverlayBootstrapper(object):
         """
         Use only during overlay bootstrap
         """
+        addr_subnet = utils.get_subnet(addr)
+        if addr_subnet not in self._all_subnets:
+            # Subnet not present in a bootstrap list. Ignore.
+            return
         print 'unreachable:', addr,
         # Reported addrs will be deleted from UNSTABLE list.  We consider the
         # case of a temporaly off-line node that incorrectly report nodes as
@@ -135,6 +152,7 @@ class OverlayBootstrapper(object):
             return
         #remove from dict (if present)
         removed = self._unstable_ip_port.pop(addr[0], None)
+        self._all_subnets.remove(addr_subnet)
         if removed:
             print 'REMOVE'
         else:
@@ -153,10 +171,10 @@ class OverlayBootstrapper(object):
           **Use only from routing table manager.
         """
         print 'reachable', addr, uptime
-        if addr[0] in self._stable_ip_port or addr[0] in self._unstable_ip_port:
-            # already in a bootstrap list
+        addr_subnet = utils.get_subnet(addr)
+        if addr_subnet in self._all_subnets:
+            # Subnet already in a bootstrap list. Ignore.
             return
-
         if uptime == 0 and len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
             print 'ADDED'
             self._unstable_ip_port[addr[0]] = addr[1]
@@ -164,13 +182,14 @@ class OverlayBootstrapper(object):
             if uptime > self.longest_uptime:
                 self.longest_uptime = uptime
                 self.longest_uptime_addr = addr
-            if (time.time() >
-                self.last_long_uptime_add_ts + ADD_LONG_UPTIME_ADDR_EACH):
-                self.last_long_add_ts = time.time()
-                if self.longest_uptime > MIN_LONG_UPTIME:
+            if ((time.time() >
+                self.last_long_uptime_add_ts + ADD_LONG_UPTIME_ADDR_EACH)
+                and self.longest_uptime > MIN_LONG_UPTIME):
+                    self.last_long_add_ts = time.time()
                     print 'added long:', addr,
                     print uptime / 3600, "hours" 
                     self._unstable_ip_port[addr[0]] = addr[1]
+                    self._all_subnets.add(addr_subnet)
                     #TODO: append directly to file?
 
     def save_to_file(self):

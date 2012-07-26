@@ -3,12 +3,18 @@
 - Changed crawler to save, at most, one address per /24 subnet in
   "bootstrap.backup". This should give some protection against an adversary
   running many malicious nodes on a subnet. It should also add robustness.
+  This also applies to bootstrap.py.
 - Bootstrap simplified (moved from routing_manager to controller)
 - controller.get_peers simplified (pending_lookups is no longer needed)
 - Rename bootstrap.main > bootstrap_stable (nodes we run are called "stable")
   bootstrap.backup > bootstrap_unstable (others nodes are considered "unstable"
 - Replaced pymdht.status with a better overlay bootstrapping mechanism
   (see bootstrap.py for details).
+- Removed state.py (replaced by bootstrap.py). Routing table information (in a
+  similar format as state.py output) is now available at
+  pymdht.print_routing_table()
+- ui/cli (default interface in run_pymdht_node.py) has two new commands: 'r'
+  (routing table stats) and 'rr' (detailed info).
 
 == 12.6.2
 

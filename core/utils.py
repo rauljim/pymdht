@@ -35,3 +35,7 @@ def uncompact_addr(c_addr):
         raise AddrError
 '''
 compact_peer = compact_addr
+
+def get_subnet(addr):
+    return socket.inet_aton(addr[0])[:3]
+        
