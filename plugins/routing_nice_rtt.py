@@ -41,6 +41,8 @@ sys.path.pop()
 logger = logging.getLogger('dht')
 
 NUM_BUCKETS = identifier.ID_SIZE_BITS
+MAX_LOG_DISTANCE_TO_ADD_HARDCODED = 155
+
 """
 We need 160 sbuckets to cover all the cases. See the following table:
 Index | Distance      | Comment
@@ -198,10 +200,10 @@ class RoutingManager(object):
         will be sent out by the caller)
         '''
         self._num_timeouts_in_a_row = 0
-        if self.bootstrapper.is_hardcoded(node_.addr):
-            return
-        
         log_distance = self.my_node.distance(node_).log
+        if (log_distance > MAX_LOG_DISTANCE_TO_ADD_HARDCODED and
+            self.bootstrapper.is_hardcoded(node_.addr)):
+            return
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except(IndexError):
@@ -236,8 +238,6 @@ class RoutingManager(object):
             
     def on_response_received(self, node_, rtt, nodes):
         self._num_timeouts_in_a_row = 0
-        if self.bootstrapper.is_hardcoded(node_.addr):
-            return
 
         if nodes:
             logger.debug('nodes found: %r', nodes)
@@ -245,6 +245,9 @@ class RoutingManager(object):
 
         logger.debug('on response received %f', rtt)
         log_distance = self.my_node.distance(node_).log
+        if (log_distance > MAX_LOG_DISTANCE_TO_ADD_HARDCODED and
+            self.bootstrapper.is_hardcoded(node_.addr)):
+            return
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except(IndexError):
@@ -336,8 +339,6 @@ class RoutingManager(object):
         self._num_timeouts_in_a_row += 1
         if self._num_timeouts_in_a_row > MAX_TIMEOUTS_IN_A_ROW:
             # stop, do not expell nodes from routing table
-            return []
-        if self.bootstrapper.is_hardcoded(node_.addr):
             return []
 
         log_distance = self.my_node.distance(node_).log
