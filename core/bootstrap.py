@@ -191,7 +191,7 @@ class OverlayBootstrapper(object):
                 self.next_long_uptime_add_ts += ADD_LONG_UPTIME_ADDR_EACH
                 assert self.longest_uptime_addr
                 self.longest_uptime_addr = None
-                #TODO: append directly to file?
+                self.save_to_file()
 
     def save_to_file(self):
         addrs = self._unstable_ip_port.items()
