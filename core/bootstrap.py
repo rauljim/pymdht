@@ -43,7 +43,6 @@ MIN_LONG_UPTIME = 3600 # one hour
 class OverlayBootstrapper(object):
 
     def __init__(self, conf_path):
-        #TODO: subnet
         self.hardcoded_ips = set()
         self._stable_ip_port = {}
         self._unstable_ip_port = {}
@@ -54,15 +53,14 @@ class OverlayBootstrapper(object):
                                                LOCAL_UNSTABLE_FILENAME)
 
         filename = HARDCODED_STABLE_FILENAME
-        f = _get_open_file(filename)
-        for line in f:
+        f = utils.get_open_file(filename)
+        for line in f or []:
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
             self._stable_ip_port[addr[0]] = addr[1]
             self._all_subnets.add(utils.get_subnet(addr))
-        print '%s: %d hardcoded, %d stable' % (filename,
-                                               len(self.hardcoded_ips),
-                                               len(self._stable_ip_port))
+        logger.debug('%s: %d hardcoded, %d stable' % (
+                filename, len(self.hardcoded_ips), len(self._stable_ip_port)))
         # local (unstable)
         try:
             f = open(self.abs_local_filename)
@@ -76,24 +74,26 @@ class OverlayBootstrapper(object):
                 addr = _sanitize_bootstrap_addr(line)
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(utils.get_subnet(addr))
-        print '%s: %d hardcoded, %d unstable' % (filename,
-                                                 len(self.hardcoded_ips),
-                                                 len(self._unstable_ip_port))
+        logger.debug('%s: %d hardcoded, %d unstable' % (
+                filename, len(self.hardcoded_ips), len(self._unstable_ip_port)))
         filename = HARDCODED_UNSTABLE_FILENAME
-        f = _get_open_file(filename)
-        for line in f:
+        f = utils.get_open_file(filename)
+        for line in f or []:
             addr = _sanitize_bootstrap_addr(line)
             self.hardcoded_ips.add(addr[0])
             if not local_exists:
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(utils.get_subnet(addr))
-        print '%s: %d hardcoded, %d unstable' % (filename,
-                                                 len(self.hardcoded_ips),
-                                                 len(self._unstable_ip_port))
+        logger.debug('%s: %d hardcoded, %d unstable' % (
+                filename, len(self.hardcoded_ips), len(self._unstable_ip_port)))
         #long-term variables
         self.next_long_uptime_add_ts = time.time() # do first add asap
         self.longest_uptime = MIN_LONG_UPTIME
         self.longest_uptime_addr = None
+
+    @property
+    def unstable_len(self):
+        return len(self._unstable_ip_port)
 
     def get_sample_unstable_addrs(self, num_addrs):
         #TODO: known issue (not critical)
@@ -102,7 +102,6 @@ class OverlayBootstrapper(object):
         #off-line detector is broken and the detector will not work.
         if self._sample_unstable_addrs:
             i_warn_you_msg = "You are messing with my off-line detector, my friend"
-            print i_warn_you_msg
             logger.warning(i_warn_you_msg)
         self._sample_unstable_addrs = random.sample(
             self._unstable_ip_port.items(), num_addrs)
@@ -111,7 +110,7 @@ class OverlayBootstrapper(object):
 
     def get_shuffled_stable_addrs(self):
         addrs = self._stable_ip_port.items()
-        random.suffle(addrs)
+        random.shuffle(addrs)
         return addrs
         
     def is_hardcoded(self, addr):
@@ -128,11 +127,9 @@ class OverlayBootstrapper(object):
         """
         Use only during overlay bootstrap
         """
-        addr_subnet = utils.get_subnet(addr)
-        if addr_subnet not in self._all_subnets:
-            # Subnet not present in a bootstrap list. Ignore.
+        if addr[0] not in self._unstable_ip_port:
+            # Addr not present in a bootstrap list. Ignore.
             return
-        print 'unreachable:', addr,
         # Reported addrs will be deleted from UNSTABLE list.  We consider the
         # case of a temporaly off-line node that incorrectly report nodes as
         # unreachable, when in reality the reported node may be reachable. This
@@ -145,18 +142,17 @@ class OverlayBootstrapper(object):
 
         # To make it simpler, we don't allow creating multiple samples (see
         # get_sample_unstable_addrs).
-        if (self._sample_unstable_addrs and
-            addr == self._sample_unstable_addrs.pop(0)):
-            # assume local node is off-line, do not remove
-            print 'OFF-LINE'
-            return
+        if self._sample_unstable_addrs:
+            if addr == self._sample_unstable_addrs.pop(0):
+                # assume local node is off-line, do not remove
+                logger.debug('OFF-LINE %r' % (addr,))
+                return
+            else:
+                self._sample_unstable_addrs = [] # end off-line mode
         #remove from dict (if present)
-        removed = self._unstable_ip_port.pop(addr[0], None)
-        self._all_subnets.remove(addr_subnet)
-        if removed:
-            print 'REMOVE'
-        else:
-            print 'not unstable'
+        del self._unstable_ip_port[addr[0]]
+        self._all_subnets.remove(utils.get_subnet(addr))
+        logger.debug('REMOVED %r' % (addr,))
 
     def report_reachable(self, addr, uptime=0):
         """
@@ -170,9 +166,8 @@ class OverlayBootstrapper(object):
           written to the UNSTABLE file.
           **Use only from routing table manager.
         """
-        print 'reachable', addr, uptime
         addr_subnet = utils.get_subnet(addr)
-        if len(self._unstable_ip_port) < MAX_LONG_UPTIME_ADDRS:
+        if len(self._unstable_ip_port) >= MAX_LONG_UPTIME_ADDRS:
             # Enough addrs in the list. Ignore.
             return
         if addr_subnet in self._all_subnets:
@@ -180,19 +175,20 @@ class OverlayBootstrapper(object):
             return
         if uptime == 0:
             if len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
-                print 'ADDED'
+                logger.debug('added short %r' % (addr,))
                 self._unstable_ip_port[addr[0]] = addr[1]
-        elif uptime > self.longest_uptime:
-            assert uptime > MIN_LONG_UPTIME
+                self._all_subnets.add(addr_subnet)
+        elif uptime >= self.longest_uptime:
+            assert uptime >= MIN_LONG_UPTIME
             self.longest_uptime = uptime
             self.longest_uptime_addr = addr
-            if time.time() > self.next_long_uptime_add_ts:
-                print 'added long:', addr,
-                print uptime / 3600, "hours" 
+            if time.time() >= self.next_long_uptime_add_ts:
+                logger.debug('added long: %r, %f hours' % (
+                        addr, uptime / 3600))
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(addr_subnet)
                 self.longest_uptime = MIN_LONG_UPTIME
-                self.next_long_add_ts += ADD_LONG_UPTIME_ADDR_EACH
+                self.next_long_uptime_add_ts += ADD_LONG_UPTIME_ADDR_EACH
                 assert self.longest_uptime_addr
                 self.longest_uptime_addr = None
                 #TODO: append directly to file?
@@ -210,27 +206,6 @@ class OverlayBootstrapper(object):
 
             
 def _sanitize_bootstrap_addr(line):
-    # no need to catch exceptions, get_bootstrap_nodes takes care of them
+    #TODO: need to catch exceptions
     ip, port_str = line.split()
     return ip, int(port_str)
-
-def _get_open_file(filename, mode='r'): #TODO: move to utils
-    data_path = os.path.dirname(message.__file__)
-    abs_filename = os.path.join(data_path, filename)
-    
-    # Arno, 2012-05-25: py2exe support
-    if hasattr(sys, "frozen"):
-        print >>sys.stderr,"pymdht: bootstrap: Frozen mode"
-        installdir = os.path.dirname(unicode(
-                sys.executable,sys.getfilesystemencoding()))
-        if sys.platform == "darwin":
-            installdir = installdir.replace("MacOS","Resources")
-        abs_filename = os.path.join(installdir, "Tribler", "Core",
-                         "DecentralizedTracking", "pymdht", "core",
-                         filename)
-    print >>sys.stderr,"pymdht: bootstrap:", filename, abs_filename
-    try:
-        f = open(abs_filename, mode)
-    except (IOError):
-        f = []
-    return f

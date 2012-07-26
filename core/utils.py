@@ -2,8 +2,11 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import os
+import sys
 import socket
 
+import node
 
 class AddrError(Exception):
     pass
@@ -39,3 +42,23 @@ compact_peer = compact_addr
 def get_subnet(addr):
     return socket.inet_aton(addr[0])[:3]
         
+
+def get_open_file(filename, mode='r'):
+    data_path = os.path.dirname(node.__file__)
+    abs_filename = os.path.join(data_path, filename)
+    
+    # Arno, 2012-05-25: py2exe support
+    if hasattr(sys, "frozen"):
+        print >>sys.stderr,"pymdht: utils.py py2exe: Frozen mode"
+        installdir = os.path.dirname(unicode(
+                sys.executable,sys.getfilesystemencoding()))
+        if sys.platform == "darwin":
+            installdir = installdir.replace("MacOS","Resources")
+        abs_filename = os.path.join(installdir, "Tribler", "Core",
+                         "DecentralizedTracking", "pymdht", "core",
+                         filename)
+        print >>sys.stderr,"pymdht: utils.py py2exe:", filename, abs_filename
+    try:
+        return open(abs_filename, mode)
+    except (IOError):
+        logger.execption('Ignoring this file...')
