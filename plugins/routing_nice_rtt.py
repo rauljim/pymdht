@@ -330,6 +330,9 @@ class RoutingManager(object):
         return
     
     def on_timeout(self, node_):
+        if not node_.id:
+            # this is an overlay bootstrap node (no id). Ignore.
+            return []
         self._num_timeouts_in_a_row += 1
         if self._num_timeouts_in_a_row > MAX_TIMEOUTS_IN_A_ROW:
             # stop, do not expell nodes from routing table
