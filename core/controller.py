@@ -47,14 +47,13 @@ CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
 class Controller:
 
     def __init__(self, version_label,
-                 my_node, state_filename,
+                 my_node, conf_path,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
                  bootstrap_mode):
-        
-        self.bootstrapper = bootstrap.OverlayBootstrapper()
-        self.state_filename = state_filename
+        self.bootstrapper = bootstrap.OverlayBootstrapper(conf_path)
+        self.state_filename = os.path.join(conf_path, STATE_FILENAME)
         saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
         my_addr = my_node.addr
         self._my_id = my_node.id # id indicated by user 

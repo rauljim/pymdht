@@ -30,18 +30,19 @@ LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
 
 MAX_ADDRS_SHORT = 2100
 MAX_ADDRS_LONG = 2500
-ADD_LONG_EACH = 30#60 * 60 # one hour
+ADD_LONG_EACH = 3600 # one hour
 
 
 class OverlayBootstrapper(object):
 
-    def __init__(self):
+    def __init__(self, conf_path):
         #TODO: subnet
         self.hardcoded_ips = set()
         self._stable_ip_port = {}
         self._unstable_ip_port = {}
         self._local_exists = False
         self._sample_unstable_addrs = []
+        self.abs_local_filename = os.path.join(conf_path, LOCAL_FILENAME)
 
         filename = STABLE_FILENAME
         f = _get_open_file(filename)
@@ -52,12 +53,17 @@ class OverlayBootstrapper(object):
         print '%s: %d hardcoded, %d stable' % (filename,
                                                len(self.hardcoded_ips),
                                                len(self._stable_ip_port))
-        filename = LOCAL_FILENAME
-        f = _get_open_file(filename)
-        local_exists = bool(f)
-        for line in f:
-            addr = _sanitize_bootstrap_addr(line)
-            self._unstable_ip_port[addr[0]] = addr[1]
+        try:
+            f = open(self.abs_local_filename)
+        except:
+            logger.debug("File does not exist")
+            local_exists = False
+        else:
+            #TODO: use unstable if too few addrs in local? I don't think so
+            local_exists = True
+            for line in f:
+                addr = _sanitize_bootstrap_addr(line)
+                self._unstable_ip_port[addr[0]] = addr[1]
         print '%s: %d hardcoded, %d unstable' % (filename,
                                                  len(self.hardcoded_ips),
                                                  len(self._unstable_ip_port))
@@ -158,14 +164,19 @@ class OverlayBootstrapper(object):
                 self.oldest_ts = reachable_since_ts
                 self.oldest_addr = addr
             if time.time() > self.last_long_add_ts + ADD_LONG_EACH:
-                print 'added long:', addr, time.time() - reachable_since_ts 
+                print 'added long:', addr,
+                print (time.time() - reachable_since_ts)/3600, "hours" 
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self.last_long_add_ts = time.time()
 
     def save_to_file(self):
         addrs = self._unstable_ip_port.items()
         addrs.sort()
-        out = _get_open_file(LOCAL_FILENAME, 'w')
+        try:
+            out = open(self.abs_local_filename, 'w')
+        except:
+            logger.exception()
+            return
         for addr in addrs:
             print >>out, addr[0], addr[1] #TODO: inet_aton
 

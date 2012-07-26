@@ -56,9 +56,8 @@ class Pymdht:
                  bootstrap_mode=False,
                  swift_port=0):
         logging_conf.setup(conf_path, debug_level)
-        state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(VERSION_LABEL,
-                                                my_node, state_filename,
+                                                my_node, conf_path,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 experimental_m_mod,
