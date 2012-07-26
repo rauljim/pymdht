@@ -88,6 +88,8 @@ class _LookupQueue(object):
 
     def on_timeout(self, max_nodes):
         return self._pop_nodes_to_query(max_nodes)
+    #TODO: use STABLE nodes if all UNSTABLE nodes unreachable!!!
+    #FIXME: ^^^^^^^^^^^
 
     on_error = on_timeout
     
