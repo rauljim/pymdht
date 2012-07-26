@@ -193,12 +193,13 @@ class RoutingTable(object):
         print 'Total:', self.num_rnodes
 
     def print_table(self):
-        header_format = '%6s %40s %10s %15s %5s %4s %6s'
-        data_format =   '%6d %40r %10s %15s %5d %4d %7.2f'
+        header_format = '%6s %40s %10s %15s %5s %4s %8s'
+        data_format =   '%6d %40r %10s %15s %5d %4d %9.2f'
         header = header_format % (
-            'bucket', 'id', 'version', 'ip', 'port', 'rtt', 'time(h)')
-        thick_line = '=' * 93
-        thin_line = '-' * 93
+            'bucket', 'id', 'version', 'ip', 'port', 'rtt', 'uptime(h)')
+        #TODO: format uptime as hh:mm
+        thick_line = '=' * 95
+        thin_line = '-' * 95
         print thick_line
         print data_format % (-1, self.my_node.id,
                              version_repr(self.my_node.version),

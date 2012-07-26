@@ -28,10 +28,10 @@ STABLE_FILENAME = 'bootstrap_stable'
 UNSTABLE_FILENAME = 'bootstrap_unstable'
 LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
 
-MAX_ADDRS_SHORT = 2100
-MAX_ADDRS_LONG = 2500
-ADD_LONG_EACH = 3600 # one hour
-
+MAX_ZERO_UPTIME_ADDRS = 2100
+MAX_LONG_UPTIME_ADDRS = 2500
+ADD_LONG_UPTIME_ADDR_EACH = 30 # 3600 # one hour
+MIN_LONG_UPTIME = 30 # 3600 # one hour
 
 class OverlayBootstrapper(object):
 
@@ -78,9 +78,9 @@ class OverlayBootstrapper(object):
                                                  len(self.hardcoded_ips),
                                                  len(self._unstable_ip_port))
         #long-term variables
-        self.last_long_add_ts = time.time()
-        self.oldest_ts = time.time()
-        self.oldest_addr = None
+        self.last_long_uptime_add_ts = time.time()
+        self.longest_uptime = 0
+        self.longest_uptime_addr = None
 
     def get_sample_unstable_addrs(self, num_addrs):
         #TODO: known issue (not critical)
@@ -140,34 +140,38 @@ class OverlayBootstrapper(object):
         else:
             print 'not unstable'
 
-    def report_reachable(self, addr, reachable_since_ts=0):
+    def report_reachable(self, addr, uptime=0):
         """
-        - reachable_since_ts == 0:
+        - uptime == 0:
           This node has been discovered during overlay boostrap. It will be added
           to the UNSTABLE list if there is enough room.
           **Use only from lookup manager (overlay bootstrap lookup).
-        - reachable_since_ts != 0:
-          This node has been in the routing table for longer than one hour. Once
-          in a while, a long-term reachable node is written to the UNSTABLE file.
+        - uptime > 0:
+          This node has been in the routing table for some time
+          (uptime seconds). Once in a while, a long-term reachable node is
+          written to the UNSTABLE file.
           **Use only from routing table manager.
         """
-        print 'reachable', addr, reachable_since_ts
+        print 'reachable', addr, uptime
         if addr[0] in self._stable_ip_port or addr[0] in self._unstable_ip_port:
             # already in a bootstrap list
             return
 
-        if reachable_since_ts == 0 and len(self._unstable_ip_port) < MAX_ADDRS_SHORT:
+        if uptime == 0 and len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
             print 'ADDED'
             self._unstable_ip_port[addr[0]] = addr[1]
-        if reachable_since_ts and len(self._unstable_ip_port) < MAX_ADDRS_LONG:
-            if reachable_since_ts < self.oldest_ts:
-                self.oldest_ts = reachable_since_ts
-                self.oldest_addr = addr
-            if time.time() > self.last_long_add_ts + ADD_LONG_EACH:
-                print 'added long:', addr,
-                print (time.time() - reachable_since_ts)/3600, "hours" 
-                self._unstable_ip_port[addr[0]] = addr[1]
+        if uptime and len(self._unstable_ip_port) < MAX_LONG_UPTIME_ADDRS:
+            if uptime > self.longest_uptime:
+                self.longest_uptime = uptime
+                self.longest_uptime_addr = addr
+            if (time.time() >
+                self.last_long_uptime_add_ts + ADD_LONG_UPTIME_ADDR_EACH):
                 self.last_long_add_ts = time.time()
+                if self.longest_uptime > MIN_LONG_UPTIME:
+                    print 'added long:', addr,
+                    print uptime / 3600, "hours" 
+                    self._unstable_ip_port[addr[0]] = addr[1]
+                    #TODO: append directly to file?
 
     def save_to_file(self):
         addrs = self._unstable_ip_port.items()
