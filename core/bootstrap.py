@@ -91,8 +91,8 @@ class OverlayBootstrapper(object):
                                                  len(self.hardcoded_ips),
                                                  len(self._unstable_ip_port))
         #long-term variables
-        self.last_long_uptime_add_ts = time.time()
-        self.longest_uptime = 0
+        self.next_long_uptime_add_ts = time.time() # do first add asap
+        self.longest_uptime = MIN_LONG_UPTIME
         self.longest_uptime_addr = None
 
     def get_sample_unstable_addrs(self, num_addrs):
@@ -172,25 +172,30 @@ class OverlayBootstrapper(object):
         """
         print 'reachable', addr, uptime
         addr_subnet = utils.get_subnet(addr)
+        if len(self._unstable_ip_port) < MAX_LONG_UPTIME_ADDRS:
+            # Enough addrs in the list. Ignore.
+            return
         if addr_subnet in self._all_subnets:
             # Subnet already in a bootstrap list. Ignore.
             return
-        if uptime == 0 and len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
-            print 'ADDED'
-            self._unstable_ip_port[addr[0]] = addr[1]
-        if uptime and len(self._unstable_ip_port) < MAX_LONG_UPTIME_ADDRS:
-            if uptime > self.longest_uptime:
-                self.longest_uptime = uptime
-                self.longest_uptime_addr = addr
-            if ((time.time() >
-                self.last_long_uptime_add_ts + ADD_LONG_UPTIME_ADDR_EACH)
-                and self.longest_uptime > MIN_LONG_UPTIME):
-                    self.last_long_add_ts = time.time()
-                    print 'added long:', addr,
-                    print uptime / 3600, "hours" 
-                    self._unstable_ip_port[addr[0]] = addr[1]
-                    self._all_subnets.add(addr_subnet)
-                    #TODO: append directly to file?
+        if uptime == 0:
+            if len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
+                print 'ADDED'
+                self._unstable_ip_port[addr[0]] = addr[1]
+        elif uptime > self.longest_uptime:
+            assert uptime > MIN_LONG_UPTIME
+            self.longest_uptime = uptime
+            self.longest_uptime_addr = addr
+            if time.time() > self.next_long_uptime_add_ts:
+                print 'added long:', addr,
+                print uptime / 3600, "hours" 
+                self._unstable_ip_port[addr[0]] = addr[1]
+                self._all_subnets.add(addr_subnet)
+                self.longest_uptime = MIN_LONG_UPTIME
+                self.next_long_add_ts += ADD_LONG_UPTIME_ADDR_EACH
+                assert self.longest_uptime_addr
+                self.longest_uptime_addr = None
+                #TODO: append directly to file?
 
     def save_to_file(self):
         addrs = self._unstable_ip_port.items()
