@@ -30,8 +30,8 @@ LOCAL_FILENAME = 'bootstrap_local' #TODO: ~/.pymdht
 
 MAX_ZERO_UPTIME_ADDRS = 2100
 MAX_LONG_UPTIME_ADDRS = 2500
-ADD_LONG_UPTIME_ADDR_EACH = 30 # 3600 # one hour
-MIN_LONG_UPTIME = 30 # 3600 # one hour
+ADD_LONG_UPTIME_ADDR_EACH =  3600 # one hour
+MIN_LONG_UPTIME = 3600 # one hour
 
 class OverlayBootstrapper(object):
 
