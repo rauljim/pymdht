@@ -1,4 +1,4 @@
-== 12.6.3
+== 12.7.0
 
 - Changed crawler to save, at most, one address per /24 subnet in
   "bootstrap.backup". This should give some protection against an adversary
