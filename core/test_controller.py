@@ -43,7 +43,7 @@ class TestController:
         
         self.controller = controller.Controller(VERSION_LABEL,
                                                 tc.CLIENT_NODE,
-                                                'test_logs/state.dat',
+                                                'test_logs',
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 exp_m_mod,
@@ -62,12 +62,6 @@ class TestController:
         #FIXME: assert_almost_equal(ts, expected_ts)
         eq_(len(datagrams), 1)
         eq_(datagrams[0], expected_datagrams[0])
-
-    def test_with_unexistent_state_file(self):
-        controller.Controller(VERSION_LABEL ,
-                              tc.CLIENT_NODE, 'test_logs/state.dat.no',
-                              routing_m_mod, lookup_m_mod, exp_m_mod,
-                              None, False)
 
     def test_adding_and_removing_node(self):
         # The routing table is initially empty
@@ -172,10 +166,6 @@ class TestController:
         #FIXME: ok_(datagrams)
         #FIXME: assert 'get_peers' in datagrams[0].data
 
-    def test_save_state(self):
-        time.sleep(controller.SAVE_STATE_DELAY)
-        self.controller.main_loop()
-
     def test_bad_datagram_received(self):
         ts, datagrams = self.controller.on_datagram_received(
             message.Datagram('aa', tc.CLIENT_ADDR))
@@ -207,25 +197,3 @@ class TestController:
         
     def teardown(self):
         time.normal_mode()
-
-class _TestStateErrors:
-
-    def test(self): 
-        '''self.controller = controller.Controller(tc.CLIENT_ADDR,
-                                                'test_logs/state.dat.broken',
-                                                routing_m_mod,
-                                                lookup_m_mod,
-                                                None)
-'''
-        self.controller = controller.Controller(tc.CLIENT_ADDR,
-                                                'test_logs/state.dat.good',
-                                                routing_m_mod,
-                                                lookup_m_mod,
-                                                None)
-'''
-        self.controller = controller.Controller(tc.CLIENT_ADDR,
-                                                'test_logs/state.dat.nofile',
-                                                routing_m_mod,
-                                                lookup_m_mod,
-                                                None)
-'''
