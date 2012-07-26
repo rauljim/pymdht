@@ -42,6 +42,8 @@ logger = logging.getLogger('dht')
 
 NUM_BUCKETS = identifier.ID_SIZE_BITS
 MAX_LOG_DISTANCE_TO_ADD_HARDCODED = 155
+# Hardcoded nodes may be added to the routing table if
+# log_distance < MAX_LOG_DISTANCE_TO_ADD_HARDCODED
 
 """
 We need 160 sbuckets to cover all the cases. See the following table:
