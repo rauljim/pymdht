@@ -21,7 +21,6 @@ import cPickle
 
 import logging, logging_conf
 
-import state
 import identifier
 from identifier import Id
 import message
@@ -36,11 +35,6 @@ import bootstrap
 
 logger = logging.getLogger('dht')
 
-SAVE_STATE_DELAY = 1 * 60
-STATE_FILENAME = 'pymdht.state'
-
-#TIMEOUT_DELAY = 2
-
 CACHE_VALID_PERIOD = 5 * 60 # 5 minutes
 
 
@@ -53,12 +47,8 @@ class Controller:
                  private_dht_name,
                  bootstrap_mode):
         self.bootstrapper = bootstrap.OverlayBootstrapper(conf_path)
-        self.state_filename = os.path.join(conf_path, STATE_FILENAME)
-        saved_id, saved_bootstrap_nodes = state.load(self.state_filename)
         my_addr = my_node.addr
         self._my_id = my_node.id # id indicated by user 
-        if not self._my_id:
-            self._my_id = saved_id # id loaded from file
         if not self._my_id:
             self._my_id = self._my_id = identifier.RandomId() # random id
         self._my_node = Node(my_addr, self._my_id, version=version_label)
@@ -78,7 +68,6 @@ class Controller:
             self._my_node.id, self.msg_f) 
                   
         current_ts = time.time()
-        self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
         self._next_maintenance_ts = current_ts
         self._next_timeout_ts = current_ts
         self._next_main_loop_call_ts = current_ts
@@ -193,17 +182,7 @@ class Controller:
                 target, rnodes = maintenance_lookup
                 lookup_obj = self._lookup_m.maintenance_lookup(target)
                 queries_to_send.extend(lookup_obj.start(rnodes))
-            
-        # Auto-save routing table
-        if current_ts >= self._next_save_state_ts:
-            state.save(self._my_id,
-                       self._routing_m.get_main_rnodes(),
-                       self.state_filename)
-            self._next_save_state_ts = current_ts + SAVE_STATE_DELAY
-            self._next_main_loop_call_ts = min(self._next_main_loop_call_ts,
-                                               self._next_maintenance_ts,
-                                               self._next_timeout_ts,
-                                               self._next_save_state_ts)
+
         # Return control to reactor
         datagrams_to_send = self._register_queries(queries_to_send)
         return self._next_main_loop_call_ts, datagrams_to_send
