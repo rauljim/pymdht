@@ -136,6 +136,9 @@ class Pymdht:
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()
 
+    def print_routing_table(self):
+        self.controller.print_routing_table()
+
     def start_capture(self):
         self.reactor.start_capture()
         

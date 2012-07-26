@@ -4,6 +4,7 @@
 
 import ptime as time
 import logging
+from message import version_repr
 
 logger = logging.getLogger('dht')
 
@@ -190,7 +191,39 @@ class RoutingTable(object):
             if sbucket and len(sbucket.main):
                 print i, len(sbucket.main), len(sbucket.replacement)
         print 'Total:', self.num_rnodes
-    
+
+    def print_table(self):
+        header_format = '%6s %40s %10s %15s %5s %4s %6s'
+        data_format =   '%6d %40r %10s %15s %5d %4d %7.2f'
+        header = header_format % (
+            'bucket', 'id', 'version', 'ip', 'port', 'rtt', 'time(h)')
+        thick_line = '=' * 93
+        thin_line = '-' * 93
+        print thick_line
+        print data_format % (-1, self.my_node.id,
+                             version_repr(self.my_node.version),
+                             self.my_node.addr[0], self.my_node.addr[1],
+                             0, 0)
+        print thin_line
+        print header
+        print thin_line
+
+        current_time = time.time()
+        for rnode in self.get_main_rnodes():
+            if rnode.rtt == 99:
+                rtt = rnode.real_rtt
+            else:
+                rtt = rnode.rtt
+            print data_format % (
+                self.my_node.id.distance(rnode.id).log,
+                rnode.id, version_repr(rnode.version),
+                rnode.addr[0], rnode.addr[1],
+                rtt * 1000,
+                (current_time - rnode.creation_ts)/3600)
+        print thin_line
+        print header
+        print thick_line
+        
     def __repr__(self):
         begin = ['==============RoutingTable============= BEGIN']
         data = ['%d %r' % (i, sbucket)

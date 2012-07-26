@@ -33,7 +33,8 @@ Available commands are:
 - fast info_hash bt_port
 - exit
 - m                  Memory information
-- r                  Print routing table
+- r                  Print routing table stats
+- rr                 Print routing table (full)
 '''
         elif command == 'exit':
             dht.stop()
@@ -44,6 +45,8 @@ Available commands are:
             print h.heap()
         elif command == 'r':
             dht.print_routing_table_stats()
+        elif command == 'rr':
+            dht.print_routing_table()
         elif command == 'fast':
             if len(input) != 3:
                 print 'usage: fast info_hash bt_port'

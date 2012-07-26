@@ -138,6 +138,9 @@ class Controller:
     def print_routing_table_stats(self):
         self._routing_m.print_stats()
 
+    def print_routing_table(self):
+        self._routing_m.print_table()
+
     def main_loop(self):
         """
         Perform maintenance operations. The main operation is routing table

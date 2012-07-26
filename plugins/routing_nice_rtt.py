@@ -383,6 +383,9 @@ class RoutingManager(object):
     def print_stats(self):
         self.table.print_stats()
 
+    def print_table(self):
+        self.table.print_table()
+
     def _update_rnode_on_query_received(self, rnode):
         """Register a query from node.
 
