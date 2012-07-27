@@ -2,6 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import unittest
 from nose.tools import eq_, ok_, assert_raises
 import ptime as time
 import tracker
@@ -18,9 +19,9 @@ KEYS = ('0','1','2')
 PEERS = [('1.2.3.4', i) for i in range(0, 10)]
 
 
-class TestTracker(object):
+class TestTracker(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         time.mock_mode()
         self.t = tracker.Tracker(VALIDITY_PERIOD, CLEANUP_COUNTER)
 
@@ -159,6 +160,9 @@ class TestTracker(object):
         eq_(self.t.num_peers, 3)
 
             
-    def teardown(self):
+    def tearDown(self):
         time.normal_mode()
 
+
+if __name__ == '__main__':
+    unittest.main()

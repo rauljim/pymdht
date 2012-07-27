@@ -4,6 +4,7 @@
 
 import ptime as time
 
+import unittest
 from nose.tools import ok_, eq_, raises, assert_raises
 import test_const as tc
 
@@ -27,11 +28,8 @@ addr1 = ('127.0.0.1', 1111)
 addr2 = ('127.0.0.1', 2222)
 
 
-class TestNode:
+class TestNode(unittest.TestCase):
 
-    def setup(self):
-        pass
-    
     def test_node(self):
         node1 = Node(addr1, id1, 'version')
         node2 = Node(addr2, id2)
@@ -88,9 +86,9 @@ class TestNode:
         n2.id = tc.CLIENT_ID
         eq_(n1, n2)
 
-class TestRoutingNode:
+class TestRoutingNode(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         self.rnode1 = RoutingNode(Node(addr1, id1), 1)
         self.rnode2 = RoutingNode(Node(addr2, id2), 1)
 
@@ -135,3 +133,7 @@ class TestRoutingNode:
         eq_(n1, rn1)
         rn1_duplicate = n1.get_rnode(1)
         eq_(rn1_duplicate, rn1)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -2,12 +2,13 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import unittest
 from nose.tools import *
 
 import utils
 
 
-class TestUtils:
+class TestUtils(unittest.TestCase):
 
     def test_compact_addr(self):
         cases = ((('1.2.3.4', 255), (1,2,3,4,0,255)),
@@ -17,3 +18,6 @@ class TestUtils:
             expected = ''.join([chr(i) for i in case[1]])
             eq_(utils.compact_addr(case[0]), expected)
                 
+
+if __name__ == '__main__':
+    unittest.main()

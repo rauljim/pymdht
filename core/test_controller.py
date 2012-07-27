@@ -4,6 +4,7 @@
 
 import logging
 
+import unittest
 from nose.tools import ok_, eq_
 
 import ptime as time
@@ -36,9 +37,9 @@ def assert_almost_equal(result, expected, tolerance=.05):
         assert False, 'result: %f, expected: %f' % (result,
                                                     expected)
 
-class TestController:
+class TestController(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         time.mock_mode()
         
         self.controller = controller.Controller(VERSION_LABEL,
@@ -195,5 +196,9 @@ class TestController:
             message.Datagram(data, tc.SERVER_ADDR))
         self.controller.main_loop() # maintenance (maintenance lookup)
         
-    def teardown(self):
+    def tearDown(self):
         time.normal_mode()
+
+
+if __name__ == '__main__':
+    unittest.main()

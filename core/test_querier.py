@@ -2,6 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import unittest
 from nose.tools import ok_, eq_
 
 import sys
@@ -42,9 +43,9 @@ VERSION_LABEL = ''.join(
 clients_msg_f = message.MsgFactory(VERSION_LABEL, tc.CLIENT_ID)
 servers_msg_f = message.MsgFactory(VERSION_LABEL, tc.SERVER_ID)
 
-class TestQuerier:
+class TestQuerier(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         time.mock_mode()
         self.querier = Querier()#tc.CLIENT_ID)
 
@@ -186,6 +187,9 @@ class TestQuerier:
             timeout_queries[1], expected_msgs):
             assert related_query is expected_msg
 
-    def teardown(self):
+    def tearDown(self):
         time.normal_mode()
 
+
+if __name__ == '__main__':
+    unittest.main()

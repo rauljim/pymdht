@@ -2,6 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import unittest
 from nose.tools import ok_, eq_, assert_raises
 
 from socket import inet_aton
@@ -18,10 +19,7 @@ logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
 
-class TestMsgTools:
-
-    def setup(self):
-        pass
+class TestMsgTools(unittest.TestCase):
 
     def test_invalid_addresses(self):
         ips = ['127.0.0.1', '127.24.43.6', '192.168.0.1', '192.168.47.3']
@@ -99,3 +97,6 @@ class TestMsgTools:
         assert_raises(mt.AddrError, mt.uncompact_addr, c_addr[1:])
         assert_raises(mt.AddrError, mt.uncompact_addr, c_addr+'X')
         
+
+if __name__ == '__main__':
+    unittest.main()

@@ -42,7 +42,8 @@ MIN_LONG_UPTIME = 3600 # one hour
 
 class OverlayBootstrapper(object):
 
-    def __init__(self, conf_path):
+    def __init__(self, conf_path, auto_save=True):
+        self.auto_save = auto_save
         self.hardcoded_ips = set()
         self._stable_ip_port = {}
         self._unstable_ip_port = {}
@@ -169,9 +170,11 @@ class OverlayBootstrapper(object):
         addr_subnet = utils.get_subnet(addr)
         if len(self._unstable_ip_port) >= MAX_LONG_UPTIME_ADDRS:
             # Enough addrs in the list. Ignore.
+            logging.debug('MAX_LONG_UPTIME_ADDRS reached')
             return
         if addr_subnet in self._all_subnets:
             # Subnet already in a bootstrap list. Ignore.
+            logging.debug('subnet exists')
             return
         if uptime == 0:
             if len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
@@ -191,7 +194,8 @@ class OverlayBootstrapper(object):
                 self.next_long_uptime_add_ts += ADD_LONG_UPTIME_ADDR_EACH
                 assert self.longest_uptime_addr
                 self.longest_uptime_addr = None
-                self.save_to_file()
+                if self.auto_save:
+                    self.save_to_file()
 
     def save_to_file(self):
         addrs = self._unstable_ip_port.items()

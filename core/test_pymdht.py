@@ -2,6 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import unittest
 import logging
 
 import test_const as tc
@@ -12,12 +13,12 @@ import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
 import exp_plugin_template as exp_m_mod
 
-class TestPymdht:
+class TestPymdht(unittest.TestCase):
 
     def _callback(self, *args, **kwargs):
         return
     
-    def setup(self):
+    def setUp(self):
         self.dht = pymdht.Pymdht(tc.CLIENT_NODE, 'test_logs',
                                  routing_m_mod,
                                  lookup_m_mod,
@@ -31,3 +32,5 @@ class TestPymdht:
         self.dht.print_routing_table_stats()
 
 
+if __name__ == '__main__':
+    unittest.main()

@@ -16,7 +16,7 @@ import core.node as node
 import core.pymdht as pymdht
 
 
-def main(options, args):
+def main2(options, args):
     if not os.path.isdir(options.path):
         if os.path.exists(options.path):
             print >>sys.stderr, 'FATAL:', options.path, 'must be a directory'
@@ -117,7 +117,7 @@ def main(options, args):
         import ui.cli
         ui.cli.command_user_interface(dht)
         
-if __name__ == '__main__':
+def main():
     default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
     parser = OptionParser()
     parser.add_option("-a", "--address", dest="ip",
@@ -230,6 +230,7 @@ if __name__ == '__main__':
     options.announce_port = int(options.announce_port)
     options.log_distance = int(options.log_distance)
     options.swift_port = int(options.swift_port)
-    main(options, args)
+    main2(options, args)
 
-
+if __name__ == '__main__':
+    main()

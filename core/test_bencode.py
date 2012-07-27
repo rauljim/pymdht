@@ -2,10 +2,12 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
+import unittest
 from nose.tools import assert_raises, ok_, eq_
 
 import cStringIO
 import logging, logging_conf
+import unittest
 
 from bencode import *
 
@@ -94,9 +96,9 @@ def debug_print(test_num, input_, expected, output):
     output:   %s''' % (test_num, input_, expected, output))
        
 
-class TestEncode():
+class TestEncode(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         pass
 
     def test_encode(self):
@@ -127,9 +129,9 @@ class TestEncode():
                 assert False # Fail. We got no exception at all.
 
                 
-class TestDecode:
+class TestDecode(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         pass
 
     def test_decode(self):
@@ -161,3 +163,7 @@ class TestDecode:
     def test_decode_unexpected_error(self):
         assert_raises(DecodeError, decode, 'llee', 'z')
 
+
+if __name__ == '__main__':
+    unittest.main()
+    

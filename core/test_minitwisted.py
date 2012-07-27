@@ -9,6 +9,7 @@ import sys
 import threading
 import socket
 
+import unittest
 from nose.tools import eq_, ok_, assert_raises
 
 import logging_conf
@@ -36,7 +37,7 @@ class CrashError(Exception):
     'Used to test crashing callbacks'
     pass
 
-class TestMinitwisted:
+class TestMinitwisted(unittest.TestCase):
 
     def _main_loop(self):
         print 'main loop call'
@@ -62,7 +63,7 @@ class TestMinitwisted:
     def _crashing_callback(self):
         raise CrashError, 'Crash testing'
 
-    def setup(self):
+    def setUp(self):
         time.mock_mode()
         self.main_loop_call_counter = 0
         self.callback_values = []
@@ -152,12 +153,12 @@ class TestMinitwisted:
         eq_(self.callback_values, [1, 2])
 
         
-    def teardown(self):
+    def tearDown(self):
         #self.reactor.stop() >> reactor is not really running
         time.normal_mode()
 
 
-class TestMinitwistedRealThreading:
+class TestMinitwistedRealThreading(unittest.TestCase):
 
     def _main_loop(self):
         return time.time() + 1, []
@@ -183,7 +184,7 @@ class TestMinitwistedRealThreading:
 
 
 
-class TestSend:
+class TestSend(unittest.TestCase):
     
     def _main_loop(self):
         return time.time() + MAIN_LOOP_DELAY, [DATAGRAM1]
@@ -199,7 +200,7 @@ class TestSend:
     def _crashing_callback(self):
         raise CrashError, 'Crash testing'
 
-    def setup(self):
+    def setUp(self):
         self.main_loop_call_counter = 0
         self.callback_values = []
         self.datagrams_received = []
@@ -261,12 +262,8 @@ class TestSend:
         eq_(captured_msgs[2][2], True) #outgoing
         eq_(captured_msgs[2][3], DATAGRAM3.data)
         
-    def teardown(self):
-
-        return
-
         
-class TestSocketError:
+class TestSocketError(unittest.TestCase):
 
     def _main_loop(self):
         return time.time() + tc.TASK_INTERVAL*10000, [DATAGRAM1]
@@ -274,7 +271,7 @@ class TestSocketError:
     def _on_datagram_received(self):
         return
     
-    def setup(self):
+    def setUp(self):
         self.main_loop_call_counter = 0
         self.callback_values = []
         self.datagrams_received = []
@@ -297,7 +294,7 @@ class TestSocketError:
 
 
 
-class _TestError:
+class _TestError():#unittest.TestCase):
 
     def _main_loop(self):
         return time.time() + 100, []
@@ -330,7 +327,7 @@ class _TestError:
 
     
         
-class _TestSocketErrors:
+class _TestSocketErrors():#unittest.TestCase):
 
     def _main_loop(self): 
         return time.time() + tc.TASK_INTERVAL*10000, []
@@ -346,7 +343,7 @@ class _TestSocketErrors:
     def _on_datagram_received(self, datagram):
         return time.time() + 100, []
 
-    def setup(self):
+    def setUp(self):
         self.main_loop_send_called = False
         self.callback_fired = False
         self.r = ThreadedReactor(self._main_loop_send, tc.CLIENT_PORT,
@@ -386,8 +383,6 @@ class _TestSocketErrors:
         logger.critical('TESTING: IGNORE CRITICAL MESSAGE')
         self.r.sendto('z'*12345, tc.NO_ADDR)
 
-    def tear_down(self):
-        pass
 
 class _SocketMock(object):
 
@@ -459,3 +454,5 @@ class _SocketErrorMock(object):
         raise socket.error
 
         
+if __name__ == '__main__':
+    unittest.main()

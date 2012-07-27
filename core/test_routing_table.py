@@ -5,6 +5,7 @@
 import ptime as time
 import logging, logging_conf
 
+import unittest
 from nose.tools import eq_, ok_, assert_raises, assert_false, assert_not_equal
 
 import test_const as tc
@@ -19,7 +20,7 @@ logger = logging.getLogger('dht')
 MAX_RNODES = 2
 NODES_PER_BUCKET = 4
 
-class TestBucket:
+class TestBucket(unittest.TestCase):
 
 
     def test_(self):
@@ -147,9 +148,9 @@ class TestBucket:
 
         
 
-class TestRoutingTable:
+class TestRoutingTable(unittest.TestCase):
 
-    def setup(self):
+    def setUp(self):
         nodes_per_bucket = [MAX_RNODES] * 160
         self.my_node = tc.CLIENT_NODE
         self.rt = RoutingTable(self.my_node,
@@ -349,3 +350,7 @@ class TestRoutingTable:
         eq_(self.rt.find_next_bucket_with_room_index(log_distance=106), 107)
 
         self.rt.print_stats()
+
+
+if __name__ == '__main__':
+    unittest.main()

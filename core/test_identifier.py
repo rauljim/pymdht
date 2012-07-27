@@ -3,6 +3,7 @@
 # See LICENSE.txt for more information
 
 import random
+import unittest
 
 import logging, logging_conf
 
@@ -26,12 +27,12 @@ DIST1_2 = '\x03' * ID_SIZE_BYTES
 HEX_ID1 =  '01' * ID_SIZE_BYTES
 
 
-class TestId(object):
+class TestId(unittest.TestCase):
     
     def test_create(self):
         _ = Id(BIN_ID1)
         _ = RandomId()
-#TODO        assert_raises(IdError, Id, 1)
+        #TODO: assert_raises(IdError, Id, 1)
         assert_raises(IdError, Id, '1')
         _ = Id('1' * 40) # Hexadecimal
         assert_raises(IdError, Id, 'Z'*40)
@@ -167,7 +168,7 @@ class TestId(object):
             eq_(id_.log_distance(id_.generate_close_id(i)), i)
 
             
-class TestRandomId:
+class TestRandomId(unittest.TestCase):
     prefixes = ['', '0', '1', '10101010101010']
     norandom_prefixes = ['0'*160, '1'*160]
     invalid_prefixes = ['a', '2', 2, '0'*161, '1'*161]
@@ -180,3 +181,7 @@ class TestRandomId:
         ok_(RandomId(prefix) != RandomId(prefix))
     for prefix in invalid_prefixes:
         assert_raises(Exception, RandomId, prefix)
+
+        
+if __name__ == '__main__':
+    unittest.main()
