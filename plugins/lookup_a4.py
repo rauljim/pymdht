@@ -205,6 +205,7 @@ class GetPeersLookup(object):
             # OVERLAY BOOTSTRAP (using nodes from bootstrapper)
             addrs = self.bootstrapper.get_sample_unstable_addrs(
                 NUM_OVERLAY_BOOTSTRAP_NODES)
+            addrs.extend(self.bootstrapper.get_shuffled_stable_addrs())
             bootstrap_rnodes = [Node(addr) for addr in addrs]
 
         overlay_bootstrap = bool(bootstrapper)
