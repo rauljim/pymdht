@@ -117,8 +117,8 @@ def main2(options, args):
         telnet_ui = ui.telnet.Telnet(dht, options.telnet_port)
         telnet_ui.start()
     elif options.cli:
-        import ui.cli
-        ui.cli.command_user_interface(dht)
+        import core.cli as cli
+        cli.command_user_interface(dht)
         
 def main():
     default_path = os.path.join(os.path.expanduser('~'), '.pymdht')
