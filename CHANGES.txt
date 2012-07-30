@@ -1,5 +1,7 @@
 == 12.7.1
 
+- Removed dependency on non-standard-library module nose. Now, all the unit
+  tests rely on the unittest module (standard library).
 
 == 12.7.0
 

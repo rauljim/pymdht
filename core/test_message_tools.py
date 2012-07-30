@@ -3,7 +3,6 @@
 # See LICENSE.txt for more information
 
 import unittest
-from nose.tools import ok_, eq_, assert_raises
 
 from socket import inet_aton
 
@@ -25,7 +24,7 @@ class TestMsgTools(unittest.TestCase):
         ips = ['127.0.0.1', '127.24.43.6', '192.168.0.1', '192.168.47.3']
         for ip in ips:
             c_addr = mt.compact_addr((ip, 22))
-            assert_raises(mt.AddrError, mt.uncompact_addr, c_addr)
+            self.assertRaises(mt.AddrError, mt.uncompact_addr, c_addr)
 
     def test_tools(self):
         bin_strs = ['23', '\1\5', 'a\3']
@@ -58,7 +57,7 @@ class TestMsgTools(unittest.TestCase):
                      '\x22' * 16,
                      ]
         #assert mt.bin_to_ip(bin_ipv6s[0]) == '1.2.3.4'
-        #assert_raises(mt.AddrError, mt.bin_to_ip, bin_ipv6s[1])
+        #self.assertRaises(mt.AddrError, mt.bin_to_ip, bin_ipv6s[1])
 
 
         IP = '1.2.3.4'
@@ -67,7 +66,7 @@ class TestMsgTools(unittest.TestCase):
         c_nodes2 = [tc.CLIENT_ID.bin_id + inet_aton(IP) + BIN_PORT]
         nodes2 = [node.Node((IP, PORT), tc.CLIENT_ID)]
         logger.debug(mt.uncompact_nodes2(c_nodes2))
-        eq_(mt.uncompact_nodes2(c_nodes2), nodes2)
+        self.assertEqual(mt.uncompact_nodes2(c_nodes2), nodes2)
         logger.warning(
             "**IGNORE WARNING LOG** This exception was raised by a test")
        
@@ -75,9 +74,9 @@ class TestMsgTools(unittest.TestCase):
     def test_tools_error(self):
         c_nodes = mt.compact_nodes(tc.NODES)
         # Compact nodes is one byte short
-        eq_(mt.uncompact_nodes(c_nodes[:-1]), [])
+        self.assertEqual(mt.uncompact_nodes(c_nodes[:-1]), [])
         # Port is 0 (
-        eq_(mt.uncompact_nodes(c_nodes), tc.NODES)
+        self.assertEqual(mt.uncompact_nodes(c_nodes), tc.NODES)
 
         nodes = [n for n in tc.NODES]
         # One address has port ZERO
@@ -85,17 +84,17 @@ class TestMsgTools(unittest.TestCase):
         peers = [n.addr for n in nodes]
 
         c_nodes = mt.compact_nodes(nodes)
-        eq_(mt.uncompact_nodes(c_nodes), nodes[1:])
+        self.assertEqual(mt.uncompact_nodes(c_nodes), nodes[1:])
         c_nodes2 = mt.compact_nodes2(nodes)
-        eq_(mt.uncompact_nodes2(c_nodes2), nodes[1:])
+        self.assertEqual(mt.uncompact_nodes2(c_nodes2), nodes[1:])
         c_peers = mt.compact_peers(peers)
-        eq_(mt.uncompact_peers(c_peers), peers[1:])
+        self.assertEqual(mt.uncompact_peers(c_peers), peers[1:])
 
         addr = ('1.2.3.4', 1234)
         c_addr = mt.compact_addr(addr)
-        assert_raises(mt.AddrError, mt.uncompact_addr, c_addr[:-1])
-        assert_raises(mt.AddrError, mt.uncompact_addr, c_addr[1:])
-        assert_raises(mt.AddrError, mt.uncompact_addr, c_addr+'X')
+        self.assertRaises(mt.AddrError, mt.uncompact_addr, c_addr[:-1])
+        self.assertRaises(mt.AddrError, mt.uncompact_addr, c_addr[1:])
+        self.assertRaises(mt.AddrError, mt.uncompact_addr, c_addr+'X')
         
 
 if __name__ == '__main__':

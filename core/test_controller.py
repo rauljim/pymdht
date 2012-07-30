@@ -5,7 +5,6 @@
 import logging
 
 import unittest
-from nose.tools import ok_, eq_
 
 import ptime as time
 import test_const as tc
@@ -61,12 +60,12 @@ class TestController(unittest.TestCase):
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         ts, datagrams = self.controller.main_loop()
         #FIXME: assert_almost_equal(ts, expected_ts)
-        eq_(len(datagrams), 1)
-        eq_(datagrams[0], expected_datagrams[0])
+        self.assertEqual(len(datagrams), 1)
+        self.assertEqual(datagrams[0], expected_datagrams[0])
 
     def test_adding_and_removing_node(self):
         # The routing table is initially empty
-        eq_(self.controller._routing_m.get_main_rnodes(), [])
+        self.assertEqual(self.controller._routing_m.get_main_rnodes(), [])
 
         q = self.controller.msg_f.outgoing_ping_query(tc.SERVER_NODE)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
@@ -74,19 +73,19 @@ class TestController(unittest.TestCase):
         # It returns a maintenance ping
         ts, datagrams = self.controller.main_loop()
         #FIXME: assert_almost_equal(ts, expected_ts)
-        eq_(len(datagrams), 1)
-        eq_(datagrams[0], expected_datagrams[0])
+        self.assertEqual(len(datagrams), 1)
+        self.assertEqual(datagrams[0], expected_datagrams[0])
         time.sleep((ts - time.time()) / 2)
         # SERVER_NODE gets msg and replies before the timeout
         tid = self.servers_msg_f.incoming_msg(
             Datagram(datagrams[0].data, tc.CLIENT_ADDR)).tid
         data = self.servers_msg_f.outgoing_ping_response(
             tc.CLIENT_NODE).stamp(tid)
-        eq_(self.controller._routing_m.get_main_rnodes(), [])
+        self.assertEqual(self.controller._routing_m.get_main_rnodes(), [])
         datagram = message.Datagram(data, tc.SERVER_ADDR)
         self.controller.on_datagram_received(datagram)
         # SERVER_NODE is added to the routing table
-        eq_(self.controller._routing_m.get_main_rnodes(), [tc.SERVER_NODE])
+        self.assertEqual(self.controller._routing_m.get_main_rnodes(), [tc.SERVER_NODE])
 
         time.sleep((ts - time.time()))
         # main_loop is called to trigger timeout
@@ -96,15 +95,15 @@ class TestController(unittest.TestCase):
                                                            self.my_id, None)
         expected_ts, expected_datagrams = self.querier2.register_queries([q])
         #FIXME: assert_almost_equal(ts, expected_ts)
-        #FIXME: eq_(len(datagrams), 1)
-        #FIXME: eq_(datagrams[0], expected_datagrams[0])
+        #FIXME: self.assertEqual(len(datagrams), 1)
+        #FIXME: self.assertEqual(datagrams[0], expected_datagrams[0])
         
         time.sleep(ts - time.time())
         # main_loop is called to trigger timeout
         # It triggers a timeout (removing SERVER_NODE from the routing table
         # returns a maintenance ping
         ts, datagrams = self.controller.main_loop()
-        #FIXME: eq_(self.controller._routing_m.get_main_rnodes(), [])
+        #FIXME: self.assertEqual(self.controller._routing_m.get_main_rnodes(), [])
         # No reply for this query
         #this call should trigger timeout
         self.controller.main_loop()
@@ -128,7 +127,7 @@ class TestController(unittest.TestCase):
                                               lambda x,y,z: x.append(y), 0,
                                               False)
         #FIXME: assert_almost_equal(ts, ping_timeout_ts)#time.time()+2)
-        #FIXME: eq_(len(datagrams), 1)
+        #FIXME: self.assertEqual(len(datagrams), 1)
 
         # Now a get_peers with local results
         info_hash = identifier.Id('info_hash info_hash ')
@@ -136,19 +135,19 @@ class TestController(unittest.TestCase):
         lookup_result = []
         self.controller.get_peers(lookup_result, info_hash,
                                   lambda x,y,z: x.append(y), 0, False)
-        #FIXME: eq_(len(lookup_result), 1) # the node is tracking this info_hash
-        #FIXME: eq_(lookup_result[0][0], tc.CLIENT_ADDR)
+        #FIXME: self.assertEqual(len(lookup_result), 1) # the node is tracking this info_hash
+        #FIXME: self.assertEqual(lookup_result[0][0], tc.CLIENT_ADDR)
 
     def test_retry_get_peers(self):
         ts, datagrams = self.controller.main_loop()
         ping_timeout_ts =  ts
         #FIXME: assert_almost_equal(ts, time.time()+2)
-        eq_(len(datagrams), 1)
+        self.assertEqual(len(datagrams), 1)
         ping = datagrams[0].data
         addr = datagrams[0].addr
         #this get_peers fails because there are no nodes in the routing table
         datagrams = self.controller.get_peers(None, tc.INFO_HASH, None, 0, False)
-        #FIXME:        eq_(len(datagrams), 0)
+        #FIXME:        self.assertEqual(len(datagrams), 0)
         #fabricate response
         ping = self.servers_msg_f.incoming_msg(Datagram(ping, addr))
         pong = self.servers_msg_f.outgoing_ping_response(tc.CLIENT_NODE)
@@ -158,13 +157,13 @@ class TestController(unittest.TestCase):
             message.Datagram(data, addr))
         # This call does nothing because it's too early
         ts, datagrams = self.controller.main_loop()
-        #eq_(ts, ping_timeout_ts)
-        eq_(datagrams, [])
+        #self.assertEqual(ts, ping_timeout_ts)
+        self.assertEqual(datagrams, [])
         # Controller retries lookup  get_peers
         time.sleep(ts - time.time())
         ts, datagrams = self.controller.main_loop()
         # The lookup starts with a single node
-        #FIXME: ok_(datagrams)
+        #FIXME: self.assertTrue(datagrams)
         #FIXME: assert 'get_peers' in datagrams[0].data
 
     def test_bad_datagram_received(self):

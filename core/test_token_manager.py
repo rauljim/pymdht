@@ -3,7 +3,6 @@
 # See LICENSE.txt for more information
 
 import unittest
-from nose.tools import ok_, eq_
 
 import token_manager
 
@@ -17,18 +16,18 @@ class TestTokenManager(unittest.TestCase):
         self.token_m2 = token_manager.TokenManager()
 
     def test_get_token(self):
-        eq_(self.token_m1.get(IPS[0]), self.token_m1.get(IPS[0]))
-        eq_(self.token_m2.get(IPS[0]), self.token_m2.get(IPS[0]))
-        ok_(self.token_m1.get(IPS[0]) != self.token_m2.get(IPS[0]))
-        ok_(self.token_m1.get(IPS[0]) != self.token_m1.get(IPS[1]))
-        ok_(self.token_m2.get(IPS[0]) != self.token_m2.get(IPS[1]))
+        self.assertEqual(self.token_m1.get(IPS[0]), self.token_m1.get(IPS[0]))
+        self.assertEqual(self.token_m2.get(IPS[0]), self.token_m2.get(IPS[0]))
+        self.assertTrue(self.token_m1.get(IPS[0]) != self.token_m2.get(IPS[0]))
+        self.assertTrue(self.token_m1.get(IPS[0]) != self.token_m1.get(IPS[1]))
+        self.assertTrue(self.token_m2.get(IPS[0]) != self.token_m2.get(IPS[1]))
 
     def test_check_token(self):
         for ip in IPS:
-            ok_(self.token_m1.check(ip, self.token_m1.get(ip)))
-            ok_(self.token_m2.check(ip, self.token_m2.get(ip)))
-            ok_(not self.token_m1.check(ip, self.token_m2.get(ip)))
-            ok_(not self.token_m2.check(ip, self.token_m1.get(ip)))
+            self.assertTrue(self.token_m1.check(ip, self.token_m1.get(ip)))
+            self.assertTrue(self.token_m2.check(ip, self.token_m2.get(ip)))
+            self.assertTrue(not self.token_m1.check(ip, self.token_m2.get(ip)))
+            self.assertTrue(not self.token_m2.check(ip, self.token_m1.get(ip)))
 
 
 if __name__ == '__main__':
