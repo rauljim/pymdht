@@ -4,8 +4,8 @@
 
 import sys
 
-import core.ptime as time
-import core.identifier as identifier
+import ptime as time
+import identifier as identifier
 
 MIN_BT_PORT = 1024
 MAX_BT_PORT = 2**16
@@ -32,21 +32,10 @@ Available commands are:
 - help
 - fast info_hash bt_port
 - exit
-- m                  Memory information
-- r                  Print routing table stats
-- rr                 Print routing table (full)
 '''
         elif command == 'exit':
             dht.stop()
             break
-        elif command == 'm':
-            import guppy
-            h = guppy.hpy()
-            print h.heap()
-        elif command == 'r':
-            dht.print_routing_table_stats()
-        elif command == 'rr':
-            dht.print_routing_table()
         elif command == 'fast':
             if len(input) != 3:
                 print 'usage: fast info_hash bt_port'
