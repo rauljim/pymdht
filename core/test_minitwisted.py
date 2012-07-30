@@ -117,7 +117,7 @@ class TestMinitwisted(unittest.TestCase):
 
     def test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
-        for _ in xrange(FLOOD_LIMIT * 2):
+        for i in xrange(FLOOD_LIMIT * 2):
             self.reactor.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         for i in xrange(FLOOD_LIMIT): 
             self.assertEqual(len(self.datagrams_received), i)

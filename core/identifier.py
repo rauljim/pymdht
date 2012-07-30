@@ -220,7 +220,7 @@ class Id(object):
         id_byte = chr(int_byte)
         # Produce random ending bytes
         end_bytes = ''.join([chr(random.randint(0, 255)) \
-                                      for _ in xrange(byte_index + 1, ID_SIZE_BYTES)])
+                                      for i in xrange(byte_index + 1, ID_SIZE_BYTES)])
         bin_id = self.bin_id[:byte_index] +\
             id_byte + end_bytes
         result = Id(bin_id)

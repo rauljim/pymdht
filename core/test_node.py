@@ -124,7 +124,7 @@ class TestRoutingNode(unittest.TestCase):
         self.assertEqual(rnode.timeouts_in_a_row(False), 0)
         
     def test_repr(self):
-        _ = repr(RoutingNode(tc.CLIENT_NODE, 1))
+        rnode = repr(RoutingNode(tc.CLIENT_NODE, 1))
 
     def test_get_node_and_get_rnode(self):
         rn1 = self.rnode1.get_rnode()

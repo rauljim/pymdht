@@ -409,7 +409,7 @@ class TestIncomingMsg(unittest.TestCase):
         logger.info(
             "TEST LOGGING ** IGNORE EXPECTED INFO ** Unknown error: %r",
             error_code)
-        _ = servers_msg_f.incoming_msg(Datagram(b_err, tc.CLIENT_ADDR))
+        msg = servers_msg_f.incoming_msg(Datagram(b_err, tc.CLIENT_ADDR))
 
     def test_nodes2(self):
         response = clients_msg_f.outgoing_get_peers_response(tc.SERVER_NODE,
@@ -553,7 +553,7 @@ class TestSanitizeErrorError(unittest.TestCase):
         # Unknown error doesn't raise m.MsgError
         msg_out = clients_msg_f.outgoing_error(tc.SERVER_NODE,
                                                (1,1)).stamp(tc.TID)
-        _ = servers_msg_f.incoming_msg(Datagram(msg_out, tc.SERVER_ADDR))
+        msg = servers_msg_f.incoming_msg(Datagram(msg_out, tc.SERVER_ADDR))
     
 
 

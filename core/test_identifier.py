@@ -29,11 +29,11 @@ HEX_ID1 =  '01' * ID_SIZE_BYTES
 class TestId(unittest.TestCase):
     
     def test_create(self):
-        _ = Id(BIN_ID1)
-        _ = RandomId()
+        id0 = Id(BIN_ID1)
+        id1 = RandomId()
         #TODO: self.assertRaises(IdError, Id, 1)
         self.assertRaises(IdError, Id, '1')
-        _ = Id('1' * 40) # Hexadecimal
+        id2 = Id('1' * 40) # Hexadecimal
         self.assertRaises(IdError, Id, 'Z'*40)
         self.assertEqual(Id('\x00'*20).bin_id, Id('0'*40).bin_id)
         self.assertEqual(Id('\xff'*20), Id('f'*40))
@@ -161,9 +161,9 @@ class TestId(unittest.TestCase):
             # do not work when two Id instances have the same bin_id
 
     def test_generate_closest_id(self):
-        id_ = RandomId()
+        id0 = RandomId()
         for i in [-1] + range(ID_SIZE_BITS):
-            self.assertEqual(id_.log_distance(id_.generate_close_id(i)), i)
+            self.assertEqual(id0.log_distance(id_.generate_close_id(i)), i)
 
             
 class TestRandomId(unittest.TestCase):
