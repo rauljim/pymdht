@@ -39,6 +39,7 @@ MAX_ZERO_UPTIME_ADDRS = 2100
 MAX_LONG_UPTIME_ADDRS = 2500
 ADD_LONG_UPTIME_ADDR_EACH =  3600 # one hour
 MIN_LONG_UPTIME = 3600 # one hour
+MAX_LONG_UPTIME = 24 * 3600 # write to file, don't wait
 
 class OverlayBootstrapper(object):
 
@@ -181,6 +182,12 @@ class OverlayBootstrapper(object):
                 logger.debug('added short %r' % (addr,))
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(addr_subnet)
+        elif uptime >= MAX_LONG_UPTIME:
+            # 24 hours. Add it right away.
+            logger.debug('added 24h long: %r, %f hours' % (
+                    addr, uptime / 3600))
+            self._unstable_ip_port[addr[0]] = addr[1]
+            self._all_subnets.add(addr_subnet)
         elif uptime >= self.longest_uptime:
             assert uptime >= MIN_LONG_UPTIME
             self.longest_uptime = uptime
