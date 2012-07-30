@@ -42,99 +42,61 @@ class Id(object):
     >>> Id(chr(255) * ID_SIZE_BYTES) == Id('f' * ID_SIZE_BYTES * 2)
     True
 
-    >>> Id(chr(0) * ID_SIZE_BYTES) == Id(0)
-    True
+    #>>> Id(chr(0) * ID_SIZE_BYTES) == Id(0)
+    #True
 
-    >>> Id(chr(255) * ID_SIZE_BYTES) == Id(MAX_ID_LONG)
-    True
+    #>>> Id(chr(255) * ID_SIZE_BYTES) == Id(MAX_ID_LONG)
+    #True
     
     """
 
     def __init__(self, hex_or_bin_id):
-        self._bin_id = None
         self._bin = None
         self._hex = None
         self._bin_str = None
         self._long = None
-        self._log = None
-        if isinstance(hex_or_bin_id, str):
-            if len(hex_or_bin_id) == ID_SIZE_BYTES:
-                self._bin_id = hex_or_bin_id
-            elif len(hex_or_bin_id) == ID_SIZE_BYTES*2:
-                self._hex = hex_or_bin_id
-                try:
-                    self._bin_id = base64.b16decode(hex_or_bin_id, True)
-                except:
-                    raise IdError, 'input: %r' % hex_or_bin_id
-        elif isinstance(hex_or_bin_id, long) or isinstance(hex_or_bin_id, int):
-            if hex_or_bin_id < 0 or hex_or_bin_id > MAX_ID_LONG:
+        self.log = None
+        assert isinstance(hex_or_bin_id, str)
+        if len(hex_or_bin_id) == ID_SIZE_BYTES:
+            self._bin = hex_or_bin_id
+            self._hex = base64.b16encode(self._bin)
+        elif len(hex_or_bin_id) == ID_SIZE_BYTES*2:
+            self._hex = hex_or_bin_id
+            try:
+                self._bin = base64.b16decode(self._hex, True)
+            except:
                 raise IdError, 'input: %r' % hex_or_bin_id
-            self._long = long(hex_or_bin_id)
-            self._hex = '%040x' % self._long
-            self._bin_id = base64.b16decode(self._hex, True)
-        if not self._bin_id:
+        else:
             raise IdError, 'input: %r' % hex_or_bin_id
-        self._bin = self._bin_id
+        self._long = long(self._hex, 16)
+
+        bin_str = bin(self._long)[2:]
+        # Need to pad to get 160 bits
+        self._bin_str = '0'*(ID_SIZE_BITS - len(bin_str)) + bin_str
+
+        if self._long == 0:
+            self.log = -1
+        else:
+            self.log = len(bin(self._long)) - 3
+        self.prefix_len = ID_SIZE_BITS - self.log
 
     def __hash__(self):
-        return self.bin_id.__hash__()
-
-    @property
-    def bin_id(self):
-        """bin_id is read-only."""
-        return self._bin
- 
-    @property
-    def bin(self):
-        return self._bin
-
-    @property
-    def hex(self):
-        if not self._hex:
-            self._hex = base64.b16encode(self._bin)
-        return self._hex
-
-    @property
-    def bin_str(self):
-        if not self._bin_str:
-            bin_str = bin(self.long)[2:]
-            # Need to pad to get 160 bits
-            self._bin_str = '0'*(ID_SIZE_BITS - len(bin_str)) + bin_str
-        return self._bin_str
-
-    @property
-    def long(self):
-        if not self._long:
-            self._long = long(self.hex, 16)
-        return self._long
-
-    @property
-    def log(self):
-        if not self._log:
-            if self.long == 0:
-                self._log = -1
-            else:
-                self._log = len(bin(self.long)) - 3
-        return self._log
-
-    @property
-    def prefix_len(self):
-        return ID_SIZE_BITS - self.log
+        return self._bin.__hash__()
 
     def __cmp__(self, other):
-        return self.long.__cmp__(other.long)
+        return self._long.__cmp__(other._long)
         
     def __eq__(self, other):
-        return self.long == other.long
+        return self._long == other._long
 
     def __ne__(self, other):
         return not self == other
         
     def __str__(self):
-        return self.bin_id
+        return self._bin
 
     def __repr__(self):
-        return '%s' % self.hex
+        return '%s' % self._hex
 
     def distance(self, other):
         """
@@ -142,7 +104,9 @@ class Id(object):
         object.
 
         """
-        return Id(self.long ^ other.long)
+        long_id = self._long ^ other._long
+        hex_id = '%040x' % long_id
+        return Id(hex_id)
     
     def log_distance(self, other):
         """Return log (base 2) of the XOR distance between two Id
@@ -194,10 +158,10 @@ class Id(object):
         return self.distance(other).log
 
     def get_prefix(self, prefix_len):
-        return self.bin_str[:prefix_len]
+        return self._bin_str[:prefix_len]
 
     def get_bit(self, index):
-        if self.long & (1 << (ID_SIZE_BITS - index - 1)):
+        if self._long & (1 << (ID_SIZE_BITS - index - 1)):
             return 1
         else:
             return 0
@@ -207,8 +171,8 @@ class Id(object):
         if log_distance < 0:
             return self
         byte_num, bit_num = divmod(log_distance, BITS_PER_BYTE)
-        byte_index = len(self.bin_id) - byte_num - 1 # -1 correction
-        int_byte = ord(self.bin_id[byte_index])
+        byte_index = len(self._bin) - byte_num - 1 # -1 correction
+        int_byte = ord(self._bin[byte_index])
         import sys
         # Flip bit
         int_byte = int_byte ^ (1 << bit_num)
@@ -221,19 +185,19 @@ class Id(object):
         # Produce random ending bytes
         end_bytes = ''.join([chr(random.randint(0, 255)) \
                                       for i in xrange(byte_index + 1, ID_SIZE_BYTES)])
-        bin_id = self.bin_id[:byte_index] +\
+        bin_id = self._bin[:byte_index] +\
             id_byte + end_bytes
         result = Id(bin_id)
         return result 
 
     def set_bit(self, index, value):
         if value:
-            long_id = self.long | (1 << index)
+            long_id = self._long | (1 << index)
         else:
-            long_id = self.long & (ALL_ONES_LONG ^ (1 << index))
+            long_id = self._long & (ALL_ONES_LONG ^ (1 << index))
         return Id(long_id)
 
-MAX_ID = Id(MAX_ID_LONG)
+MAX_ID = Id('\xFF' * ID_SIZE_BYTES)
 
     
 class RandomId(Id):
@@ -246,4 +210,5 @@ class RandomId(Id):
             long_id = long(bin_prefix, 2)
             long_id = long_id << padding_len
         long_id = long_id + random.randint(0, (1 << padding_len) - 1)
-        Id.__init__(self, long_id)
+        hex_id = '%040x' % long_id
+        Id.__init__(self, hex_id)
