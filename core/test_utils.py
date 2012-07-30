@@ -2,12 +2,12 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 import utils
 
 
-class TestUtils(unittest.TestCase):
+class TestUtils(TestCase):
 
     def test_compact_addr(self):
         cases = ((('1.2.3.4', 255), (1,2,3,4,0,255)),
@@ -19,4 +19,4 @@ class TestUtils(unittest.TestCase):
                 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

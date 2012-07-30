@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 import logging
 
 import test_const as tc
@@ -13,7 +13,7 @@ import routing_plugin_template as routing_m_mod
 import lookup_plugin_template as lookup_m_mod
 import exp_plugin_template as exp_m_mod
 
-class TestPymdht(unittest.TestCase):
+class TestPymdht(TestCase):
 
     def _callback(self, *args, **kwargs):
         return
@@ -33,4 +33,4 @@ class TestPymdht(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

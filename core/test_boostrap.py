@@ -1,7 +1,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 import ptime as time
 import bootstrap
@@ -18,7 +18,7 @@ RANDOM_ADDR2 = ('127.12.1.1', 3708)
 
 CONF_PATH = 'test_logs'
 
-class TestBootstrap(unittest.TestCase):
+class TestBootstrap(TestCase):
 
     def setUp(self):
         time.mock_mode()
@@ -127,4 +127,4 @@ class TestBootstrap(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

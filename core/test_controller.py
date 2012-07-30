@@ -4,7 +4,7 @@
 
 import logging
 
-import unittest
+from unittest import TestCase, main
 
 import ptime as time
 import test_const as tc
@@ -36,7 +36,7 @@ def assert_almost_equal(result, expected, tolerance=.05):
         assert False, 'result: %f, expected: %f' % (result,
                                                     expected)
 
-class TestController(unittest.TestCase):
+class TestController(TestCase):
 
     def setUp(self):
         time.mock_mode()
@@ -200,4 +200,4 @@ class TestController(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

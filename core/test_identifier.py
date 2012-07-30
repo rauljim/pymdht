@@ -3,7 +3,7 @@
 # See LICENSE.txt for more information
 
 import random
-import unittest
+from unittest import TestCase, main
 
 import logging, logging_conf
 
@@ -26,7 +26,7 @@ DIST1_2 = '\x03' * ID_SIZE_BYTES
 HEX_ID1 =  '01' * ID_SIZE_BYTES
 
 
-class TestId(unittest.TestCase):
+class TestId(TestCase):
     
     def test_create(self):
         id0 = Id(BIN_ID1)
@@ -35,7 +35,7 @@ class TestId(unittest.TestCase):
         self.assertRaises(IdError, Id, '1')
         id2 = Id('1' * 40) # Hexadecimal
         self.assertRaises(IdError, Id, 'Z'*40)
-        self.assertEqual(Id('\x00'*20).bin_id, Id('0'*40).bin_id)
+        self.assertEqual(Id('\x00'*20)._bin, Id('0'*40)._bin)
         self.assertEqual(Id('\xff'*20), Id('f'*40))
 
     def test_has_repr(self):
@@ -45,18 +45,13 @@ class TestId(unittest.TestCase):
         d = {Id(BIN_ID1): 1}
         
     def test_bin_id(self):
-        assert Id(BIN_ID1).bin_id == BIN_ID1
+        assert Id(BIN_ID1)._bin == BIN_ID1
 
     def test_equal(self):
         id1 = Id(BIN_ID0)
         assert id1 == id1 # same instance
         assert id1 == Id(BIN_ID0) #different instance, same value
         assert id1 != Id(BIN_ID1)
-
-    def test_bin_id_read_only(self):
-        id1 = Id(BIN_ID1)
-        with self.assertRaises(AttributeError):
-            id1.bin_id = BIN_ID2
 
     def test_str(self):
         id1 = Id(BIN_ID1)
@@ -66,9 +61,9 @@ class TestId(unittest.TestCase):
         id1 = Id(BIN_ID1)
         id2 = Id(BIN_ID2)
         dist1_2 = Id(DIST1_2)
-        assert id1.distance(id2).bin_id == dist1_2.bin_id
-        assert id2.distance(id1).bin_id == dist1_2.bin_id 
-        #assert id1.distance(id1).bin_id == ZeroId().bin_id
+        assert id1.distance(id2)._bin == dist1_2._bin
+        assert id2.distance(id1)._bin == dist1_2._bin 
+        #assert id1.distance(id1)._bin == ZeroId()._bin
 
     def test_log_distance(self):
         id0 = Id(BIN_ID0)
@@ -156,9 +151,9 @@ class TestId(unittest.TestCase):
         
         for i, ordered_id in enumerate(ordered_list):
             logger.debug('%d, %s, %s' % (i, ordered_id, result_list[i]))
-            assert ordered_id.bin_id == result_list[i].bin_id
+            assert ordered_id._bin == result_list[i]._bin
             # Notice that 'assert ordered_id is result_id'
-            # do not work when two Id instances have the same bin_id
+            # do not work when two Id instances have the same _bin
 
     def test_generate_closest_id(self):
         id_ = RandomId()
@@ -166,7 +161,7 @@ class TestId(unittest.TestCase):
             self.assertEqual(id_.log_distance(id_.generate_close_id(i)), i)
 
             
-class TestRandomId(unittest.TestCase):
+class TestRandomId(TestCase):
 
     def test(self):
         prefixes = ['', '0', '1', '10101010101010']
@@ -184,4 +179,4 @@ class TestRandomId(unittest.TestCase):
 
         
 if __name__ == '__main__':
-    unittest.main()
+    main()

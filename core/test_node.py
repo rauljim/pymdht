@@ -4,7 +4,7 @@
 
 import ptime as time
 
-import unittest
+from unittest import TestCase, main
 
 import test_const as tc
 
@@ -28,7 +28,7 @@ addr1 = ('127.0.0.1', 1111)
 addr2 = ('127.0.0.1', 2222)
 
 
-class TestNode(unittest.TestCase):
+class TestNode(TestCase):
 
     def test_node(self):
         node1 = Node(addr1, id1, 'version')
@@ -67,7 +67,7 @@ class TestNode(unittest.TestCase):
 
     def test_compact(self):
         self.assertEqual(tc.CLIENT_NODE.compact(),
-            tc.CLIENT_ID.bin_id + utils.compact_addr(tc.CLIENT_ADDR))
+            tc.CLIENT_ID._bin + utils.compact_addr(tc.CLIENT_ADDR))
         
     def test_get_rnode(self):
         self.assertEqual(tc.CLIENT_NODE.get_rnode(1),
@@ -86,7 +86,7 @@ class TestNode(unittest.TestCase):
         n2.id = tc.CLIENT_ID
         self.assertEqual(n1, n2)
 
-class TestRoutingNode(unittest.TestCase):
+class TestRoutingNode(TestCase):
 
     def setUp(self):
         self.rnode1 = RoutingNode(Node(addr1, id1), 1)
@@ -136,4 +136,4 @@ class TestRoutingNode(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

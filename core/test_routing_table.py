@@ -5,7 +5,7 @@
 import ptime as time
 import logging, logging_conf
 
-import unittest
+from unittest import TestCase, main
 
 import test_const as tc
 
@@ -19,7 +19,7 @@ logger = logging.getLogger('dht')
 MAX_RNODES = 2
 NODES_PER_BUCKET = 4
 
-class TestBucket(unittest.TestCase):
+class TestBucket(TestCase):
 
 
     def test_(self):
@@ -147,7 +147,7 @@ class TestBucket(unittest.TestCase):
 
         
 
-class TestRoutingTable(unittest.TestCase):
+class TestRoutingTable(TestCase):
 
     def setUp(self):
         nodes_per_bucket = [MAX_RNODES] * 160
@@ -352,4 +352,4 @@ class TestRoutingTable(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

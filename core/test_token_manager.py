@@ -2,14 +2,14 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 import token_manager
 
 
 IPS = ['1.1.1.1', '2.2.2.2']
 
-class TestTokenManager(unittest.TestCase):
+class TestTokenManager(TestCase):
 
     def setUp(self):
         self.token_m1 = token_manager.TokenManager()
@@ -31,4 +31,4 @@ class TestTokenManager(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

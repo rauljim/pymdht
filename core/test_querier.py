@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 import sys
 import logging
@@ -42,7 +42,7 @@ VERSION_LABEL = ''.join(
 clients_msg_f = message.MsgFactory(VERSION_LABEL, tc.CLIENT_ID)
 servers_msg_f = message.MsgFactory(VERSION_LABEL, tc.SERVER_ID)
 
-class TestQuerier(unittest.TestCase):
+class TestQuerier(TestCase):
 
     def setUp(self):
         time.mock_mode()
@@ -191,4 +191,4 @@ class TestQuerier(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

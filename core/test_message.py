@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 import node
 import logging, logging_conf
@@ -38,7 +38,7 @@ def _test_matching_tid():
 
 
 
-class TestMsgExchanges(unittest.TestCase):
+class TestMsgExchanges(TestCase):
     
     def test_msg_exhanges(self):
         self._exchange_msgs(clients_msg_f.outgoing_ping_query(
@@ -105,7 +105,7 @@ class TestMsgExchanges(unittest.TestCase):
         assert incoming_response.type is m.RESPONSE
 
 
-class TestEvilIncomingQueries(unittest.TestCase): #aka invalid bencode messages
+class TestEvilIncomingQueries(TestCase): #aka invalid bencode messages
 
     bad_non_empty_string = ['', # empty string
                                  123, # integer
@@ -353,7 +353,7 @@ def value_is_string(msg_d, k, valid_values=None):
     
         
 
-class TestIncomingMsg(unittest.TestCase):
+class TestIncomingMsg(TestCase):
 
     def setUp(self):
         b_ping = clients_msg_f.outgoing_ping_query(tc.SERVER_NODE).stamp(tc.TID)
@@ -430,7 +430,7 @@ b_ap_q = clients_msg_f.outgoing_announce_peer_query(tc.SERVER_NODE,
                                                     tc.BT_PORT,
                                                     tc.TOKEN).stamp(tc.TID)
 
-class TestSanitizeQueryError(unittest.TestCase):
+class TestSanitizeQueryError(TestCase):
 
     def setUp(self):
         self.ping_d = servers_msg_f.incoming_msg(
@@ -510,7 +510,7 @@ b_gp_r = clients_msg_f.outgoing_get_peers_response(tc.SERVER_NODE,
                                                    peers=tc.PEERS).stamp(tc.TID)
 b_ap_r = clients_msg_f.outgoing_announce_peer_response(tc.SERVER_NODE).stamp(tc.TID)
 
-class TestSanitizeResponseError(unittest.TestCase):
+class TestSanitizeResponseError(TestCase):
 
     def setUp(self):
         self.ping_r = servers_msg_f.incoming_msg(Datagram(b_ping_r, tc.SERVER_ADDR))
@@ -543,7 +543,7 @@ class TestSanitizeResponseError(unittest.TestCase):
         self.assertRaises(m.MsgError, self.gp_r.sanitize_response, m.GET_PEERS)
 '''        
         
-class TestSanitizeErrorError(unittest.TestCase):
+class TestSanitizeErrorError(TestCase):
 
     def test(self):
         msg_out = clients_msg_f.outgoing_error(tc.SERVER_NODE,
@@ -558,7 +558,7 @@ class TestSanitizeErrorError(unittest.TestCase):
 
 
         
-class TestPrinting(unittest.TestCase):
+class TestPrinting(TestCase):
     
     def test_printing(self):
         out_msg = clients_msg_f.outgoing_ping_query(tc.SERVER_NODE)
@@ -569,7 +569,7 @@ class TestPrinting(unittest.TestCase):
         repr(in_msg)
 
                   
-class TestPrivateDHT(unittest.TestCase):
+class TestPrivateDHT(TestCase):
 
     def test(self):
         private_client1 = m.MsgFactory(VERSION_LABEL, tc.CLIENT_ID, 'private1')
@@ -602,4 +602,4 @@ class TestPrivateDHT(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

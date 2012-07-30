@@ -224,7 +224,7 @@ class OutgoingMsg(object):
     def make_query(self, src_id, experimental_obj=None,
                    lookup_obj=None):
         self._dict[TYPE] = QUERY
-        self._dict[ARGS] = {ID: src_id.bin_id}
+        self._dict[ARGS] = {ID: src_id._bin}
         self.lookup_obj = lookup_obj
         self.experimental_obj = experimental_obj
         self.got_response = False

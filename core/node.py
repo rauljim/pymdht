@@ -42,7 +42,7 @@ class Node(object):
         if self.addr == other.addr:
             try:
                 return self.id == other.id
-            except AttributeError: #self.id == None (id.bin_id fails)
+            except AttributeError: #self.id == None (id._bin fails)
                 return self.id is None and other.id is None
         else:
             return False
@@ -70,7 +70,7 @@ class Node(object):
 
     def compact(self):
         """Return compact format"""
-        return self.id.bin_id + self.compact_addr
+        return self.id._bin + self.compact_addr
 
     def get_rnode(self, log_distance):
         return RoutingNode(self, log_distance)
