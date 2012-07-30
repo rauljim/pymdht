@@ -5,7 +5,6 @@
 import logging
 
 import unittest
-from nose.tools import ok_, eq_
 
 import ptime as time
 import test_const as tc
@@ -59,8 +58,8 @@ class TestController(unittest.TestCase):
         datagrams = self.controller.get_peers(lookup_result, tc.INFO_HASH,
                                               lambda x,y,z: x.append(y), 0,
                                               False)
-        #FIXME: eq_(len(lookup_result), 1) # the node is tracking this info_hash
-        #FIXME: eq_(lookup_result[0][0], tc.CLIENT_ADDR)
+        #FIXME: self.assertTrue(datagrams)
+        #FIXME: assert 'get_peers' in datagrams[0].data
 
     def test_bad_datagram_received(self):
         ts, datagrams = self.controller.on_datagram_received(

@@ -7,7 +7,6 @@ import unittest
 
 import logging, logging_conf
 
-from nose.tools import eq_, ok_, assert_raises, raises
 import test_const as tc
 
 import identifier
@@ -30,17 +29,17 @@ HEX_ID1 =  '01' * ID_SIZE_BYTES
 class TestId(unittest.TestCase):
     
     def test_create(self):
-        _ = Id(BIN_ID1)
-        _ = RandomId()
-        #TODO: assert_raises(IdError, Id, 1)
-        assert_raises(IdError, Id, '1')
-        _ = Id('1' * 40) # Hexadecimal
-        assert_raises(IdError, Id, 'Z'*40)
-        eq_(Id('\x00'*20).bin_id, Id('0'*40).bin_id)
-        eq_(Id('\xff'*20), Id('f'*40))
+        id0 = Id(BIN_ID1)
+        id1 = RandomId()
+        #TODO: self.assertRaises(IdError, Id, 1)
+        self.assertRaises(IdError, Id, '1')
+        id2 = Id('1' * 40) # Hexadecimal
+        self.assertRaises(IdError, Id, 'Z'*40)
+        self.assertEqual(Id('\x00'*20).bin_id, Id('0'*40).bin_id)
+        self.assertEqual(Id('\xff'*20), Id('f'*40))
 
     def test_has_repr(self):
-        eq_(repr(Id(BIN_ID1)), '01' * ID_SIZE_BYTES)
+        self.assertEqual(repr(Id(BIN_ID1)), '01' * ID_SIZE_BYTES)
         
     def test_is_hashable(self):
         d = {Id(BIN_ID1): 1}
@@ -54,11 +53,10 @@ class TestId(unittest.TestCase):
         assert id1 == Id(BIN_ID0) #different instance, same value
         assert id1 != Id(BIN_ID1)
 
-
-    @raises(AttributeError)
     def test_bin_id_read_only(self):
         id1 = Id(BIN_ID1)
-        id1.bin_id = BIN_ID2
+        with self.assertRaises(AttributeError):
+            id1.bin_id = BIN_ID2
 
     def test_str(self):
         id1 = Id(BIN_ID1)
@@ -76,9 +74,9 @@ class TestId(unittest.TestCase):
         id0 = Id(BIN_ID0)
         id1 = Id(BIN_ID1)
         id2 = Id(BIN_ID2)
-        eq_(id0.log_distance(id0), -1)
-        eq_(id0.log_distance(id1), ID_SIZE_BITS - 8)
-        eq_(id0.log_distance(id2), ID_SIZE_BITS - 7)
+        self.assertEqual(id0.log_distance(id0), -1)
+        self.assertEqual(id0.log_distance(id1), ID_SIZE_BITS - 8)
+        self.assertEqual(id0.log_distance(id2), ID_SIZE_BITS - 7)
 
         id_log = (
             (Id('\x00' + '\xff' * (ID_SIZE_BYTES - 1)),
@@ -113,16 +111,16 @@ class TestId(unittest.TestCase):
         for (id_, log_) in id_log:
             logger.debug('log_distance: %d' % id0.log_distance(id_))
             logger.debug('expected: %d' % log_)
-            eq_(id0.log_distance(id_), log_)
+            self.assertEqual(id0.log_distance(id_), log_)
         for id1, id2, expected in id2_log:
-            eq_(id1.log_distance(id2), expected)
+            self.assertEqual(id1.log_distance(id2), expected)
 
             z = Id('\0'*20)
-            eq_(z.log_distance(Id('\x00'*19+'\x00')), -1)
-            eq_(z.log_distance(Id('\x00'*19+'\x00')), -1)
-            eq_(z.log_distance(Id('\x00'*19+'\x00')), -1)
-            eq_(z.log_distance(Id('\x00'*19+'\x00')), -1)
-            eq_(z.log_distance(Id('\x00'*19+'\x00')), -1)
+            self.assertEqual(z.log_distance(Id('\x00'*19+'\x00')), -1)
+            self.assertEqual(z.log_distance(Id('\x00'*19+'\x00')), -1)
+            self.assertEqual(z.log_distance(Id('\x00'*19+'\x00')), -1)
+            self.assertEqual(z.log_distance(Id('\x00'*19+'\x00')), -1)
+            self.assertEqual(z.log_distance(Id('\x00'*19+'\x00')), -1)
 
 
 
@@ -163,24 +161,26 @@ class TestId(unittest.TestCase):
             # do not work when two Id instances have the same bin_id
 
     def test_generate_closest_id(self):
-        id_ = RandomId()
+        id0 = RandomId()
         for i in [-1] + range(ID_SIZE_BITS):
-            eq_(id_.log_distance(id_.generate_close_id(i)), i)
+            self.assertEqual(id0.log_distance(id_.generate_close_id(i)), i)
 
             
 class TestRandomId(unittest.TestCase):
-    prefixes = ['', '0', '1', '10101010101010']
-    norandom_prefixes = ['0'*160, '1'*160]
-    invalid_prefixes = ['a', '2', 2, '0'*161, '1'*161]
-    for i in xrange(123):
-        assert RandomId() != RandomId()
 
-    for prefix in prefixes + norandom_prefixes:
-        eq_(RandomId(prefix).get_prefix(len(prefix)), prefix)
-    for prefix in prefixes:
-        ok_(RandomId(prefix) != RandomId(prefix))
-    for prefix in invalid_prefixes:
-        assert_raises(Exception, RandomId, prefix)
+    def test(self):
+        prefixes = ['', '0', '1', '10101010101010']
+        norandom_prefixes = ['0'*160, '1'*160]
+        invalid_prefixes = ['a', '2', 2, '0'*161, '1'*161]
+        for i in xrange(123):
+            assert RandomId() != RandomId()
+
+        for prefix in prefixes + norandom_prefixes:
+            self.assertEqual(RandomId(prefix).get_prefix(len(prefix)), prefix)
+        for prefix in prefixes:
+            self.assertTrue(RandomId(prefix) != RandomId(prefix))
+        for prefix in invalid_prefixes:
+            self.assertRaises(Exception, RandomId, prefix)
 
         
 if __name__ == '__main__':

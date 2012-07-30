@@ -10,7 +10,6 @@ import threading
 import socket
 
 import unittest
-from nose.tools import eq_, ok_, assert_raises
 
 import logging_conf
 import ptime as time
@@ -78,79 +77,79 @@ class TestMinitwisted(unittest.TestCase):
         #self.reactor.start() >> instead of usint start(), we use run_one_step()
 
     def test_call_main_loop(self):
-        eq_(self.main_loop_call_counter, 0)
+        self.assertEqual(self.main_loop_call_counter, 0)
         self.reactor.run_one_step()
         # main_loop is called right away
-        eq_(self.main_loop_call_counter, 1)
+        self.assertEqual(self.main_loop_call_counter, 1)
         self.reactor.run_one_step()
         # no events
-        eq_(self.main_loop_call_counter, 1)
+        self.assertEqual(self.main_loop_call_counter, 1)
         time.sleep(self.main_loop_delay)
         self.reactor.run_one_step()
         # main_loop is called again after 
-        eq_(self.main_loop_call_counter, 2)
+        self.assertEqual(self.main_loop_call_counter, 2)
         
     def test_call_asap(self):
-        eq_(self.callback_values, [])
+        self.assertEqual(self.callback_values, [])
         self.reactor.call_asap(self._callback, 0)
-        eq_(self.callback_values, []) # stil nothing
+        self.assertEqual(self.callback_values, []) # stil nothing
         self.reactor.run_one_step()
-        eq_(self.callback_values, [0]) #callback triggered
+        self.assertEqual(self.callback_values, [0]) #callback triggered
         for i in xrange(1, 5):
             self.reactor.call_asap(self._callback, i)
             self.reactor.run_one_step()
-            eq_(self.callback_values, range(i + 1))
+            self.assertEqual(self.callback_values, range(i + 1))
     
     def test_minitwisted_crashed(self):
         self.reactor.call_asap(self._crashing_callback)
-        assert_raises(CrashError, self.reactor.run_one_step)
+        self.assertRaises(CrashError, self.reactor.run_one_step)
 
     def test_on_datagram_received_callback(self):
-        eq_(self.datagrams_received, [])
+        self.assertEqual(self.datagrams_received, [])
         self.reactor.run_one_step()
-        eq_(self.datagrams_received, [])
+        self.assertEqual(self.datagrams_received, [])
         datagram = Datagram(DATA1, tc.SERVER_ADDR)
         # This is equivalent to sending a datagram to reactor
         self.reactor.s.put_datagram_received(datagram)
         self.reactor.run_one_step()
-        eq_(len(self.datagrams_received), 1)
-        eq_(self.datagrams_received[0], datagram)
+        self.assertEqual(len(self.datagrams_received), 1)
+        self.assertEqual(self.datagrams_received[0], datagram)
 
     def test_block_flood(self):
         from floodbarrier import MAX_PACKETS_PER_PERIOD as FLOOD_LIMIT
-        for _ in xrange(FLOOD_LIMIT * 2):
+        for i in xrange(FLOOD_LIMIT * 2):
             self.reactor.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         for i in xrange(FLOOD_LIMIT): 
-            eq_(len(self.datagrams_received), i)
+            self.assertEqual(len(self.datagrams_received), i)
             self.reactor.run_one_step()
-        eq_(len(self.datagrams_received), FLOOD_LIMIT)
+        self.assertEqual(len(self.datagrams_received), FLOOD_LIMIT)
         for i in xrange(FLOOD_LIMIT):
-            eq_(len(self.datagrams_received), FLOOD_LIMIT)
+            self.assertEqual(len(self.datagrams_received), FLOOD_LIMIT)
             logger.warning(
                 "TESTING LOGS ** IGNORE EXPECTED WARNING **")
             self.reactor.run_one_step()
-        eq_(len(self.datagrams_received), FLOOD_LIMIT)
+        self.assertEqual(len(self.datagrams_received), FLOOD_LIMIT)
 
     def test_network_and_callback(self):
         self.reactor.call_asap(self._callback, 1)
-        eq_(self.main_loop_call_counter, 0)
-        eq_(self.callback_values, [])
+        self.assertEqual(self.main_loop_call_counter, 0)
+        self.assertEqual(self.callback_values, [])
         time.sleep(.1)
         self.reactor.run_one_step()
         # call_asap and main_loop triggered
-        eq_(self.callback_values, [1])
-        eq_(self.main_loop_call_counter, 1)
+        self.assertEqual(self.callback_values, [1])
+        self.assertEqual(self.main_loop_call_counter, 1)
 
         self.reactor.s.put_datagram_received(DATAGRAM1)
-        eq_(self.datagrams_received, [])
+        self.assertEqual(self.datagrams_received, [])
         self.reactor.run_one_step()
-        eq_(self.datagrams_received, [DATAGRAM1])
+        self.assertEqual(self.datagrams_received, [DATAGRAM1])
 
         self.reactor.call_asap(self._callback, 2)
         self.reactor.s.put_datagram_received(DATAGRAM3)
         self.reactor.run_one_step() # receive AND call_asap
-        eq_(self.datagrams_received, [DATAGRAM1, DATAGRAM3])
-        eq_(self.callback_values, [1, 2])
+        self.assertEqual(self.datagrams_received, [DATAGRAM1, DATAGRAM3])
+        self.assertEqual(self.callback_values, [1, 2])
 
         
     def tearDown(self):
@@ -175,12 +174,12 @@ class TestMinitwistedRealThreading(unittest.TestCase):
                                        tc.CLIENT_PORT,
                                        self._on_datagram_received,
                                        task_interval=tc.TASK_INTERVAL)
-        ok_(not self.reactor.running)
+        self.assertTrue(not self.reactor.running)
         self.reactor.start()
         time.sleep(.1)
-        ok_(self.reactor.running)
+        self.assertTrue(self.reactor.running)
         self.reactor.stop()
-        ok_(not self.reactor.running)
+        self.assertTrue(not self.reactor.running)
 
 
 
@@ -212,26 +211,26 @@ class TestSend(unittest.TestCase):
         self.reactor.s = _SocketMock()
         
     def test_main_loop_send_data(self):
-        eq_(self.reactor.s.get_datagrams_sent(), [])
+        self.assertEqual(self.reactor.s.get_datagrams_sent(), [])
         self.reactor.run_one_step()
         # main_loop sends DATAGRAM1
-        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
+        self.assertEqual(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
     
     def test_call_asap_send_data(self):
         self.reactor.run_one_step()
-        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
+        self.assertEqual(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
         self.reactor.call_asap(self._callback, 1)
         self.reactor.run_one_step()
-        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM2])
+        self.assertEqual(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM2])
         
     def test_on_datagram_received_send_data(self): 
         self.reactor.run_one_step()
-        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
+        self.assertEqual(self.reactor.s.get_datagrams_sent(), [DATAGRAM1])
         self.reactor.s.put_datagram_received(Datagram(DATA1, tc.SERVER_ADDR))
         self.reactor.run_one_step()
-        eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
+        self.assertEqual(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
-        
+
 class TestSocketError(unittest.TestCase):
 
     def _main_loop(self):
@@ -288,7 +287,7 @@ class _TestError():#unittest.TestCase):
 #        self.reactor.start()
         self.reactor.call_asap(self._very_long_callback)
         time.sleep(tc.TASK_INTERVAL*2)
-        assert_raises(Exception, self.reactor.stop)
+        self.assertRaises(Exception, self.reactor.stop)
     
 
 
@@ -345,7 +344,7 @@ class _TestSocketErrors():#unittest.TestCase):
         while not r2.s.error_raised:
             time.sleep(tc.TASK_INTERVAL)
         assert r2.running # the error is ignored
-        ok_(not self.callback_fired)
+        self.assertTrue(not self.callback_fired)
 #        r2.stop()
 
     def _test_sendto_too_large_data_string(self):

@@ -2,7 +2,6 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-#from nose.tools import eq_, ok_
 '''
 import logging, logging_conf
 logs_path = 'test_logs'
@@ -77,10 +76,10 @@ NODES_LD_IH = [[]] * BITS_PER_BYTE
 for ld in xrange(BITS_PER_BYTE, ID_SIZE_BITS):
     NODES_LD_IH.append([])
     common_id = INFO_HASH_ZERO.generate_close_id(ld)
-    #eq_(common_id.log_distance(INFO_HASH_ZERO), ld)
+    #self.assertEqual(common_id.log_distance(INFO_HASH_ZERO), ld)
     for i in xrange(num_nodes_per_ld):
         this_id = Id(common_id.bin_id[:-1] + chr(i))
-        #eq_(this_id.log_distance(INFO_HASH_ZERO), ld)
+        #self.assertEqual(this_id.log_distance(INFO_HASH_ZERO), ld)
         NODES_LD_IH[ld].append(
             node.Node(('128.0.0.' + str(i), ld), this_id))
 num_nodes_per_ld = 50
@@ -88,10 +87,10 @@ NODES_LD_CL = [[]] * BITS_PER_BYTE
 for ld in xrange(BITS_PER_BYTE, ID_SIZE_BITS):
     NODES_LD_CL.append([])
     common_id = CLIENT_ID.generate_close_id(ld)
-    #eq_(common_id.log_distance(INFO_HASH_ZERO), ld)
+    #self.assertEqual(common_id.log_distance(INFO_HASH_ZERO), ld)
     for i in xrange(num_nodes_per_ld):
         this_id = Id(common_id.bin_id[:-1] + chr(i))
-        #eq_(this_id.log_distance(INFO_HASH_ZERO), ld)
+        #self.assertEqual(this_id.log_distance(INFO_HASH_ZERO), ld)
         NODES_LD_CL[ld].append(
             node.Node(('128.0.0.' + str(i), ld), this_id))
 

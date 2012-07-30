@@ -25,7 +25,7 @@ class TestFloodBarrier(unittest.TestCase):
                           max_packets_per_period=4,
                           blocking_period=1)
         for ip in ts.IPS:
-            for _ in xrange(4):
+            for i in xrange(4):
                 assert not fb.ip_blocked(ip)
         # Every ip is on the limit
         assert fb.ip_blocked(ts.IPS[0])
@@ -51,11 +51,11 @@ class TestFloodBarrier(unittest.TestCase):
         assert not fb.ip_blocked(ts.IPS[3])
         time.sleep(.4)
         for ip in ts.IPS:
-            for _ in xrange(4):
+            for i in xrange(4):
                 assert not fb.ip_blocked(ip)
         time.sleep(.4)
         for ip in ts.IPS:
-            for _ in xrange(4):
+            for i in xrange(4):
                 assert not fb.ip_blocked(ip)
 
         

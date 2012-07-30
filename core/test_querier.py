@@ -3,7 +3,6 @@
 # See LICENSE.txt for more information
 
 import unittest
-from nose.tools import ok_, eq_
 
 import sys
 import logging
@@ -56,7 +55,7 @@ class TestQuerier(unittest.TestCase):
         else:
             num_tids = 1000
         for i in xrange(num_tids):
-            eq_(self.querier._next_tid(),
+            self.assertEqual(self.querier._next_tid(),
                 chr(i%256)+chr((i/256)%256))
 
     def test_ping_with_reponse(self):
@@ -70,7 +69,7 @@ class TestQuerier(unittest.TestCase):
         ping_r_msg_out = servers_msg_f.outgoing_ping_response(tc.CLIENT_NODE)
         bencoded_r = ping_r_msg_out.stamp(ping_msg.tid)
         time.sleep(1)
-        eq_(self.querier.get_timeout_queries()[1], [])
+        self.assertEqual(self.querier.get_timeout_queries()[1], [])
         # The client receives the bencoded message (after 1 second)
         ping_r_in = clients_msg_f.incoming_msg(
             Datagram(bencoded_r, tc.SERVER_ADDR))
@@ -87,7 +86,7 @@ class TestQuerier(unittest.TestCase):
         time.sleep(3)
         # The server never responds and the timeout is triggered
         timeout_queries = self.querier.get_timeout_queries()
-        eq_(len(timeout_queries[1]), 1)
+        self.assertEqual(len(timeout_queries[1]), 1)
         assert timeout_queries[1][0] is ping_msg
 
     def test_unsolicited_response(self):
@@ -177,12 +176,12 @@ class TestQuerier(unittest.TestCase):
         related_query = self.querier.get_related_query(ping_r_in)
         assert related_query is None
         # Still no time to trigger timeouts
-        eq_(self.querier.get_timeout_queries()[1], [])
+        self.assertEqual(self.querier.get_timeout_queries()[1], [])
         time.sleep(1)
         # Now, the timeouts can be triggered
         timeout_queries = self.querier.get_timeout_queries()
         expected_msgs = msgs[:2] + msgs[4:]
-        eq_(len(timeout_queries[1]), len(expected_msgs))
+        self.assertEqual(len(timeout_queries[1]), len(expected_msgs))
         for related_query, expected_msg in zip(
             timeout_queries[1], expected_msgs):
             assert related_query is expected_msg

@@ -3,7 +3,6 @@
 # See LICENSE.txt for more information
 
 import unittest
-from nose.tools import assert_raises, ok_, eq_
 
 import cStringIO
 import logging, logging_conf
@@ -161,7 +160,7 @@ class TestDecode(unittest.TestCase):
                 assert False
 
     def test_decode_unexpected_error(self):
-        assert_raises(DecodeError, decode, 'llee', 'z')
+        self.assertRaises(DecodeError, decode, 'llee', 'z')
 
 
 if __name__ == '__main__':

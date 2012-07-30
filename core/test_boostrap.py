@@ -2,7 +2,7 @@
 # See LICENSE.txt for more information
 
 import unittest
-from nose.tools import eq_, ok_, assert_raises
+
 import ptime as time
 import bootstrap
 
@@ -25,7 +25,7 @@ class TestBootstrap(unittest.TestCase):
 
     def test_general(self):
         b = bootstrap.OverlayBootstrapper(CONF_PATH, False)
-        eq_(len(b.get_sample_unstable_addrs(5)), 5)
+        self.assertEqual(len(b.get_sample_unstable_addrs(5)), 5)
         assert RANDOM_ADDR not in b.get_sample_unstable_addrs(2)
         assert STABLE_ADDR in b.get_shuffled_stable_addrs()
         assert RANDOM_ADDR not in b.get_shuffled_stable_addrs()

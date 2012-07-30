@@ -201,33 +201,6 @@ class Id(object):
             return 1
         else:
             return 0
-
-    
-    def DD_order_closest(self, id_list):
-        """Return a list with the Id objects in 'id_list' ordered
-        according to the distance to self. The closest id first.
-        
-        The original list is not modified.
-
-        """
-        id_list_copy = id_list[:]
-        max_distance = ID_SIZE_BITS + 1
-        log_distance_list = [] 
-        for element in id_list:
-            log_distance_list.append(self.log_distance(element))
-
-        result = []
-        for _ in range(len(id_list)):
-            lowest_index = None
-            lowest_distance = max_distance
-            for j in range(len(id_list_copy)):
-                if log_distance_list[j] < lowest_distance:
-                    lowest_index = j
-                    lowest_distance = log_distance_list[j]
-            result.append(id_list_copy[lowest_index])
-            del log_distance_list[lowest_index]
-            del id_list_copy[lowest_index]
-        return result
     
     def generate_close_id(self, log_distance):
         assert log_distance < ID_SIZE_BITS
@@ -247,7 +220,7 @@ class Id(object):
         id_byte = chr(int_byte)
         # Produce random ending bytes
         end_bytes = ''.join([chr(random.randint(0, 255)) \
-                                      for _ in xrange(byte_index + 1, ID_SIZE_BYTES)])
+                                      for i in xrange(byte_index + 1, ID_SIZE_BYTES)])
         bin_id = self.bin_id[:byte_index] +\
             id_byte + end_bytes
         result = Id(bin_id)
