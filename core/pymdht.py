@@ -126,18 +126,10 @@ class Pymdht:
                 num_10min, self.max_num_10min,
                 info_hash, callback_f))
         
-        use_cache = True
-        print 'pymdht: use_cache ON!!'
         self.reactor.call_asap(self.controller.get_peers,
                                lookup_id, info_hash,
                                callback_f, bt_port,
-                               use_cache)
-
-    def print_routing_table_stats(self):
-        self.controller.print_routing_table_stats()
-
-    def print_routing_table(self):
-        self.controller.print_routing_table()
+                               use_cache=False)
 
     def start_capture(self):
         self.reactor.start_capture()

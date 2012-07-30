@@ -48,8 +48,15 @@ def main2(options, args):
         #logs_level = logging.INFO # This generates some (useful) logs
         logs_level = logging.WARNING # This generates warning and error logs
 
-        
-    
+    if options.client_only:
+        options.routing_m_file = options.experimental_m_file = None
+        options.lookup_m_file = 'core/lookup_a4.py'
+        routing_m_mod = experimental_m_mod = None
+    else:
+        routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
+        routing_m_mod = __import__(routing_m_name, fromlist=[''])
+        experimental_m_name = '.'.join(os.path.split(options.experimental_m_file))[:-3]
+        experimental_m_mod = __import__(experimental_m_name, fromlist=[''])
     print 'Using the following plug-ins:'
     print '*', options.routing_m_file
     print '*', options.lookup_m_file
@@ -60,12 +67,8 @@ def main2(options, args):
     print 'auto_bootstrap:', options.auto_bootstrap
     print 'bootstrap mode:', options.bootstrap_mode
     print 'Swift tracker port:', options.swift_port
-    routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
-    routing_m_mod = __import__(routing_m_name, fromlist=[''])
     lookup_m_name = '.'.join(os.path.split(options.lookup_m_file))[:-3]
     lookup_m_mod = __import__(lookup_m_name, fromlist=[''])
-    experimental_m_name = '.'.join(os.path.split(options.experimental_m_file))[:-3]
-    experimental_m_mod = __import__(experimental_m_name, fromlist=[''])
     
 
     dht = pymdht.Pymdht(my_node, logs_path,
@@ -210,6 +213,9 @@ def main():
                       metavar='INT', default=0,
                       help="Open a Swift tracker interface on the indicated\
     UDP port. Default 0, means do not run a swift tracker.")
+    parser.add_option("--client-only",dest="client_only",
+                      action='store_true', default=False,
+                      help="Client only.")
     parser.add_option("--version",dest="version",
                       action='store_true', default=False,
                       help="Print Pymdhtversion and exit.")
