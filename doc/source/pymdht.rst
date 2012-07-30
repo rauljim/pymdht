@@ -1,5 +1,0 @@
-pymdht
-======
-
-.. automodule:: pymdht
-   :members:
