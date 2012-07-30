@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 import logging, logging_conf
 
 import ptime as time
@@ -15,7 +15,7 @@ logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
 
-class TestFloodBarrier(unittest.TestCase):
+class TestFloodBarrier(TestCase):
 
     def setUp(self):
         time.mock_mode()
@@ -64,4 +64,4 @@ class TestFloodBarrier(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()

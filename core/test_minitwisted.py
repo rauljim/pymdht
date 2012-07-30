@@ -9,7 +9,7 @@ import sys
 import threading
 import socket
 
-import unittest
+from unittest import TestCase, main
 
 import logging_conf
 import ptime as time
@@ -36,7 +36,7 @@ class CrashError(Exception):
     'Used to test crashing callbacks'
     pass
 
-class TestMinitwisted(unittest.TestCase):
+class TestMinitwisted(TestCase):
 
     def _main_loop(self):
         print 'main loop call'
@@ -157,7 +157,7 @@ class TestMinitwisted(unittest.TestCase):
         time.normal_mode()
 
 
-class TestMinitwistedRealThreading(unittest.TestCase):
+class TestMinitwistedRealThreading(TestCase):
 
     def _main_loop(self):
         return time.time() + 1, []
@@ -183,7 +183,7 @@ class TestMinitwistedRealThreading(unittest.TestCase):
 
 
 
-class TestSend(unittest.TestCase):
+class TestSend(TestCase):
     
     def _main_loop(self):
         return time.time() + MAIN_LOOP_DELAY, [DATAGRAM1]
@@ -230,8 +230,8 @@ class TestSend(unittest.TestCase):
         self.reactor.run_one_step()
         self.assertEqual(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
-
-class TestSocketError(unittest.TestCase):
+        
+class TestSocketError(TestCase):
 
     def _main_loop(self):
         return time.time() + tc.TASK_INTERVAL*10000, [DATAGRAM1]
@@ -262,7 +262,7 @@ class TestSocketError(unittest.TestCase):
 
 
 
-class _TestError():#unittest.TestCase):
+class _TestError():#TestCase):
 
     def _main_loop(self):
         return time.time() + 100, []
@@ -295,7 +295,7 @@ class _TestError():#unittest.TestCase):
 
     
         
-class _TestSocketErrors():#unittest.TestCase):
+class _TestSocketErrors():#TestCase):
 
     def _main_loop(self): 
         return time.time() + tc.TASK_INTERVAL*10000, []
@@ -423,4 +423,4 @@ class _SocketErrorMock(object):
 
         
 if __name__ == '__main__':
-    unittest.main()
+    main()

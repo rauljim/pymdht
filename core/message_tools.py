@@ -72,7 +72,7 @@ def uncompact_peers(c_peers):
     return peers
 
 def compact_nodes(nodes):
-    return ''.join([node.id.bin_id + compact_addr(node.addr) \
+    return ''.join([node.id._bin + compact_addr(node.addr) \
                     for node in nodes])
     
 def uncompact_nodes(c_nodes):
@@ -94,7 +94,7 @@ def uncompact_nodes(c_nodes):
     return nodes
 
 def compact_nodes2(nodes):
-    return [node.id.bin_id + compact_addr(node.addr) \
+    return [node.id._bin + compact_addr(node.addr) \
             for node in nodes]
     
 def uncompact_nodes2(c_nodes):

@@ -9,7 +9,7 @@ logs_level = logging.DEBUG
 logging_conf.setup(logs_path, logs_level)
 '''
 
-import unittest
+from unittest import TestCase, main
 import identifier
 from identifier import Id, ID_SIZE_BITS, BITS_PER_BYTE
 import node
@@ -78,7 +78,7 @@ for ld in xrange(BITS_PER_BYTE, ID_SIZE_BITS):
     common_id = INFO_HASH_ZERO.generate_close_id(ld)
     #self.assertEqual(common_id.log_distance(INFO_HASH_ZERO), ld)
     for i in xrange(num_nodes_per_ld):
-        this_id = Id(common_id.bin_id[:-1] + chr(i))
+        this_id = Id(common_id._bin[:-1] + chr(i))
         #self.assertEqual(this_id.log_distance(INFO_HASH_ZERO), ld)
         NODES_LD_IH[ld].append(
             node.Node(('128.0.0.' + str(i), ld), this_id))
@@ -89,7 +89,7 @@ for ld in xrange(BITS_PER_BYTE, ID_SIZE_BITS):
     common_id = CLIENT_ID.generate_close_id(ld)
     #self.assertEqual(common_id.log_distance(INFO_HASH_ZERO), ld)
     for i in xrange(num_nodes_per_ld):
-        this_id = Id(common_id.bin_id[:-1] + chr(i))
+        this_id = Id(common_id._bin[:-1] + chr(i))
         #self.assertEqual(this_id.log_distance(INFO_HASH_ZERO), ld)
         NODES_LD_CL[ld].append(
             node.Node(('128.0.0.' + str(i), ld), this_id))

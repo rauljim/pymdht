@@ -2,11 +2,11 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 import cStringIO
 import logging, logging_conf
-import unittest
+from unittest import TestCase, main
 
 from bencode import *
 
@@ -95,7 +95,7 @@ def debug_print(test_num, input_, expected, output):
     output:   %s''' % (test_num, input_, expected, output))
        
 
-class TestEncode(unittest.TestCase):
+class TestEncode(TestCase):
 
     def setUp(self):
         pass
@@ -128,7 +128,7 @@ class TestEncode(unittest.TestCase):
                 assert False # Fail. We got no exception at all.
 
                 
-class TestDecode(unittest.TestCase):
+class TestDecode(TestCase):
 
     def setUp(self):
         pass
@@ -164,5 +164,5 @@ class TestDecode(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()
     

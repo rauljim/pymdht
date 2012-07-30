@@ -2,7 +2,7 @@
 # Released under GNU LGPL 2.1
 # See LICENSE.txt for more information
 
-import unittest
+from unittest import TestCase, main
 
 from socket import inet_aton
 
@@ -18,7 +18,7 @@ logging_conf.testing_setup(__name__)
 logger = logging.getLogger('dht')
 
 
-class TestMsgTools(unittest.TestCase):
+class TestMsgTools(TestCase):
 
     def test_invalid_addresses(self):
         ips = ['127.0.0.1', '127.24.43.6', '192.168.0.1', '192.168.47.3']
@@ -63,7 +63,7 @@ class TestMsgTools(unittest.TestCase):
         IP = '1.2.3.4'
         PORT = 7777
         BIN_PORT = mt.int_to_bin(PORT)
-        c_nodes2 = [tc.CLIENT_ID.bin_id + inet_aton(IP) + BIN_PORT]
+        c_nodes2 = [tc.CLIENT_ID._bin + inet_aton(IP) + BIN_PORT]
         nodes2 = [node.Node((IP, PORT), tc.CLIENT_ID)]
         logger.debug(mt.uncompact_nodes2(c_nodes2))
         self.assertEqual(mt.uncompact_nodes2(c_nodes2), nodes2)
@@ -98,4 +98,4 @@ class TestMsgTools(unittest.TestCase):
         
 
 if __name__ == '__main__':
-    unittest.main()
+    main()
