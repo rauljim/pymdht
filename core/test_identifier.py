@@ -161,9 +161,9 @@ class TestId(unittest.TestCase):
             # do not work when two Id instances have the same bin_id
 
     def test_generate_closest_id(self):
-        id0 = RandomId()
+        id_ = RandomId()
         for i in [-1] + range(ID_SIZE_BITS):
-            self.assertEqual(id0.log_distance(id_.generate_close_id(i)), i)
+            self.assertEqual(id_.log_distance(id_.generate_close_id(i)), i)
 
             
 class TestRandomId(unittest.TestCase):
