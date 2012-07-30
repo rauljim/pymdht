@@ -46,9 +46,6 @@ class ThreadedReactor(threading.Thread):
         self._call_asap_queue = []
         self._next_main_loop_call_ts = 0 # call immediately
 
-        self._capturing = False
-        self._captured = []
-
         self._main_loop_f = main_loop_f
         self._port = port
         self._on_datagram_received_f = on_datagram_received_f
@@ -79,14 +76,6 @@ class ThreadedReactor(threading.Thread):
             self._lock.release()
     running = property(_get_running, _set_running)
 
-    def _add_capture(self, capture):
-        self._lock.acquire()
-        try:
-            if self._capturing:
-                self._captured.append(capture)
-        finally:
-            self._lock.release()
-     
     def run(self):
         self.run2()
     
@@ -109,25 +98,6 @@ class ThreadedReactor(threading.Thread):
                 raise
         self.running = False
         logger.debug('Reactor stopped')
-
-    def start_capture(self):
-        self._lock.acquire()
-        try:
-            assert not self._capturing
-            self._capturing = True
-        finally:
-            self._lock.release()
-
-    def stop_and_get_capture(self):
-        self._lock.acquire()
-        try:
-            assert self._capturing
-            self._capturing = False
-            captured = self._captured
-            self._captured = []
-        finally:
-            self._lock.release()
-        return captured
 
     def run_one_step(self):
         """Main loop activated by calling self.start()"""
@@ -163,7 +133,6 @@ class ThreadedReactor(threading.Thread):
             logger.warning(
                 'Got socket.error when receiving data:\n%s' % e)
         else:
-            self._add_capture((time.time(), addr, False, data))
             ip_is_blocked = self.floodbarrier_active and \
                             self.floodbarrier.ip_blocked(addr[0])
             if ip_is_blocked:
@@ -223,4 +192,3 @@ class ThreadedReactor(threading.Thread):
             logging.error('datagram >>>>>>>>>>>', datagram)
             logging.error('data,addr: %s %s' % (datagram.data, datagram.addr))
             raise
-        self._add_capture((time.time(), datagram.addr, True, datagram.data))

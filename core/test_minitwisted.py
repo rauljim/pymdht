@@ -231,37 +231,6 @@ class TestSend(unittest.TestCase):
         self.reactor.run_one_step()
         eq_(self.reactor.s.get_datagrams_sent(), [DATAGRAM1, DATAGRAM3])
         
-    def test_capture(self):
-        self.reactor.start_capture()
-        ts1 = time.time()
-        time.sleep(tc.TASK_INTERVAL/2)
-        # out > DATAGRAM1 (main_loop)
-        self.reactor.run_one_step()
-        ts2 = time.time()
-        incoming_datagram = Datagram(DATA1, tc.SERVER_ADDR)
-        self.reactor.s.put_datagram_received(incoming_datagram)
-        time.sleep(tc.TASK_INTERVAL/2)
-        self.reactor.run_one_step() 
-        # in < incoming_datagram (socket)
-        # out > DATAGRAM3 (on_datagram_received)
-        captured_msgs = self.reactor.stop_and_get_capture()
-
-        eq_(len(captured_msgs), 3)
-        for msg in  captured_msgs:
-            print msg
-        assert ts1 < captured_msgs[0][0] < ts2
-        eq_(captured_msgs[0][1], tc.SERVER_ADDR)
-        eq_(captured_msgs[0][2], True) #outgoing
-        eq_(captured_msgs[0][3], DATA1)
-        assert captured_msgs[1][0] > ts2
-        eq_(captured_msgs[1][1], DATAGRAM1.addr)
-        eq_(captured_msgs[1][2], False) #incoming
-        eq_(captured_msgs[1][3], DATAGRAM1.data)
-        assert captured_msgs[2][0] > captured_msgs[1][0]
-        eq_(captured_msgs[2][1], DATAGRAM3.addr)
-        eq_(captured_msgs[2][2], True) #outgoing
-        eq_(captured_msgs[2][3], DATAGRAM3.data)
-        
         
 class TestSocketError(unittest.TestCase):
 

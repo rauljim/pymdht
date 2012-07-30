@@ -130,9 +130,3 @@ class Pymdht:
                                lookup_id, info_hash,
                                callback_f, bt_port,
                                use_cache=False)
-
-    def start_capture(self):
-        self.reactor.start_capture()
-        
-    def stop_and_get_capture(self):
-        return self.reactor.stop_and_get_capture()
