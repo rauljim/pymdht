@@ -18,14 +18,13 @@ MAINTENANCE_DELAY = 8
 class RoutingManager(object):
     """
     Create a routing table (using routing\_table.RoutingTable) for
-    'my\_node'. Take 'bootstrap\_nodes' as candidates to be added to the
-    routing table.
+    'my\_node'. The routing table will report 'good' nodes to the bootstrapper to
+    be saved on disk. The routing table should not add 'hardcoded nodes' (see
+    bootstrap.py) to the routing table.
 
     """
-    def __init__(self, my_node, bootstrap_nodes, msg_f):
+    def __init__(self, my_node, msg_f, bootstrapper):
         self.my_node = my_node
-        #Copy the bootstrap list
-        self.bootstrap_nodes = iter(bootstrap_nodes)
         self.msg_f = msg_f
 
         self.table = routing_table.RoutingTable(my_node, [8,]*160)

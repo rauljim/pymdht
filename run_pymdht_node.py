@@ -57,6 +57,7 @@ def main(options, args):
     print 'Path:', options.path
     print 'Private DHT name:', options.private_dht_name
     print 'debug mode:', options.debug
+    print 'auto_bootstrap:', options.auto_bootstrap
     print 'bootstrap mode:', options.bootstrap_mode
     print 'Swift tracker port:', options.swift_port
     routing_m_name = '.'.join(os.path.split(options.routing_m_file))[:-3]
@@ -73,8 +74,9 @@ def main(options, args):
                         experimental_m_mod,
                         options.private_dht_name,
                         logs_level,
-                        options.bootstrap_mode,
-                        options.swift_port)
+                        auto_bootstrap=options.auto_bootstrap,
+                        bootstrap_mode=options.bootstrap_mode,
+                        swift_port=options.swift_port)
     if options.lookup_delay:
         loop_forever = not options.num_lookups
         remaining_lookups = options.num_lookups
@@ -122,7 +124,7 @@ if __name__ == '__main__':
                       metavar='IP', default='127.0.0.1',
                       help="IP address to be used")
     parser.add_option("-p", "--port", dest="port",
-                      metavar='INT', default=7000,
+                      metavar='INT', default=17000,
                       help="port to be used")
     parser.add_option("--path", dest="path",
                       metavar='PATH', default=default_path,
@@ -196,6 +198,10 @@ if __name__ == '__main__':
     node id to be close to the node-id specified. This is useful to place\
     nodes close to a particular identifier. For instance, to collect get_peers\
     messages for a given info_hash")
+    parser.add_option("--do-not-auto-bootstrap",dest="auto_bootstrap",
+                      action='store_false', default=True,
+                      help="Only for well-known bootsrap nodes. It will ignore\
+    some incoming queries to avoid being added to too many routing tables.")
     parser.add_option("--bootstrap-mode",dest="bootstrap_mode",
                       action='store_true', default=False,
                       help="Only for well-known bootsrap nodes. It will ignore\

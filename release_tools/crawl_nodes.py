@@ -8,8 +8,9 @@ import threading
 import sys
 sys.path.append('..')
 import logging
+import socket
 
-from core.pymdht import PYMDHT_VERSION
+from core.pymdht import PYMDHT_VERSION, VERSION_LABEL
 import core.logging_conf as logging_conf
 from core.node import Node
 from core.message import MsgFactory, Datagram, IncomingMsg
@@ -17,11 +18,12 @@ from core.identifier import RandomId
 from core.minitwisted import ThreadedReactor
 import core.ptime as time
 from core.pymdht import PYMDHT_VERSION
+import core.utils as utils
 
 MY_ID = RandomId()
 TID = '11'
 
-INPUT_FILE = '../core/bootstrap.backup'
+INPUT_FILE = '../core/bootstrap_unstable'
 PORT = 7667
 
 TIMEOUT = .25 # seconds
@@ -31,12 +33,12 @@ MAX_NODES = 2000
 class NodeCrawler(object):
 
     def __init__(self, filename):
-        self.msg_f = MsgFactory(PYMDHT_VERSION, MY_ID)
+        self.msg_f = MsgFactory(VERSION_LABEL, MY_ID)
         self._lock = threading.Lock()
         self._is_done = False
         self._pinged_ips = set()
         self._pinged_addrs = set()
-        self._ok_addrs = set()
+        self._ok_subnet_addrs = {}
         self._found_nodes = []
         self._file = open(filename)
         self.reactor = ThreadedReactor(
@@ -53,7 +55,7 @@ class NodeCrawler(object):
         return Node((ip, int(str_port)))
 
     def _get_found_node(self):
-        if len(self._ok_addrs) < MAX_NODES and self._found_nodes:
+        if len(self._ok_subnet_addrs) < MAX_NODES and self._found_nodes:
             return self._found_nodes.pop(0)
                         
     def _get_ping_datagram(self):
@@ -65,7 +67,7 @@ class NodeCrawler(object):
             if node_.ip in self._pinged_ips:
                 #duplicated IP, ignore
                 return
-            print '>>>>', node_, len(self._ok_addrs), len(self._found_nodes)
+            print '>>>>', node_, len(self._ok_subnet_addrs), len(self._found_nodes)
             msg = self.msg_f.outgoing_find_node_query(node_,
                                                       RandomId())
             datagram = Datagram(msg.stamp(TID), node_.addr)
@@ -73,7 +75,7 @@ class NodeCrawler(object):
             with self._lock:                                                                        
                 self._is_done = True  
         return datagram
-        
+
     def _main_loop(self):
         datagrams_to_send = []
         datagram = self._get_ping_datagram()
@@ -84,14 +86,17 @@ class NodeCrawler(object):
         return TIMEOUT, datagrams_to_send
 
     def _on_datagram_received(self, datagram):
+        #TODO: do not add to UNSTABLE if node is alredy in STABLE
         addr = datagram.addr
+        subnet = utils.get_subnet(addr)
         if addr in self._pinged_addrs:
             self._pinged_addrs.remove(addr)
-            self._ok_addrs.add(addr)
+            self._ok_subnet_addrs[subnet] = addr
         if len(self._found_nodes) < MAX_NODES:
             msg = IncomingMsg(None, datagram)
-            if msg.all_nodes:
-                self._found_nodes.extend(msg.all_nodes)
+            for node_ in msg.all_nodes or []:
+                if utils.get_subnet(node_.addr) not in self._ok_subnet_addrs:
+                    self._found_nodes.append(node_)
         return TIMEOUT, []
         
             
@@ -102,7 +107,7 @@ class NodeCrawler(object):
 
     def stop_and_get_result(self):
         self.reactor.stop()
-        return sorted(list(self._ok_addrs))
+        return sorted(self._ok_subnet_addrs.values())
 
 if __name__ == '__main__':
     logging_conf.setup('.', logging.DEBUG)

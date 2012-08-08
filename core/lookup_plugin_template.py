@@ -22,8 +22,9 @@ class GetPeersLookup(object):
         self.callback_f = callback_f
         self.bt_port = bt_port
         self._msg_factory = msg_f.outgoing_get_peers_query
+        self.start_ts = time.time()
     
-    def start(self, bootstrap_rnodes):
+    def start(self, bootstrap_rnodes, bootstrapper):
         queries_to_send = [self._msg_factory(bn, self._my_id,
                                              self.info_hash,
                                              self.lookup_id)
@@ -69,7 +70,7 @@ class MaintenanceLookup(GetPeersLookup):
         
 class LookupManager(object):
 
-    def __init__(self, my_id, msg_f):
+    def __init__(self, my_id, msg_f, bootstrapper):
         self.my_id = my_id
         self.msg_f = msg_f
 
