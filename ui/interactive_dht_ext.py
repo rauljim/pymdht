@@ -46,7 +46,7 @@ class idht_ext(threading.Thread):
         
         html_file = open(html_filename, 'w')
         
-        conn = HTTPConnection('thepiratebay.org')
+        conn = HTTPConnection('thepiratebay.se')
     
         conn.request('GET', '/top/'+page)
         response = conn.getresponse()
