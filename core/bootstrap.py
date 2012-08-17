@@ -105,6 +105,10 @@ class OverlayBootstrapper(object):
         if self._sample_unstable_addrs:
             i_warn_you_msg = "You are messing with my off-line detector, my friend"
             logger.warning(i_warn_you_msg)
+        if 1:#len(self._unstable_ip_port) < num_addrs:
+            print '>>>len(self._unstable_ip_port) == %d, num_addrs: %d' % (
+                len(self._unstable_ip_port), num_addrs)
+            
         self._sample_unstable_addrs = random.sample(
             self._unstable_ip_port.items(),
             min(num_addrs, len(self._unstable_ip_port))
