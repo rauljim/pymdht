@@ -106,7 +106,9 @@ class OverlayBootstrapper(object):
             i_warn_you_msg = "You are messing with my off-line detector, my friend"
             logger.warning(i_warn_you_msg)
         self._sample_unstable_addrs = random.sample(
-            self._unstable_ip_port.items(), num_addrs)
+            self._unstable_ip_port.items(),
+            min(num_addrs, len(self._unstable_ip_port))
+            ) #TODO: what if the file is empty/contains too few nodes?
         # return a copy (lookup manager may modify it)
         return self._sample_unstable_addrs[:] 
 
