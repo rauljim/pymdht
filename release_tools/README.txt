@@ -7,12 +7,12 @@ git checkout develop
 # A pymdht.bootstrap from node running 24/7 is best.
 cp ~/.pymdht/pymdht.bootstrap ../core/bootstrap_unstable
 
-# Run the crawler to update bootstrap nodes (it takes a little while)
-rm crawled.nodes.release-*
-./crawl_nodes.py 
+# Run the crawler to update bootstrap nodes (it takes around 4 days)
+rm crawled24.nodes.release-*
+./crawl24.py 
 
 # Replace bootstrap_unstable with the list created by crawler
-mv crawled.nodes.release-* ../core/bootstrap_unstable
+sort crawled.nodes.release-* >../core/bootstrap_unstable
 
 # Commit core/bootstrap_unstable
 git commit ../core/bootstrap_unstable -m 'bootstrap nodes updated'
