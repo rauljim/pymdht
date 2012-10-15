@@ -16,7 +16,7 @@ import core.pymdht as pymdht
 import time
 import interactive_dht_ext as idht_ext
 
-import core.old_message as message
+import core.message as message
 
 import mainclass as mainclass
 

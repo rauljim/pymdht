@@ -8,7 +8,7 @@ import string
 #import dpkt
 import binascii
 from StringIO import StringIO
-import core.old_message as message
+import core.message as message
 import os
 import stat
 import core.identifier as identifier
