@@ -35,13 +35,16 @@ import core.message as message
 import core.node as node
 from core.node import Node, RoutingNode
 from core.routing_table import RoutingTable
-import core.bootstrap as bootstrap
 
 sys.path.pop()
 
 logger = logging.getLogger('dht')
 
 NUM_BUCKETS = identifier.ID_SIZE_BITS
+MAX_LOG_DISTANCE_TO_ADD_HARDCODED = 155
+# Hardcoded nodes may be added to the routing table if
+# log_distance < MAX_LOG_DISTANCE_TO_ADD_HARDCODED
+
 """
 We need 160 sbuckets to cover all the cases. See the following table:
 Index | Distance      | Comment
@@ -66,12 +69,10 @@ QUARANTINE_PERIOD = 3 * 60 # 3 minutes
 MAX_NUM_TIMEOUTS = 2
 PING_DELAY_AFTER_TIMEOUT = 30 #seconds
 
-BOOTSTRAP_MODE = 'bootstrap_mode'
 FIND_CLOSEST_MODE = 'find_closest_mode'
 FILL_BUCKETS= 'fill_buckets'
 NORMAL_MODE = 'normal_mode'
-_MAINTENANCE_DELAY = {# bootstrap delay is determined by the bootstrap module
-                      FIND_CLOSEST_MODE: 3,
+_MAINTENANCE_DELAY = {FIND_CLOSEST_MODE: 3,
                       FILL_BUCKETS: 1,
                       NORMAL_MODE: 6}
 
@@ -84,15 +85,14 @@ MAX_TIMEOUTS_IN_A_ROW = 10 # When x timeouts in a row, we consider that the
 
 class RoutingManager(object):
     
-    def __init__(self, my_node, bootstrap_nodes, msg_f):
+    def __init__(self, my_node, msg_f, bootstrapper):
         self.my_node = my_node
-        self.bootstrapper = bootstrap.OverlayBootstrapper(my_node.id,
-                                                          bootstrap_nodes, msg_f)
         self.msg_f = msg_f
+        self.bootstrapper = bootstrapper
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
         # maintenance variables
         self._next_stale_maintenance_index = 0
-        self._maintenance_mode = BOOTSTRAP_MODE
+        self._maintenance_mode = FILL_BUCKETS
         self._replacement_queue = _ReplacementQueue(self.table)
         self._query_received_queue = _QueryReceivedQueue(self.table)
         self._found_nodes_queue = _FoundNodesQueue(self.table)
@@ -117,17 +117,7 @@ class RoutingManager(object):
         queries_to_send = []
         maintenance_lookup = None
         maintenance_delay = 0
-        if self._maintenance_mode == BOOTSTRAP_MODE: 
-                (queries_to_send,
-                 maintenance_lookup,
-                 bootstrap_delay) = self.bootstrapper.do_bootstrap(
-                    self.table.num_rnodes)
-                if bootstrap_delay:
-                    maintenance_delay = bootstrap_delay
-                else:
-                    self._maintenance_mode = FILL_BUCKETS
-                    self.bootstrapper.bootstrap_done()
-        elif self._maintenance_mode == FILL_BUCKETS:
+        if self._maintenance_mode == FILL_BUCKETS: #TODO: kill
             if self._num_pending_filling_lookups:
                 self._num_pending_filling_lookups -= 1
                 maintenance_lookup = self._get_maintenance_lookup()
@@ -187,13 +177,6 @@ class RoutingManager(object):
         return self._replacement_queue.pop(0)
                                   
     def _get_maintenance_query(self, node_, do_fill_up=False):
-        '''
-        if not node_.id: 
-            # Bootstrap nodes don't have id
-            return message.OutgoingFindNodeQuery(node_,
-                                                 self.my_node.id,
-                                                 self.my_node.id, None)
-        '''
         if do_fill_up or random.choice((False, True)):
 
             # 50% chance to send a find_node to fill up a non-full bucket
@@ -219,10 +202,10 @@ class RoutingManager(object):
         will be sent out by the caller)
         '''
         self._num_timeouts_in_a_row = 0
-        if self.bootstrapper.is_bootstrap_node(node_):
-            return
-        
         log_distance = self.my_node.distance(node_).log
+        if (log_distance > MAX_LOG_DISTANCE_TO_ADD_HARDCODED and
+            self.bootstrapper.is_hardcoded(node_.addr)):
+            return
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except(IndexError):
@@ -257,8 +240,6 @@ class RoutingManager(object):
             
     def on_response_received(self, node_, rtt, nodes):
         self._num_timeouts_in_a_row = 0
-        if self.bootstrapper.is_bootstrap_node(node_):
-            return
 
         if nodes:
             logger.debug('nodes found: %r', nodes)
@@ -266,6 +247,9 @@ class RoutingManager(object):
 
         logger.debug('on response received %f', rtt)
         log_distance = self.my_node.distance(node_).log
+        if (log_distance > MAX_LOG_DISTANCE_TO_ADD_HARDCODED and
+            self.bootstrapper.is_hardcoded(node_.addr)):
+            return
         try:
             sbucket = self.table.get_sbucket(log_distance)
         except(IndexError):
@@ -278,6 +262,8 @@ class RoutingManager(object):
             if rnode:
                 # node in routing table: update rnode
                 self._update_rnode_on_response_received(rnode, rtt)
+                self.bootstrapper.report_reachable(
+                    rnode.addr, time.time() - rnode.creation_ts)
             # This IP is in the table. Stop here to avoid multiple entries
             # with the same IP
             return
@@ -349,11 +335,12 @@ class RoutingManager(object):
         return
     
     def on_timeout(self, node_):
+        if not node_.id:
+            # this is an overlay bootstrap node (no id). Ignore.
+            return []
         self._num_timeouts_in_a_row += 1
         if self._num_timeouts_in_a_row > MAX_TIMEOUTS_IN_A_ROW:
             # stop, do not expell nodes from routing table
-            return []
-        if self.bootstrapper.is_bootstrap_node(node_):
             return []
 
         log_distance = self.my_node.distance(node_).log
@@ -398,6 +385,9 @@ class RoutingManager(object):
 
     def print_stats(self):
         self.table.print_stats()
+
+    def print_table(self):
+        self.table.print_table()
 
     def _update_rnode_on_query_received(self, rnode):
         """Register a query from node.

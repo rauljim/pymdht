@@ -23,7 +23,7 @@ import swift_tracker
 
 logger = logging.getLogger('dht')
 
-PYMDHT_VERSION = (12, 6, 2)
+PYMDHT_VERSION = (12, 11, 0)
 VERSION_LABEL = ''.join(
     ['NS',
      chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
@@ -36,35 +36,36 @@ class Pymdht:
 
     Setting up the DHT node is as simple as creating this object.
     The parameters are:
-    - dht_addr: a tuple containing IP address and port number.
-    - state_filename: the complete path to a file to load/store node state.
+    - my_node: a Node object containing IP address and port number (id is optional).
+    - conf_path: the complete path to local files (logs, bootstrap.local, etc.)
     - routing_m_mod: the module implementing routing management.
     - lookup_m_mod: the module implementing lookup management.
     - experimental_m_mod: the module implementing experimental management.
     - private_dht_name: name of the private DHT (use global DHT when None)
     - debug_level: level of logs saved into pymdht.log (standard logging module).
-
+    - auto_bootstrap: perform a lookup on node's id to bootstrap into the overlay
+    - bootstrap_mode: (only if YOU want to run a stablebootstrap node)
+    - swift_port: UDP port for Swift interface (used in Android app)
     """
     def __init__(self, my_node, conf_path,
                  routing_m_mod, lookup_m_mod,
                  experimental_m_mod,
                  private_dht_name,
                  debug_level,
-                 bootsrap_mode=False,
+                 auto_bootstrap=True,
+                 bootstrap_mode=False,
                  swift_port=0):
         logging_conf.setup(conf_path, debug_level)
-        state_filename = os.path.join(conf_path, controller.STATE_FILENAME)
         self.controller = controller.Controller(VERSION_LABEL,
-                                                my_node, state_filename,
+                                                my_node, conf_path,
                                                 routing_m_mod,
                                                 lookup_m_mod,
                                                 experimental_m_mod,
                                                 private_dht_name,
-                                                bootsrap_mode)
+                                                bootstrap_mode)
         self.reactor = minitwisted.ThreadedReactor(
             self.controller.main_loop,
             my_node.addr[1], self.controller.on_datagram_received)
-        self.reactor.start()
         if swift_port:
             print 'Creating SwiftTracker'
             swift_tracker.SwiftTracker(self, swift_port).start()
@@ -72,6 +73,10 @@ class Pymdht:
         self.max_num_sec = 0
         self.max_num_min = 0
         self.max_num_10min = 0
+        if auto_bootstrap:
+            # Overlay bootstrap
+            self.get_peers(None, self.controller._my_id, None, 0)
+        self.reactor.start()
             
     def stop(self):
         """Stop the DHT node."""
@@ -130,6 +135,9 @@ class Pymdht:
 
     def print_routing_table_stats(self):
         self.controller.print_routing_table_stats()
+
+    def print_routing_table(self):
+        self.controller.print_routing_table()
 
     def start_capture(self):
         self.reactor.start_capture()

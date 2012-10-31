@@ -15,10 +15,13 @@ sys.path.append(root_dir)
 import core.ptime as time
 import core.identifier as identifier
 import core.message as message
+from core.node import Node
 
 sys.path.pop()
 
 logger = logging.getLogger('dht')
+
+NUM_OVERLAY_BOOTSTRAP_NODES = 40
 
 MARK_INDEX = 2
 
@@ -58,7 +61,7 @@ class _LookupQueue(object):
 
         self.last_query_ts = time.time()
 
-    def bootstrap(self, rnodes, max_nodes):
+    def bootstrap(self, rnodes, max_nodes, overlay_bootstrap):
         # Assume that the ips are not duplicated.
         qnodes = []
         for n in rnodes:
@@ -68,7 +71,7 @@ class _LookupQueue(object):
                 distance = None
             qnode = _QueuedNode(n, distance, None)
             qnodes.append(qnode)
-        self._add_queued_qnodes(qnodes)
+        self._add_queued_qnodes(qnodes, do_sort=not overlay_bootstrap)
         return self._pop_nodes_to_query(max_nodes)
 
     def on_response(self, src_node, nodes, token, max_nodes):
@@ -85,6 +88,8 @@ class _LookupQueue(object):
 
     def on_timeout(self, max_nodes):
         return self._pop_nodes_to_query(max_nodes)
+    #TODO: use STABLE nodes if all UNSTABLE nodes unreachable!!!
+    #FIXME: ^^^^^^^^^^^
 
     on_error = on_timeout
     
@@ -108,13 +113,17 @@ class _LookupQueue(object):
         self.responded_qnodes.sort(key=attrgetter('distance'))
         del self.responded_qnodes[self.max_responded_qnodes:]
 
-    def _add_queued_qnodes(self, qnodes):
+    def _add_queued_qnodes(self, qnodes, do_sort=True):
         for qnode in qnodes:
             if qnode.node.ip not in self.queued_ips \
                     and qnode.node.ip not in self.queried_ips:
                 self.queued_qnodes.append(qnode)
                 self.queued_ips.add(qnode.node.ip)
-        self.queued_qnodes.sort()
+        if do_sort:
+            # We do not want to sort nodes coming from bootstrapper.
+            # Bootstrapper relies on nodes being contacted in the same order as
+            # the given list. See bootstrapper.report_unreachable.
+            self.queued_qnodes.sort()
 
     def _pop_nodes_to_query(self, max_nodes):
         if len(self.responded_qnodes) > MARK_INDEX:
@@ -175,6 +184,8 @@ class GetPeersLookup(object):
         self._running = False
         self._slow_down = False
         self._msg_factory = msg_f.outgoing_get_peers_query
+
+        self.bootstrapper = None # do overlay bootstrap if not None
         
     def _get_max_nodes_to_query(self):
         if self._slow_down:
@@ -183,17 +194,32 @@ class GetPeersLookup(object):
         return min(self.normal_alpha - self._num_parallel_queries,
                    self.normal_m)
     
-    def start(self, bootstrap_rnodes):
+    def start(self, bootstrap_rnodes, bootstrapper=None):
         assert not self._running
         self._running = True
+        if bootstrap_rnodes:
+            # Normal lookup
+            self.bootstrapper = None
+        else:
+            self.bootstrapper = bootstrapper
+            # OVERLAY BOOTSTRAP (using nodes from bootstrapper)
+            addrs = self.bootstrapper.get_sample_unstable_addrs(
+                NUM_OVERLAY_BOOTSTRAP_NODES)
+            addrs.extend(self.bootstrapper.get_shuffled_stable_addrs())
+            bootstrap_rnodes = [Node(addr) for addr in addrs]
+
+        overlay_bootstrap = bool(bootstrapper)
         nodes_to_query = self._lookup_queue.bootstrap(bootstrap_rnodes,
-                                                      self.bootstrap_alpha)
+                                                      self.bootstrap_alpha,
+                                                      overlay_bootstrap)
         queries_to_send = self._get_lookup_queries(nodes_to_query)
         return queries_to_send
         
     def on_response_received(self, response_msg, node_):
         logger.debug('response from %r\n%r' % (node_,
                                                 response_msg))
+        if self.bootstrapper:
+            self.bootstrapper.report_reachable(node_.addr, 0)
         self._num_parallel_queries -= 1
         self.num_responses += 1
         token = getattr(response_msg, 'token', None)
@@ -212,6 +238,8 @@ class GetPeersLookup(object):
 
     def on_timeout(self, node_):
         logger.debug('TIMEOUT node: %r' % node_)
+        if self.bootstrapper:
+            self.bootstrapper.report_unreachable(node_.addr)
         self._num_parallel_queries -= 1
         self.num_timeouts += 1
         self._slow_down = True
@@ -292,9 +320,10 @@ class MaintenanceLookup(GetPeersLookup):
         
 class LookupManager(object):
 
-    def __init__(self, my_id, msg_f):
+    def __init__(self, my_id, msg_f, bootstrapper):
         self.my_id = my_id
         self.msg_f = msg_f
+        self.bootstrapper = bootstrapper
 
     def get_peers(self, lookup_id, info_hash, callback_f, bt_port=0):
         lookup_q = GetPeersLookup(self.msg_f, self.my_id,
