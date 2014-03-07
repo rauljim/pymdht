@@ -29,7 +29,7 @@ VERSION_LABEL = ''.join(
      chr((PYMDHT_VERSION[0] - 11) * 24 + PYMDHT_VERSION[1]),
      chr(PYMDHT_VERSION[2])
      ])
-                         
+
 
 class Pymdht:
     """Pymdht is the interface for the whole package.
@@ -66,9 +66,12 @@ class Pymdht:
         self.reactor = minitwisted.ThreadedReactor(
             self.controller.main_loop,
             my_node.addr[1], self.controller.on_datagram_received)
+
+        self.swift_tracker_thread = None
         if swift_port:
             print 'Creating SwiftTracker'
-            swift_tracker.SwiftTracker(self, swift_port).start()
+            self.swift_tracker_thread = swift_tracker.SwiftTracker(self, swift_port)
+            self.swift_tracker_thread.start()
         self.timestamps = []
         self.max_num_sec = 0
         self.max_num_min = 0
@@ -77,14 +80,16 @@ class Pymdht:
             # Overlay bootstrap
             self.get_peers(None, self.controller._my_id, None, 0)
         self.reactor.start()
-            
+
     def stop(self):
         """Stop the DHT node."""
-        #TODO: notify controller so it can do cleanup?
+        # TODO: notify controller so it can do cleanup?
         self.reactor.stop()
         # No need to call_asap because the minitwisted thread is dead by now
         self.controller.on_stop()
-    
+        if self.swift_tracker_thread:
+            self.swift_tracker_thread.stop()
+
     def get_peers(self, lookup_id, info_hash, callback_f,
                   bt_port=0, use_cache=False):
         """ Start a get peers lookup. Return a Lookup object.
@@ -103,7 +108,7 @@ class Pymdht:
         callback needs to be ready to get peers BEFORE calling this fuction.
         
         """
-        #logger.critical("pymdht.get_peers: callback: %r" % (callback_f))
+        # logger.critical("pymdht.get_peers: callback: %r" % (callback_f))
         current_time = time.time()
         self.timestamps.append(current_time)
         num_sec = 0
@@ -125,7 +130,7 @@ class Pymdht:
                 num_min, self.max_num_min,
                 num_10min, self.max_num_10min,
                 info_hash, callback_f))
-        
+
         use_cache = True
         print 'pymdht: use_cache ON!!'
         self.reactor.call_asap(self.controller.get_peers,
@@ -141,6 +146,6 @@ class Pymdht:
 
     def start_capture(self):
         self.reactor.start_capture()
-        
+
     def stop_and_get_capture(self):
         return self.reactor.stop_and_get_capture()
