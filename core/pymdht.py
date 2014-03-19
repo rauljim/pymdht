@@ -90,6 +90,8 @@ class Pymdht:
         if self.swift_tracker_thread:
             self.swift_tracker_thread.stop()
 
+        logging_conf.close()
+
     def get_peers(self, lookup_id, info_hash, callback_f,
                   bt_port=0, use_cache=False):
         """ Start a get peers lookup. Return a Lookup object.
