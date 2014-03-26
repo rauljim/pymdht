@@ -106,10 +106,7 @@ class RoutingManager(object):
                     queries_to_send = [self._get_maintenance_query(node_)]
                     # This task did do some work. We are done here!
                     break
-<<<<<<< HEAD
-=======
 #        print 'nice', _MAINTENANCE_DELAY[self._maintenance_mode]
->>>>>>> d7bed531d0bbfa54c481422b96243221bf18e2ff
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
 
