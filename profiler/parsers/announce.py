@@ -9,7 +9,7 @@
 from parser_utils import openf
 import core.message as message
 
-\class Parser(object):
+class Parser(object):
 
     def __init__(self, my_ip):
         self.my_ip = my_ip

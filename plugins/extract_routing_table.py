@@ -41,7 +41,7 @@ class ExperimentalManager:
             
             exp_obj = ExpObj()
 
-             exp_obj.reg_status_of_node(msg.src_node, STATUS_ON_PROCESS)
+            exp_obj.reg_status_of_node(msg.src_node, STATUS_ON_PROCESS)
             
             
             log_distance = exp_obj.next_log_dist()           
