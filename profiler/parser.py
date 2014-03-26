@@ -45,7 +45,7 @@ multiparser_mods = [
     __import__('parsers.same_ip').same_ip,
     __import__('parsers.multi_rtt').multi_rtt,
 '''
-    __import__('parsers.multi_bootstrap_miner').multi_rtt,
+    #__import__('parsers.multi_bootstrap_miner').multi_rtt,
     #__import__('parsers.announce').announce,
     #__import__('parsers.infohashes').infohashes,
     ]
@@ -72,12 +72,13 @@ cdf_files = [
     'l_time_closest',
     'l_time_auth',
     'l_num_nodes'
-'''
     ]
+'''
 
+'''
 multiparser_cdf_files = [
-     't_rtt',
-     ]
+    't_rtt',
+    ]
 '''
 TIMEOUT_DELAY = 2
 
