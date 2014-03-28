@@ -115,10 +115,10 @@ class SessionHandler(SocketServer.StreamRequestHandler):
             raise SanitizeError, '? Channel must be a number'
     
     def handle(self):
+        global stop_server
         while not stop_server:
             line = self.rfile.readline().strip().upper()
             if line == 'KILL':
-                global stop_server
                 stop_server = True
                 return
             if line == 'CRASH':
