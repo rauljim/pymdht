@@ -58,6 +58,9 @@ class OverlayBootstrapper(object):
         f = utils.get_open_file(filename)
         for line in f or []:
             addr = _sanitize_bootstrap_addr(line)
+            if addr is None:
+                continue
+
             self.hardcoded_ips.add(addr[0])
             self._stable_ip_port[addr[0]] = addr[1]
             self._all_subnets.add(utils.get_subnet(addr))
