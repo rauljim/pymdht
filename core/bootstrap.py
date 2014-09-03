@@ -58,6 +58,9 @@ class OverlayBootstrapper(object):
         f = utils.get_open_file(filename)
         for line in f or []:
             addr = _sanitize_bootstrap_addr(line)
+            if addr is None:
+                continue
+
             self.hardcoded_ips.add(addr[0])
             self._stable_ip_port[addr[0]] = addr[1]
             self._all_subnets.add(utils.get_subnet(addr))
@@ -223,6 +226,14 @@ class OverlayBootstrapper(object):
 
             
 def _sanitize_bootstrap_addr(line):
-    #TODO: need to catch exceptions
-    ip, port_str = line.split()
-    return ip, int(port_str)
+    params = line.split()
+    if len(params) != 2:
+        logging.warn('invalid bootstrap addr: %s', line)
+        return
+    ip, port_str = params
+    try:
+        port = int(port_str)
+    except ValueError:
+        logging.warn('invalid port (%s) in bootstrap addr: %s', port_str, line)
+        return
+    return ip, port
