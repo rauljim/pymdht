@@ -77,6 +77,8 @@ class OverlayBootstrapper(object):
             local_exists = True
             for line in f:
                 addr = _sanitize_bootstrap_addr(line)
+                if addr is None:
+                    continue
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(utils.get_subnet(addr))
         logger.debug('%s: %d hardcoded, %d unstable' % (
@@ -85,6 +87,8 @@ class OverlayBootstrapper(object):
         f = utils.get_open_file(filename)
         for line in f or []:
             addr = _sanitize_bootstrap_addr(line)
+            if addr is None:
+                continue
             self.hardcoded_ips.add(addr[0])
             if not local_exists:
                 self._unstable_ip_port[addr[0]] = addr[1]
