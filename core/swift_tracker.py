@@ -216,5 +216,5 @@ class ChannelManager(object):
 
     def remove(self, channel):
         for i in range(len(self.channels)):
-            if self.channels[i].local_cid == local_cid:
+            if self.channels[i].local_cid == channel.local_cid:
                 del self.channels[i]
