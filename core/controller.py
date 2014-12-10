@@ -345,7 +345,7 @@ class Controller:
             queries_to_send.extend(maintenance_queries_to_send)
         if exp_queries_to_send:
             datagrams = self._register_queries(exp_queries_to_send)
-            datagrams_to_send.extend(datagrams)
+            queries_to_send.extend(datagrams)
         return queries_to_send
 
     def _announce(self, lookup_obj):
