@@ -5,8 +5,11 @@
 import os
 import sys
 import socket
+import logging
 
 import node
+
+logger = logging.getLogger('dht')
 
 class AddrError(Exception):
     pass
