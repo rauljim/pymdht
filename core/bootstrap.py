@@ -226,7 +226,7 @@ class OverlayBootstrapper(object):
             logger.exception()
             return
         for addr in addrs:
-            logger.debug(addr[0], addr[1])  # TODO: inet_aton
+            logger.debug("%s, %s", addr[0], addr[1])  # TODO: inet_aton
 
 
 def _sanitize_bootstrap_addr(line):
