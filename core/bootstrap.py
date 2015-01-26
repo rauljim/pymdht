@@ -113,21 +113,21 @@ class OverlayBootstrapper(object):
             i_warn_you_msg = "You are messing with my off-line detector, my friend"
             logger.warning(i_warn_you_msg)
         if 1:#len(self._unstable_ip_port) < num_addrs:
-            print '>>>len(self._unstable_ip_port) == %d, num_addrs: %d' % (
-                len(self._unstable_ip_port), num_addrs)
-            
+            logger.debug('>>>len(self._unstable_ip_port) == %d, num_addrs: %d' % (
+                len(self._unstable_ip_port), num_addrs))
+
         self._sample_unstable_addrs = random.sample(
             self._unstable_ip_port.items(),
             min(num_addrs, len(self._unstable_ip_port))
             ) #TODO: what if the file is empty/contains too few nodes?
         # return a copy (lookup manager may modify it)
-        return self._sample_unstable_addrs[:] 
+        return self._sample_unstable_addrs[:]
 
     def get_shuffled_stable_addrs(self):
         addrs = self._stable_ip_port.items()
         random.shuffle(addrs)
         return addrs
-        
+
     def is_hardcoded(self, addr):
         """
         Having addresses hardcoded increases the load of these nodes "lucky"
@@ -226,9 +226,9 @@ class OverlayBootstrapper(object):
             logger.exception()
             return
         for addr in addrs:
-            print >>out, addr[0], addr[1] #TODO: inet_aton
+            logger.debug(addr[0], addr[1])  # TODO: inet_aton
 
-            
+
 def _sanitize_bootstrap_addr(line):
     params = line.split()
     if len(params) != 2:
