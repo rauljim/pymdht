@@ -69,7 +69,7 @@ class Pymdht:
 
         self.swift_tracker_thread = None
         if swift_port:
-            print 'Creating SwiftTracker'
+            logger.info('Creating SwiftTracker')
             self.swift_tracker_thread = swift_tracker.SwiftTracker(self, swift_port)
             self.swift_tracker_thread.start()
         self.timestamps = []
@@ -95,9 +95,9 @@ class Pymdht:
     def get_peers(self, lookup_id, info_hash, callback_f,
                   bt_port=0, use_cache=False):
         """ Start a get peers lookup. Return a Lookup object.
-        
+
         The info_hash must be an identifier.Id object.
-        
+
         The callback_f must expect two parameters (lookup_id and list of
         peeers). When peers are discovered, the callback is called with a list
         of peers as paramenter.  The list of peers is a list of addresses
@@ -108,7 +108,7 @@ class Pymdht:
 
         Notice that the callback can be fired even before this call ends. Your
         callback needs to be ready to get peers BEFORE calling this fuction.
-        
+
         """
         # logger.critical("pymdht.get_peers: callback: %r" % (callback_f))
         current_time = time.time()
@@ -134,7 +134,7 @@ class Pymdht:
                 info_hash, callback_f))
 
         use_cache = True
-        print 'pymdht: use_cache ON!!'
+        logger.info('pymdht: use_cache ON!!')
         self.reactor.call_asap(self.controller.get_peers,
                                lookup_id, info_hash,
                                callback_f, bt_port,
