@@ -64,8 +64,8 @@ class OverlayBootstrapper(object):
             self.hardcoded_ips.add(addr[0])
             self._stable_ip_port[addr[0]] = addr[1]
             self._all_subnets.add(utils.get_subnet(addr))
-        logger.debug('%s: %d hardcoded, %d stable' % (
-                filename, len(self.hardcoded_ips), len(self._stable_ip_port)))
+        logger.debug('%s: %d hardcoded, %d stable',
+                     filename, len(self.hardcoded_ips), len(self._stable_ip_port))
         # local (unstable)
         try:
             f = open(self.abs_local_filename)
@@ -81,8 +81,8 @@ class OverlayBootstrapper(object):
                     continue
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(utils.get_subnet(addr))
-        logger.debug('%s: %d hardcoded, %d unstable' % (
-                filename, len(self.hardcoded_ips), len(self._unstable_ip_port)))
+        logger.debug('%s: %d hardcoded, %d unstable',
+                     filename, len(self.hardcoded_ips), len(self._unstable_ip_port))
         filename = HARDCODED_UNSTABLE_FILENAME
         f = utils.get_open_file(filename)
         for line in f or []:
@@ -93,8 +93,8 @@ class OverlayBootstrapper(object):
             if not local_exists:
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(utils.get_subnet(addr))
-        logger.debug('%s: %d hardcoded, %d unstable' % (
-                filename, len(self.hardcoded_ips), len(self._unstable_ip_port)))
+        logger.debug('%s: %d hardcoded, %d unstable',
+                     filename, len(self.hardcoded_ips), len(self._unstable_ip_port))
         #long-term variables
         self.next_long_uptime_add_ts = time.time() # do first add asap
         self.longest_uptime = MIN_LONG_UPTIME
@@ -113,8 +113,8 @@ class OverlayBootstrapper(object):
             i_warn_you_msg = "You are messing with my off-line detector, my friend"
             logger.warning(i_warn_you_msg)
         if 1:#len(self._unstable_ip_port) < num_addrs:
-            logger.debug('>>>len(self._unstable_ip_port) == %d, num_addrs: %d' % (
-                len(self._unstable_ip_port), num_addrs))
+            logger.debug('>>>len(self._unstable_ip_port) == %d, num_addrs: %d',
+                         len(self._unstable_ip_port), num_addrs)
 
         self._sample_unstable_addrs = random.sample(
             self._unstable_ip_port.items(),
@@ -160,14 +160,14 @@ class OverlayBootstrapper(object):
         if self._sample_unstable_addrs:
             if addr == self._sample_unstable_addrs.pop(0):
                 # assume local node is off-line, do not remove
-                logger.debug('OFF-LINE %r' % (addr,))
+                logger.debug('OFF-LINE %s:%s', addr[0], addr[1])
                 return
             else:
                 self._sample_unstable_addrs = [] # end off-line mode
         #remove from dict (if present)
         del self._unstable_ip_port[addr[0]]
         self._all_subnets.remove(utils.get_subnet(addr))
-        logger.debug('REMOVED %r' % (addr,))
+        logger.debug('REMOVED %s:%s', addr[0], addr[1])
 
     def report_reachable(self, addr, uptime=0):
         """
@@ -192,13 +192,13 @@ class OverlayBootstrapper(object):
             return
         if uptime == 0:
             if len(self._unstable_ip_port) < MAX_ZERO_UPTIME_ADDRS:
-                logger.debug('added short %r' % (addr,))
+                logger.debug('added short %s:%s', addr[0], addr[1])
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(addr_subnet)
         elif uptime >= MAX_LONG_UPTIME:
             # 24 hours. Add it right away.
-            logger.debug('added 24h long: %r, %f hours' % (
-                    addr, uptime / 3600))
+            logger.debug('added 24h long: %s:%s, %f hours',
+                         addr[0], addr[1], uptime / 3600)
             self._unstable_ip_port[addr[0]] = addr[1]
             self._all_subnets.add(addr_subnet)
         elif uptime >= self.longest_uptime:
@@ -206,8 +206,8 @@ class OverlayBootstrapper(object):
             self.longest_uptime = uptime
             self.longest_uptime_addr = addr
             if time.time() >= self.next_long_uptime_add_ts:
-                logger.debug('added long: %r, %f hours' % (
-                        addr, uptime / 3600))
+                logger.debug('added long: %s:%s, %f hours',
+                             addr[0], addr[1], uptime / 3600)
                 self._unstable_ip_port[addr[0]] = addr[1]
                 self._all_subnets.add(addr_subnet)
                 self.longest_uptime = MIN_LONG_UPTIME
