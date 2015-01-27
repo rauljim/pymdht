@@ -65,12 +65,12 @@ _MAINTENANCE_DELAY = {BOOTSTRAP_MODE: .2,
 
 
 class RoutingManager(object):
-    
+
     def __init__(self, my_node, bootstrap_nodes):
         self.my_node = my_node
         #Copy the bootstrap list
         self.bootstrap_nodes = iter(bootstrap_nodes)
-        
+
         self.table = RoutingTable(my_node, NODES_PER_BUCKET)
         # maintenance variables
         self._maintenance_mode = BOOTSTRAP_MODE
@@ -81,7 +81,7 @@ class RoutingManager(object):
             # self._ping_a_query_received_node,
             # self._ping_a_found_node,
                                    ]
-        
+
     def do_maintenance(self):
         queries_to_send = []
         maintenance_lookup_target = None
@@ -98,7 +98,7 @@ class RoutingManager(object):
 
         return (_MAINTENANCE_DELAY[self._maintenance_mode],
                 queries_to_send, maintenance_lookup_target)
-    
+
     def _refresh_stale_bucket(self):
         maintenance_lookup_target = None
         current_time = time.time()
@@ -120,7 +120,7 @@ class RoutingManager(object):
 
     def _get_maintenance_query(self, node_):
         return message.OutgoingPingQuery(node_, self.my_node.id)
-         
+
     def on_query_received(self, node_):
         '''
         Return None when nothing to do
@@ -141,7 +141,7 @@ class RoutingManager(object):
             # node in routing table: inform rnode
             self._update_rnode_on_query_received(rnode)
             return
-        
+
         # node is not in the routing table
         if m_bucket.there_is_room():
             # There is room in the bucket. Just add the new node.
@@ -172,7 +172,7 @@ class RoutingManager(object):
             self._pinged_q_rnodes[q_rnode] = [0, c_rnode]
             queries_to_send.append(message.OutgoingPingQuery(node_, self.my_node.id))
         return queries_to_send
-  
+
     def on_response_received(self, node_, rtt, nodes):
         log_distance = self.my_node.log_distance(node_)
         try:
@@ -234,7 +234,7 @@ class RoutingManager(object):
             queries_to_send.append(message.OutgoingPingQuery(node_,
                                                              self.my_node.id))
         return queries_to_send
- 
+
     def _pop_bad_rnode(self, mbucket):
         for rnode in mbucket.rnodes:
             if rnode.timeouts_in_a_row() >= 2:
@@ -252,10 +252,10 @@ class RoutingManager(object):
                     rnode.questionable = True
                     q_rnodes.append(rnode)
         return q_rnodes
-        
+
     def on_error_received(self, node_addr):
         pass
-    
+
     def on_timeout(self, node_):
         if not node_.id:
             return [] # This is a bootstrap node (just addr, no id)
@@ -289,13 +289,13 @@ class RoutingManager(object):
             m_bucket = self.table.get_sbucket(log_distance).main
             c_rnode_in_table = m_bucket.get_rnode(c_rnode)
             if c_rnode_in_table:
-                print 'questionable node replaced'
+                logger.debug('questionable node replaced')
                 # replace
                 m_bucket.remove(rnode)
                 m_bucket.add(c_rnode)
                 self.table.num_rnodes += 0
         return []
-        
+
     def get_closest_rnodes(self, log_distance, num_nodes, exclude_myself):
         if not num_nodes:
             num_nodes = NODES_PER_BUCKET[log_distance]
@@ -333,7 +333,7 @@ class RoutingManager(object):
         if rnode.in_quarantine:
             rnode.in_quarantine = \
                 rnode.last_action_ts < current_time - QUARANTINE_PERIOD
-                
+
         rnode.last_action_ts = current_time
         rnode.num_responses += 1
         rnode.add_event(time.time(), node.RESPONSE)
